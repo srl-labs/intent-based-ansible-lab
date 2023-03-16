@@ -1,0 +1,122 @@
+# topology documentation: http://containerlab.srlinux.dev/lab-examples/min-clos/
+name: 4l2s
+
+#mgmt:
+#   network: clab_mgmt
+mgmt:
+    network: my_clab
+    ipv4_subnet: 172.20.21.0/24
+
+topology:
+  kinds:
+    srl:
+      image: ghcr.io/wdesmedt/srlinux:0.0.0-42666
+#      image: ghcr.io/nokia/srlinux:22.11.1
+    linux:
+      image: ghcr.io/hellt/network-multitool
+    vr-sros:
+      image: ghcr.io/wdesmedt/vr-sros:latest
+      type: sr-1
+      license: license-sros22.txt
+  nodes:
+    l1:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.11
+      labels: {role: leaf}
+#      startup-config: startup/l1.json
+    l2:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.12
+      labels: {role: leaf}
+#      startup-config: startup/l2.json
+    l3:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.13
+      labels: {role: leaf}
+#      startup-config: startup/l3.json
+    l4:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.14
+      labels: {role: leaf}
+#      startup-config: startup/l4.json
+    s1:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.101
+      labels: {role: spine}
+#      startup-config: startup/s1.json
+    s2:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.102
+      labels: {role: spine}
+#      startup-config: startup/s2.json
+    tor12:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.140
+#      startup-config: startup/tor12.json
+    tor34:
+      kind: srl
+      type: ixrd2
+      mgmt_ipv4: 172.20.21.141
+    cl10:
+      mgmt_ipv4: 172.20.21.130
+      kind: linux
+    cl11:
+      kind: linux
+      mgmt_ipv4: 172.20.21.131
+#      binds:
+#        - startup/cl11_startup.sh:/conf/startup.sh
+#      exec:
+#        - /conf/startup.sh
+    cl20:
+      kind: linux
+      mgmt_ipv4: 172.20.21.132
+    cl21:
+      kind: linux
+      mgmt_ipv4: 172.20.21.133
+    cl30:
+      kind: linux
+      mgmt_ipv4: 172.20.21.134
+    cl40:
+      kind: linux
+      mgmt_ipv4: 172.20.21.135
+#      binds:
+#        - startup/cl40_startup.sh:/conf/startup.sh
+#      exec:
+#        - /conf/startup.sh
+    dcgw1:
+      kind: vr-sros
+      mgmt_ipv4: 172.20.21.250
+    dcgw2:
+      kind: vr-sros
+      mgmt_ipv4: 172.20.21.251
+
+  links:
+    - endpoints: ["l1:e1-49", "s1:e1-1"]
+    - endpoints: ["l1:e1-48", "s2:e1-1"]
+    - endpoints: ["l2:e1-49", "s1:e1-2"]
+    - endpoints: ["l2:e1-48", "s2:e1-2"]
+    - endpoints: ["l3:e1-49", "s1:e1-3"]
+    - endpoints: ["l3:e1-48", "s2:e1-3"]
+    - endpoints: ["l4:e1-49", "s1:e1-4"]
+    - endpoints: ["l4:e1-48", "s2:e1-4"]
+    - endpoints: ["cl10:eth1", "l1:e1-1"]
+    - endpoints: ["cl11:eth1", "l1:e1-2"]
+    - endpoints: ["cl20:eth1", "l2:e1-1"]
+    - endpoints: ["cl21:eth1", "l2:e1-2"]
+    - endpoints: ["cl30:eth1", "l3:e1-1"]
+    - endpoints: ["cl40:eth1", "l4:e1-1"]
+    - endpoints: ["tor12:e1-49", "l1:e1-10"]
+    - endpoints: ["tor12:e1-48", "l2:e1-10"]
+    - endpoints: ["tor34:e1-49", "l3:e1-10"]
+    - endpoints: ["tor34:e1-48", "l4:e1-10"]
+    - endpoints: ["s1:e1-49", "dcgw1:eth1"]
+    - endpoints: ["s2:e1-49", "dcgw1:eth2"]
+    - endpoints: ["s1:e1-48", "dcgw2:eth1"]
+    - endpoints: ["s2:e1-48", "dcgw2:eth2"]

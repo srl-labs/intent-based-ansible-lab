@@ -1,0 +1,8 @@
+- name: Generate config for /interface
+  set_fact:
+    update: "{{ update + lookup('template', 'interface.j2') | from_yaml }}"
+    cacheable: true
+- name: Generate config for /interface/subinterface
+  set_fact:
+    update: "{{ update + lookup('template', 'subinterface.j2') | from_yaml }}"
+    cacheable: true

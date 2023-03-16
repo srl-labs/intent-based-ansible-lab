@@ -1,0 +1,7 @@
+- ansible.builtin.include_vars:
+    file: vars/{{inventory_hostname}}.yml
+#    hash_behaviour: replace
+
+- name: Generate config for /interface
+  ansible.builtin.include_role:
+    name: utils/interface

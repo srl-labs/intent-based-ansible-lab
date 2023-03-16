@@ -1,0 +1,18 @@
+- ansible.builtin.include_vars:
+    file: vars/{{inventory_hostname}}.yml
+    hash_behaviour: replace
+
+- ansible.builtin.include_vars:
+    file: vars/{{item}}.yml
+    hash_behaviour: merge
+  loop:
+    - leaf
+    - spine
+  when: item in group_names
+
+#- debug:
+#    var: network_instance
+
+- name: Generate config for /network-instance[name=default]
+  ansible.builtin.include_role:
+    name: utils/network-instance

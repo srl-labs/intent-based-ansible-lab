@@ -1,0 +1,13 @@
+---
+
+- name: Delete contact
+  gather_facts: false
+  hosts: srl
+  tasks:
+
+    - name: Delete contact
+      nokia_ni_cnpi.srlinux.srl_config:
+        delete:
+        - /system/information/contact
+      register: delc
+      diff: yes

@@ -1,0 +1,21 @@
+---
+
+- name: Add contact
+  gather_facts: false
+  hosts: srl
+  #hosts: clab-evpn01-spine1
+  vars:
+    contact: Ansible
+  tasks:
+    - name: Add contact
+      nokia_ni_cnpi.srlinux.srl_config:
+        path: /system/information
+        src: variable_contact.json.j2
+        #backup: yes
+      register: addc
+
+#    - name: Get diff
+#      debug:
+#        msg: "{{ addc.diff | default([]) | list }}"
+#      when: addc.diff is defined
+#

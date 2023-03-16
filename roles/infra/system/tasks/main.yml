@@ -1,0 +1,5 @@
+- name: Generate config for /system
+  set_fact:
+    update: "{{ update + lookup('template', 'system.j2') | from_yaml }}"
+    cacheable: true
+

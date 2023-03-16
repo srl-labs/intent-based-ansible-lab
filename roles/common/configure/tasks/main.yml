@@ -1,0 +1,32 @@
+- name: Prepare input for jsonrpc-set
+  set_fact:
+    update: "{{ update | map('combine',{'action':'update'}) }}"
+    replace: "{{ replace | map('combine',{'action':'replace'}) }}"
+
+#- name: Updating resources on device
+#  nokia_ni_cnpi.srlinux.srl_config:
+#    update: "{{ ansible_facts['update'] }}"
+#    replace: "{{ ansible_facts['replace'] }}"
+#- name: Purge resources from device
+#  nokia_ni_cnpi.srlinux.srl_config:
+#    delete: "{{ ansible_facts['delete'] }}"
+#  when: purge and (ansible_facts['delete']|length>0)
+
+#- debug:
+#    var: replace
+
+- name: Update resources on device
+  nokia.srl.jsonrpc_set:
+    commands: "{{ update + replace }}"        
+
+- name: Purge resources on device
+  nokia.srl.jsonrpc_set:
+    commands: "{{ delete }}"        
+  when:
+    - purge
+    - delete | length>0
+
+#- name: Purge resources from device
+#  nokia_ni_cnpi.srlinux.srl_config:
+#    delete: "{{ ansible_facts['delete'] }}"
+#  when: purge and (ansible_facts['delete']|length>0)

@@ -1,0 +1,9 @@
+#jinja2: lstrip_blocks: "True"
+{% for ni in ansible_net_config['network-instance'] %}
+{% if ni.name not in purge_exclude['network_instance'] %}
+{% if ni.name not in network_instance.keys() %}
+- /network-instance[name={{ ni.name }}]
+{% endif %}
+{% endif %}
+{% endfor %}
+

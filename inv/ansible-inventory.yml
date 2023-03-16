@@ -1,0 +1,50 @@
+all:
+  children:
+    linux:
+      hosts:
+        clab-4l2s-cl10:
+          ansible_host: 172.20.21.130
+        clab-4l2s-cl11:
+          ansible_host: 172.20.21.131
+        clab-4l2s-cl20:
+          ansible_host: 172.20.21.132
+        clab-4l2s-cl21:
+          ansible_host: 172.20.21.133
+        clab-4l2s-cl30:
+          ansible_host: 172.20.21.134
+        clab-4l2s-cl40:
+          ansible_host: 172.20.21.135
+    srl:
+      hosts:
+        clab-4l2s-l1:
+          ansible_host: 172.20.21.11
+        clab-4l2s-l2:
+          ansible_host: 172.20.21.12
+        clab-4l2s-l3:
+          ansible_host: 172.20.21.13
+        clab-4l2s-l4:
+          ansible_host: 172.20.21.14
+        clab-4l2s-s1:
+          ansible_host: 172.20.21.101
+        clab-4l2s-s2:
+          ansible_host: 172.20.21.102
+        clab-4l2s-tor12:
+          ansible_host: 172.20.21.140
+        clab-4l2s-tor34:
+          ansible_host: 172.20.21.141
+    leaf:
+      hosts:
+       clab-4l2s-l1:
+       clab-4l2s-l2:
+       clab-4l2s-l3:
+       clab-4l2s-l4:
+    spine:
+      hosts:
+        clab-4l2s-s1:
+        clab-4l2s-s2:
+    sros:
+      hosts:
+        clab-4l2s-dcgw1:
+          ansible_host: 172.20.21.250
+        clab-4l2s-dcgw2:
+          ansible_host: 172.20.21.251

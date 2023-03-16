@@ -1,0 +1,29 @@
+- name: init facts
+  set_fact:
+    update: []
+    replace: []
+    delete: []
+    cacheable: true
+
+- name: load config from device
+#  nokia_ni_cnpi.srlinux.srl_facts: {} # config in 'ansible_net_config' fact
+  nokia.srl.jsonrpc_get:
+    paths:
+      - path: /
+        datastore: running
+  register: get_config
+
+- set_fact:
+    running_config: "{{ get_config['data']['result'][0] }}"
+
+- name: load extra vars
+  ansible.builtin.include_vars:
+    dir: "vars/{{inventory_hostname}}"
+    hash_behaviour: merge
+    ignore_unknown_extensions: True
+    extensions:
+      - 'yaml'
+      - 'yml'
+      - 'json'
+  #when:
+  #  - "vars/" + inventory_hostname | lookup('file_exists')

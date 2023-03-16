@@ -1,0 +1,12 @@
+---
+
+- name: Get config
+  gather_facts: false
+  hosts: clab-4l2s-l1
+  tasks:
+    - name: get gather_facts
+      nokia_ni_cnpi.srlinux.srl_facts: {}
+
+    - name: display
+      debug:
+        msg: "{{ansible_net_config}}"

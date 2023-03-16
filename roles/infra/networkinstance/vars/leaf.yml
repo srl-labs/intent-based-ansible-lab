@@ -1,0 +1,48 @@
+network_instance:
+  default:
+    interfaces:
+    - system0.0
+    - ethernet-1/48.0
+    - ethernet-1/49.0
+    autonomous-system: "{{ asn }}"
+    protocols:
+      bgp:
+        ipv4:
+          admin_state: enable
+        group:
+          overlay:
+            peer_as: 100
+            export_policy: pass-evpn
+            import_policy: pass-evpn
+            ipv4:
+              admin_state: disable
+            evpn:
+              admin_state: enable
+            local_as: 100
+            local_address: "{{ router_id }}"
+          spines:
+            description: "Peer-group for spine neighbors"
+            export_policy: lo-and-servers
+            import_policy: pass-all
+            peer_as: 65100
+            ipv4:
+              admin_state: enable
+            epvn:
+              admin_state: disable
+#        neighbor:
+#          192.168.0.0:
+#            peer_group: spines
+#          192.168.1.0:
+#            peer_group: spines
+#          192.168.255.101:
+#            peer_group: overlay
+#          192.168.255.102:
+#            peer_group: overlay
+  
+
+
+            
+
+
+
+

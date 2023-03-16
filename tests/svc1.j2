@@ -1,0 +1,32 @@
+- name: Create sub-itf and mac-vrf
+  gather_facts: false
+  hosts: srl
+  tasks:
+
+    - name: Create subitf and mac-vrf
+      diff: yes
+      nokia_ni_cnpi.srlinux.srl_config:
+        update:
+        - path: /interface[name=ethernet-1/2]
+          value:
+            vlan-tagging: true
+            admin-state: enable
+        - path: /network-instance[name=mac-vrf1]
+          value:
+            type: mac-vrf
+            admin-state: enable
+            interface:
+            - name: ethernet-1/2.0
+        replace:
+        - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+          value:
+            type: bridged
+            admin-state: enable
+            vlan: {"encap": {"single-tagged": { "vlan-id": 1 }}}
+            description: foe
+        - path: /interface[name=ethernet-1/2]/subinterface[index=1]
+          value:
+            vlan: {"encap": {"single-tagged": { "vlan-id": 2 }}}
+            admin-state: enable
+            description: foo
+

@@ -1,0 +1,26 @@
+#jinja2: lstrip_blocks: "True"
+{%- for subif, prop in subinterface.items() %}
+{% set l = subif.split('.') %}
+- path: /interface[name={{l[0]}}]/subinterface[index={{l[1]}}]
+  value:
+    admin-state: {{ prop.admin_state | default("enable") }}
+    {% if prop.type is defined %}
+    type: {{ prop.type }}
+    {% endif %}
+    {% if prop.vlan is defined %}
+    vlan:
+      encap:
+        {% if prop.vlan == 'untagged' %}
+        untagged: {}
+        {% else %}
+        single-tagged:
+          vlan-id: {{ prop.vlan }}
+        {% endif %}
+    {% endif %}
+    {% if prop.ipv4_address is defined %}
+    ipv4:
+      admin-state: enable
+      address:
+      - ip-prefix: {{prop.ipv4_address }}
+    {% endif %}
+{% endfor %}

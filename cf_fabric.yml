@@ -1,0 +1,22 @@
+- name: Configure fabric
+  gather_facts: no
+  hosts: 
+    - leaf
+    - spine
+  vars:
+    purge: yes # purge resources from device not in intent
+    purgeable:
+      - interface
+      - subinterface
+      - network-instance
+  roles:
+  - { role: common/init,  }
+
+  - { role: infra/system, tags: [infra, system]}
+  - { role: infra/interface, tags: [infra, interface] }
+  - { role: infra/policy, tags: [infra, policy] }
+  - { role: infra/networkinstance, tags: [infra,]}
+
+  - { role: common/purge, }
+  - { role: common/configure, }
+

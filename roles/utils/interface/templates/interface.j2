@@ -1,0 +1,10 @@
+#jinja2: lstrip_blocks: "True"
+{%- for itf, prop in interfaces.items() %}
+- path: /interface[name={{ itf }}]
+  value:
+    admin-state: enable
+    description: foo bar
+    {% if prop.vlan_tagging is defined %}
+    vlan-tagging: true
+    {% endif %}
+{% endfor %}

@@ -1,0 +1,5 @@
+- name: network-instance default
+  set_fact:
+    replace: "{{ replace + lookup('template', 'networkinstance.j2') | from_yaml }}"
+    cacheable: true
+

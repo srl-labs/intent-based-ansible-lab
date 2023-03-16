@@ -1,0 +1,39 @@
+router_id: 192.168.255.1
+asn: 65001
+interfaces:
+  system0:
+    admin_state: enable
+    subinterface:
+      0:
+        admin_state: enable
+        ipv4_address: 192.168.255.1/32
+  ethernet-1/49:
+    description: to_spine1_1/1
+    admin_state: enable
+    subinterface:
+      0:
+        admin_state: enable
+        ipv4_address: 192.168.0.1/31
+  ethernet-1/48:
+    description: to_spine2_1/1
+    admin_state: enable
+#    vlan_tagging: true
+    subinterface:
+      0:
+        admin_state: enable
+#        vlan: 10
+        ipv4_address: 192.168.1.1/31
+#  - name: ethernet-1/1
+#    description: test interface 
+#    vlan_tagging: true
+system:
+  lldp:
+    admin-state: enable
+  information:
+    location: SomeWhere
+    contact: SomeOne
+network_instance:
+  default:
+    router-id: "{{ router_id }}"
+    interfaces: [system0.0]
+    autonomous-system: "{{ asn }}"

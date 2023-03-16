@@ -1,0 +1,14 @@
+- ansible.builtin.include_vars:
+    file: vars/{{inventory_hostname}}.yml
+    hash_behaviour: replace
+
+- ansible.builtin.include_vars:
+    file: vars/{{item}}.yml
+    hash_behaviour: merge
+  loop:
+    - srl
+  when: item in group_names
+
+- name: Generate config for /routing-policy
+  ansible.builtin.include_role:
+    name: utils/policy

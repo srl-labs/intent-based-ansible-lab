@@ -1,0 +1,68 @@
+---
+#### Set the stage: create sub-itf and mac-vrf with created sub-itf
+#  {
+#  "jsonrpc": "2.0",
+#  "id": 0,
+#  "method": "set",
+#  "params": {
+#    "commands": [
+#      {
+#         "path": "/interface[name=ethernet-1/2]/subinterface[index=0]",
+#     "action": "update",
+#     "value": {"type":"bridged", "admin-state": "enable", "description":"foo"}
+#      },
+#      {
+#    "path": "/network-instance[name=mac-vrf1]",
+#    "action": "update",
+#    "value": {"type":"mac-vrf", "admin-state": "enable", "interface": [ {"name": "ethernet-1/2.0"} ]}
+#     }
+#    ]
+#  }
+#}
+#### delete sub-itf from macvrf 
+#$ cat set_3_subif.json
+#{
+#  "jsonrpc": "2.0",
+#  "id": 0,
+#  "method": "set",
+#  "params": {
+#    "commands": [
+#      {
+#         "path": "/interface[name=ethernet-1/2]/subinterface[index=0]",
+#           "action": "delete"
+#      },
+#      {
+#            "path": "/network-instance[name=mac-vrf1]",
+#            "action": "update",
+#            "value": {"type":"mac-vrf", "admin-state": "enable", "interface": [ ]}
+#     }
+#    ]
+#  }
+#}
+#$ curl -s  'http://admin:admin@clab-eos-srl1/jsonrpc' -d @set_3_subif.json | jq
+#{
+#  "error": {
+#    "code": -1,
+#    "message": "Error in path: .interface{.name==\"ethernet-1/2\"}.subinterface{.index==0}\n    [FailedPrecondition] subinterface is bound to .network-instance{.name==\"mac-vrf1\"}.interface{.name==\"ethernet-1/2.0\"}\n"
+#  },
+#  "id": 0,
+#  "jsonrpc": "2.0"
+#}
+
+
+- name: Remove sub-itf and mac-vrf
+  gather_facts: false
+  hosts: clab-evpn01-leaf2
+  tasks:
+
+    - name: Create subitf and mac-vrf
+      nokia_ni_cnpi.srlinux.srl_config:
+        delete:
+        - /interface[name=ethernet-1/2]/subinterface[index=0]
+        - /network-instance[name=mac-vrf1]
+      register: rmsubitfmacvrf
+
+    - name: Get diff
+      debug:
+        msg: "{{ rmsubitfmacvrf.diff | default([]) | list }}"
+

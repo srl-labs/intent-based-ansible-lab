@@ -1,0 +1,12 @@
+- name: Generate Delete sets
+  vars:
+    purge_exclude:
+      network_instance: 
+      - mgmt  # never purge mgmt network-instance
+  set_fact:
+    delete: "{{ delete + lookup('template', '{{item}}_purge.j2') | from_yaml }}"
+    cacheable: true
+  loop: "{{ purgeable }}"
+  when: 
+  - purge 
+  - item in (lookup('template', item + '_purge.j2'))
