@@ -15,15 +15,3 @@
 
 - set_fact:
     running_config: "{{ get_config['data']['result'][0] }}"
-
-- name: load extra vars
-  ansible.builtin.include_vars:
-    dir: "vars/{{inventory_hostname}}"
-    hash_behaviour: merge
-    ignore_unknown_extensions: True
-    extensions:
-      - 'yaml'
-      - 'yml'
-      - 'json'
-  #when:
-  #  - "vars/" + inventory_hostname | lookup('file_exists')

@@ -1,8 +1,0 @@
-interfaces:
-  mgmt0:
-    subinterface:
-      0:
-        admin_state: enable
-  lo0:
-    subinterface:
-      0:

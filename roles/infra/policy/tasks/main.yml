@@ -1,11 +1,6 @@
-- set_fact:
-    my_intent: "{{ my_intent | default({}) | combine(group_intent[item], recursive=True)}}"
-  loop: "{{ group_names }}"
-  when: item in group_intent
-
-- set_fact:
-    my_intent: "{{ my_intent | default({}) | combine(host_intent[inventory_hostname], recursive=True)}}"
-  when: inventory_hostname in host_intent
+- name: "Load Intent: /routing-policy" 
+  ansible.builtin.include_role:
+    name: utils/load_intent
 
 - set_fact:
     routing_policy: "{{ my_intent.routing_policy }}"
