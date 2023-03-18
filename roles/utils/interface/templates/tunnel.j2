@@ -1,0 +1,16 @@
+#jinja2: lstrip_blocks: "True"
+{% if tunnel_interface is defined %}
+{%- for tunnel, tun_spec in tunnel_interface.items() %}
+- path: /tunnel-interface[name={{ tunnel }}]
+  value:
+    {% if tun_spec is defined %}
+    {% for idx, idx_spec in tun_spec.items() %}
+    vxlan-interface:
+      - index: {{ idx }}
+        type: {{ idx_spec.type }}
+        ingress:
+          vni: {{ idx_spec.ingress_vni }}
+    {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endif %}

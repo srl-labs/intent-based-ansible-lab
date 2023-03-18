@@ -13,8 +13,8 @@
 #  when: purge and (ansible_facts['delete']|length>0)
 
 #- debug:
-#    var: replace
-
+#    var: update
+#
 - name: Update resources on device
   nokia.srl.jsonrpc_set:
     commands: "{{ update + replace }}"        

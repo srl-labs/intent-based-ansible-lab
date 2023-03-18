@@ -1,6 +1,16 @@
-- ansible.builtin.include_vars:
-    file: vars/{{inventory_hostname}}.yml
-#    hash_behaviour: replace
+- set_fact:
+    my_intent: "{{ my_intent | default({}) | combine(group_intent[item], recursive=True)}}"
+  loop: "{{ group_names }}"
+  when: item in group_intent
+
+- set_fact:
+    my_intent: "{{ my_intent | default({}) | combine(host_intent[inventory_hostname], recursive=True)}}"
+  when: inventory_hostname in host_intent
+
+- set_fact:
+    interfaces: "{{ my_intent.interfaces }}"
+    subinterface: "{{ my_intent.subinterface }}"
+    tunnel_interface: "{{ my_intent.tunnel_interface | default({}) }}"
 
 - name: Generate config for /interface
   ansible.builtin.include_role:

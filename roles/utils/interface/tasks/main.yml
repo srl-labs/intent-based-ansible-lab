@@ -6,3 +6,8 @@
   set_fact:
     update: "{{ update + lookup('template', 'subinterface.j2') | from_yaml }}"
     cacheable: true
+- name: Generate config for /tunnel-interface
+  set_fact:
+    update: "{{ update + lookup('template', 'tunnel.j2') | from_yaml }}"
+    cacheable: true
+  when: "'tunnel' in lookup('template','tunnel.j2')"
