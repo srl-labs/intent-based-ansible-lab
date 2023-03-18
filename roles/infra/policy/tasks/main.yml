@@ -3,7 +3,7 @@
     name: utils/load_intent
 
 - set_fact:
-    routing_policy: "{{ my_intent.routing_policy }}"
+    intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
 - name: Generate config for /routing-policy
   ansible.builtin.include_role:

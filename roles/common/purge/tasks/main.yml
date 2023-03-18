@@ -4,9 +4,9 @@
       network_instance: 
       - mgmt  # never purge mgmt network-instance
   set_fact:
-    delete: "{{ delete + lookup('template', '{{item}}_purge.j2') | from_yaml }}"
+    delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
   loop: "{{ purgeable }}"
   when: 
   - purge 
-  - item in (lookup('template', item + '_purge.j2'))
+  - item in (lookup('template', item + '_purge.j2', template_vars=intent))

@@ -1,9 +1,9 @@
 - name: Configure fabric
   gather_facts: no
   hosts: 
-#   - clab-4l2s-l1
-   - leaf
-   - spine
+   - clab-4l2s-l1
+#   - leaf
+#   - spine
   vars:
     purge: yes # purge resources from device not in intent
     purgeable:
@@ -11,7 +11,7 @@
       - subinterface
       - network-instance
   roles:
-  - { role: common/init,  }
+  - { role: common/init, tags: [always] }
 
   - { role: infra/system, tags: [infra, system]}
   - { role: infra/interface, tags: [infra, interface] }
@@ -19,4 +19,4 @@
   - { role: infra/networkinstance, tags: [infra,]}
 
   - { role: common/purge, }
-  - { role: common/configure, }
+  - { role: common/configure, tags: [always]}

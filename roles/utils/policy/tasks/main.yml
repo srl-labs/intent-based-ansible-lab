@@ -1,4 +1,4 @@
 - name: Generate config for /routing-policy
   set_fact:
-    replace: "{{ replace + lookup('template', 'policy.j2') | from_yaml }}"
+    replace: "{{ replace + lookup('template', 'policy.j2', template_vars=intent) | from_yaml }}"
     cacheable: true

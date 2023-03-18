@@ -3,10 +3,10 @@
     name: utils/load_intent
 
 - set_fact:
-    interfaces: "{{ my_intent.interfaces }}"
-    subinterface: "{{ my_intent.subinterface }}"
-    tunnel_interface: "{{ my_intent.tunnel_interface | default({}) }}"
+    intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
 - name: Generate config for /interface
   ansible.builtin.include_role:
     name: utils/interface
+  vars:
+    intent: "{{ my_intent }}"
