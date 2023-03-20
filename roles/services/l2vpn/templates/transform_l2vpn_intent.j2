@@ -1,0 +1,36 @@
+#jinja2: lstrip_blocks: "True"
+{% for svc, svc_spec in l2vpn.items() %}
+{% if inventory_hostname in svc_spec.node_list %}
+network_instance: 
+    {{ svc }}:
+        interfaces:
+        {% for itf in svc_spec.interface %}
+        - {{ itf }}
+        {% endfor %}
+        description: {{ svc_spec.description | default("no description") }}
+        type: {{ svc_spec.type }}
+        vxlan_interface:
+            - vxlan1.{{svc_spec.id}}
+        protocols:
+            bgp_evpn:
+                vxlan_interface: {{ svc_spec.vxlan_interface }}
+                evi: {{ svc_spec.id }}
+            bgp_vpn:
+                export_rt: {{svc_spec.export_rt}}
+                import_rt: {{svc_spec.import_rt}}
+subinterface:
+{% for itf in svc_spec.interface %}
+    {{ itf }}:
+        type: bridged
+        vlan: {{ svc_spec.vlan }}
+{% endfor %}
+{% if svc_spec.vxlan_interface is defined %}
+tunnel_interface:
+    vxlan1:
+        {{svc_spec.id}}:
+            type: bridged
+            ingress_vni: {{ svc_spec.id }}
+{% endif %}
+{% endif %}
+{% endfor %}
+

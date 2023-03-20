@@ -1,6 +1,6 @@
-- set_fact:
-    my_intent: {}
-
+#- set_fact:
+#    my_intent: {}
+#
 - set_fact:
     my_intent: "{{ my_intent | default({}) | combine(group_intent[item], recursive=True)}}"
   loop: "{{ group_names }}"

@@ -1,10 +1,13 @@
-- name: "Load Intent: /network-instance" 
+- set_fact:
+    my_intent: {}
+
+- name: "{{ ansible_role_name }}: load Intent: /network-instance" 
   ansible.builtin.include_role:
     name: utils/load_intent
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
-- name: Generate config for /network-instance[name=default]
+- name: "{{ ansible_role_name }}: Generate config for /network-instance[name=default]"
   ansible.builtin.include_role:
     name: utils/network-instance

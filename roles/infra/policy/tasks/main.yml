@@ -1,10 +1,13 @@
-- name: "Load Intent: /routing-policy" 
+- set_fact:
+    my_intent: {}
+
+- name: "{{ ansible_role_name }}: Load Intent: /routing-policy" 
   ansible.builtin.include_role:
     name: utils/load_intent
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
-- name: Generate config for /routing-policy
+- name: "{{ ansible_role_name }}: Generate config for /routing-policy"
   ansible.builtin.include_role:
     name: utils/policy

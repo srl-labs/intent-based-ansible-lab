@@ -1,5 +1,0 @@
-services:
-  macvrf-200:
-    interface:
-      - name: ethernet-1/1.1
-        vlan-id: 2

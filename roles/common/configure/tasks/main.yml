@@ -1,5 +1,4 @@
-- name: Prepare input for jsonrpc-set
-  set_fact:
+- set_fact:
     update: "{{ update | map('combine',{'action':'update'}) }}"
     replace: "{{ replace | map('combine',{'action':'replace'}) }}"
 
@@ -12,14 +11,14 @@
 #    delete: "{{ ansible_facts['delete'] }}"
 #  when: purge and (ansible_facts['delete']|length>0)
 
-- debug:
-    var: replace
+#- debug:
+#    var: replace
 
-- name: Update resources on device
+- name: "Update resources on {{inventory_hostname}}"
   nokia.srl.jsonrpc_set:
     commands: "{{ update + replace }}"        
 
-- name: Purge resources on device
+- name: "Purge resources on {{inventory_hostname}}"
   nokia.srl.jsonrpc_set:
     commands: "{{ delete }}"        
   when:

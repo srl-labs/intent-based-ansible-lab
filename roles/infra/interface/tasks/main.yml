@@ -1,11 +1,14 @@
-- name: "Load Intent: /interfaces" 
+- set_fact:
+    my_intent: {}
+
+- name: "{{ ansible_role_name}}: Load Intent for /interfaces" 
   ansible.builtin.include_role:
     name: utils/load_intent
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
-- name: Generate config for /interface
+- name: "{{ ansible_role_name }}: Generate config for /interface"
   ansible.builtin.include_role:
     name: utils/interface
   vars:

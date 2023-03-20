@@ -7,7 +7,7 @@ host_intent:
         ipv4_address: 192.168.0.1/31
       system0.0:
         ipv4_address: 192.168.255.1/32
-      mgmt0.0:
+#      mgmt0.0:
   clab-4l2s-l2:
     subinterface:
       ethernet-1/48.0:

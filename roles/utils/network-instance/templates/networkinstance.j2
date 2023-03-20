@@ -3,14 +3,43 @@
 - path: /network-instance[name={{ni}}]
   value:
     admin-state: enable
+    {% if prop.type is defined %}
+    type: {{ prop.type }}
+    {% endif %}
     interface:
     {% for itf in prop.interfaces %} 
       - name: {{ itf }}
     {% endfor %}
+    {% if prop.vxlan_interface is defined %}
+    vxlan-interface:
+    {% for vxlan_itf in prop.vxlan_interface %}
+      - name: {{ vxlan_itf }}
+    {% endfor %}
+    {% endif %}
     protocols:
+      {% if prop.protocols.bgp_evpn is defined %}
+      bgp-evpn:
+        bgp-instance:
+          - id: 1
+            admin-state: enable
+            vxlan-interface: {{ prop.protocols.bgp_evpn.vxlan_interface }}
+            evi: {{ prop.protocols.bgp_evpn.evi }}
+            ecmp: 4
+      {% endif %}
+      {% if prop.protocols.bgp_vpn is defined %}
+      bgp-vpn:
+        bgp-instance:
+          - id: 1
+            route-target:
+              export-rt: "target:{{prop.protocols.bgp_vpn.export_rt}}"
+              import-rt: "target:{{prop.protocols.bgp_vpn.import_rt}}"
+      {% endif %}
+      {% if prop.protocols.bgp is defined %}
       bgp:
+        {% if prop.type|default('routed') != 'bridged' %}
         autonomous-system: {{ asn }}
         router-id: {{router_id }}
+        {% endif %}
         {% if prop.protocols.bgp.ipv4 is defined %}
         ipv4-unicast:
           admin-state: {{ prop.protocols.bgp.ipv4.admin_state|default('disable') }}
@@ -54,4 +83,5 @@
           peer-as: {{ nbr_spec.peer_as }}
           {% endif %}
         {% endfor %}
+      {% endif %}
 {% endfor %}

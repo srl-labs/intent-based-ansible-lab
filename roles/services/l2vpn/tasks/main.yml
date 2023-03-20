@@ -1,0 +1,24 @@
+- set_fact:
+    my_intent: {}
+
+- name: "{{ ansible_role_name }}: Generate low-level intent for L2VPN"
+  set_fact:
+    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
+
+#- debug:
+#    var: my_intent 
+
+- name: "{{ ansible_role_name }}: Generate config for /interface"
+  ansible.builtin.include_role:
+    name: utils/interface
+  vars:
+    intent: "{{ my_intent }}"
+
+- name: "{{ ansible_role_name }}: Generate config for /network-instance"
+  ansible.builtin.include_role:
+    name: utils/network-instance
+  vars:
+    intent: "{{ my_intent }}"
+
+- set_fact:
+    intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"

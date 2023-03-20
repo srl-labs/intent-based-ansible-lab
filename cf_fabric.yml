@@ -18,5 +18,7 @@
   - { role: infra/policy, tags: [infra, policy] }
   - { role: infra/networkinstance, tags: [infra,]}
 
+  - { role: services/l2vpn, tags: [services, ]}
+
   - { role: common/purge, }
   - { role: common/configure, tags: [always]}
