@@ -13,12 +13,16 @@
     name: utils/interface
   vars:
     intent: "{{ my_intent }}"
+  when: 
+    - my_intent.subinterface is defined
 
 - name: "{{ ansible_role_name }}: Generate config for /network-instance"
   ansible.builtin.include_role:
     name: utils/network-instance
   vars:
     intent: "{{ my_intent }}"
+  when: my_intent.network_instance is defined
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
+  when: my_intent | length > 0

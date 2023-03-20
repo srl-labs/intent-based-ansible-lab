@@ -16,7 +16,7 @@ host_intent:
         ipv4_address: 192.168.0.3/31
       system0.0:
         ipv4_address: 192.168.255.2/32
-      mgmt0.0:
+#      mgmt0.0:
   clab-4l2s-l3:
     subinterface:
       ethernet-1/48.0:
@@ -25,7 +25,7 @@ host_intent:
         ipv4_address: 192.168.0.5/31
       system0.0:
         ipv4_address: 192.168.255.3/32
-      mgmt0.0:
+#      mgmt0.0:
   clab-4l2s-l4:    
     subinterface:
       ethernet-1/48.0:
@@ -34,7 +34,7 @@ host_intent:
         ipv4_address: 192.168.0.7/31
       system0.0:
         ipv4_address: 192.168.255.4/32
-      mgmt0.0:
+#      mgmt0.0:
   clab-4l2s-s1:
     subinterface:
       ethernet-1/1.0:
@@ -47,7 +47,7 @@ host_intent:
         ipv4_address: 192.168.0.6/31
       system0.0:
         ipv4_address: 192.168.255.101/32
-      mgmt0.0:
+#      mgmt0.0:
   clab-4l2s-s2:    
     subinterface:
       ethernet-1/1.0:
@@ -60,7 +60,7 @@ host_intent:
         ipv4_address: 192.168.1.6/31
       system0.0:
         ipv4_address: 192.168.255.102/32
-      mgmt0.0:
+#      mgmt0.0:
 
 group_intent:
   leaf:
@@ -78,7 +78,7 @@ group_intent:
         description: "to_spine1_1/1"
         admin_state: enable
       irb1:
-      mgmt0:
+#      mgmt0:
       system0:
         admin_state: enable
     subinterface:
@@ -89,7 +89,7 @@ group_intent:
         type: bridged
         vlan: untagged
     tunnel_interface:
-      vxlan2: {}
+      vxlan1: {}
   spine:
     interfaces:
       ethernet-1/1:
@@ -101,7 +101,7 @@ group_intent:
       ethernet-1/4:
         admin_state: enable
       irb1:
-      mgmt0:
+#      mgmt0:
       system0:
         admin_state: enable
 

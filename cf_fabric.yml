@@ -1,9 +1,9 @@
 - name: Configure fabric
   gather_facts: no
   hosts: 
-   - clab-4l2s-l1
-#   - leaf
-#   - spine
+#   - clab-4l2s-l1
+   - leaf
+   - spine
   vars:
     purge: yes # purge resources from device not in intent
     purgeable:
@@ -12,13 +12,14 @@
       - network-instance
   roles:
   - { role: common/init, tags: [always] }
-
+## INFRA ##
   - { role: infra/system, tags: [infra, system]}
   - { role: infra/interface, tags: [infra, interface] }
   - { role: infra/policy, tags: [infra, policy] }
   - { role: infra/networkinstance, tags: [infra,]}
-
+## SERVICES ##
   - { role: services/l2vpn, tags: [services, ]}
-
-  - { role: common/purge, }
+## CONFIG PUSH ##
+  - { role: common/purge, }   # purge should never run with partial run using tags
+                              # due to incomplete intent (infra/services)
   - { role: common/configure, tags: [always]}

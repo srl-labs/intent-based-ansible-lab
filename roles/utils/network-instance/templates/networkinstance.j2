@@ -3,6 +3,7 @@
 - path: /network-instance[name={{ni}}]
   value:
     admin-state: enable
+    description: {{prop.description|default('no description')}}
     {% if prop.type is defined %}
     type: {{ prop.type }}
     {% endif %}

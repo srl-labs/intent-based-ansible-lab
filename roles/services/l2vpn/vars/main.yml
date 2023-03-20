@@ -3,15 +3,14 @@ l2vpn:
     id: 200
     type: mac-vrf
     description: MACVRF1
-    node_list:
-    - clab-4l2s-l1
-    - clab-4l2s-l2
-    interface:
-    - ethernet-1/1.0
-    - ethernet-1/2.0
-    vxlan_interface: vxlan1.200
+    interface_list:
+      clab-4l2s-l1:
+      - ethernet-1/1.0
+      - ethernet-1/2.0
+      clab-4l2s-l2:
+      - ethernet-1/1.0
+      - ethernet-1/2.0
     export_rt: 100:200
     import_rt: 100:200
-    vni: 200
     vlan: 10
   
