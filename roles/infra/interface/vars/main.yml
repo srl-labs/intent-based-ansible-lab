@@ -88,8 +88,8 @@ group_intent:
       ethernet-1/2.0:
         type: bridged
         vlan: untagged
-    tunnel_interface:
-      vxlan1: {}
+#    tunnel_interface:
+#      vxlan1: {}
   spine:
     interfaces:
       ethernet-1/1:

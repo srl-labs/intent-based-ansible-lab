@@ -1,5 +1,3 @@
-- debug:
-    var: intent
 - name: Generate Delete sets
   vars:
     purge_exclude:
@@ -13,6 +11,6 @@
     delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
   loop: "{{ purgeable }}"
-  when: 
-  - purge 
+  when:  
+  - purge
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))

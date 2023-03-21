@@ -2,17 +2,17 @@
   set_fact:
     update: "{{ update + lookup('template', 'interface.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
-  when: my_intent.interfaces is defined
+  when: my_intent.interfaces is defined and my_intent.interfaces is mapping
 
 - name: Generate config for /interface/subinterface
   set_fact:
     replace: "{{ replace + lookup('template', 'subinterface.j2', template_vars=intent) | from_yaml }}"
 #    update: "{{ update + lookup('template', 'subinterface.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
-  when: my_intent.subinterface is defined
+  when: my_intent.subinterface is defined and my_intent.subinterface is mapping
   
 - name: Generate config for /tunnel-interface
   set_fact:
     update: "{{ update + lookup('template', 'tunnel.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
-  when: my_intent.tunnel_interface is defined
+  when: my_intent.tunnel_interface is defined and my_intent.tunnel_interface is mapping

@@ -1,14 +1,7 @@
 #jinja2: lstrip_blocks: "True"
-{% set go = namespace(found=false) %}
 {% for svc, svc_spec in l2vpn.items() %}
 {% if inventory_hostname in svc_spec.interface_list %}
-{% set go.found = true %}
-{% endif %}
-{% endfor %}
-{% if go.found %} 
 network_instance: 
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
     {{ svc }}:
         interfaces:
         {% for itf in svc_spec.interface_list[inventory_hostname] %}
@@ -25,25 +18,17 @@ network_instance:
             bgp_vpn:
                 export_rt: {{svc_spec.export_rt}}
                 import_rt: {{svc_spec.import_rt}}
-    {% endif %}
-{% endfor %}
 subinterface:
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
-    {% for itf in svc_spec.interface_list[inventory_hostname] %}
+{% for itf in svc_spec.interface_list[inventory_hostname] %}
     {{ itf }}:
         type: bridged
         vlan: {{ svc_spec.vlan }}
-    {% endfor %}
-    {% endif %}
 {% endfor %}
 tunnel_interface:
     vxlan1:
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
         {{svc_spec.id}}:
             type: bridged
             ingress_vni: {{ svc_spec.id }}
-    {% endif %}
-{% endfor %}
 {% endif %}
+{% endfor %}
+

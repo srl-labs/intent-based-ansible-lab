@@ -46,7 +46,7 @@ group_intent:
               policy-result: accept
         pass-evpn:
           default-action:
-            policy-result: reject
+            policy-result: accept
           statement:
           - name: 1
             match:
