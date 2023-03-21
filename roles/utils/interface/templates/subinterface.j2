@@ -23,4 +23,14 @@
       address:
       - ip-prefix: {{prop.ipv4_address }}
     {% endif %}
+    {% if prop.arp is defined %}
+      arp:
+        learn-unsolicited: true
+        host-route:
+          populate:
+          - route-type: dynamic
+        evpn:
+          advertise:
+          - route-type: dynamic
+    {% endif %}
 {% endfor %}

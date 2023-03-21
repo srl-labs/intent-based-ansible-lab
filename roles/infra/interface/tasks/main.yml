@@ -8,8 +8,8 @@
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
-- name: "{{ ansible_role_name }}: Generate config for /interface"
-  ansible.builtin.include_role:
-    name: utils/interface
-  vars:
-    intent: "{{ my_intent }}"
+#- name: "{{ ansible_role_name }}: Generate config for /interface"
+#  ansible.builtin.include_role:
+#    name: utils/interface
+#  vars:
+#    intent: "{{ my_intent }}"

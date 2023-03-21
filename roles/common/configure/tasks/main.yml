@@ -1,6 +1,39 @@
+- name: "{{ ansible_role_name}}: Generate config for /interface"
+  ansible.builtin.include_role:
+    name: utils/interface
+  when: intent.subinterface is defined
+
+- name: "{{ ansible_role_name }}: Generate config for /network-instance"
+  ansible.builtin.include_role:
+    name: utils/network-instance
+  when: intent.network_instance | type_debug == 'dict'
+
+- name: "{{ ansible_role_name }}: Generate config for /routing-policy"
+  ansible.builtin.include_role:
+    name: utils/policy
+  when: intent.routing_policy is defined
+
 - set_fact:
     update: "{{ update | map('combine',{'action':'update'}) }}"
     replace: "{{ replace | map('combine',{'action':'replace'}) }}"
+
+- name: Generate Delete sets
+  vars:
+    purge_exclude:
+      network_instance: 
+      - mgmt  # never purge mgmt network-instance
+      interfaces:
+      - mgmt0
+      subinterface:
+      - mgmt0.0
+  set_fact:
+    delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml }}"
+    cacheable: true
+  loop: "{{ purgeable }}"
+  when:  
+  - purge
+  - item in (lookup('template', item + '_purge.j2', template_vars=intent))
+  - ansible_run_tags == ["all"]
 
 #- name: Updating resources on device
 #  nokia_ni_cnpi.srlinux.srl_config:
@@ -11,8 +44,8 @@
 #    delete: "{{ ansible_facts['delete'] }}"
 #  when: purge and (ansible_facts['delete']|length>0)
 
-- debug:
-    var: update
+#- debug:
+#    var: replace
 
 - name: "Update resources on {{inventory_hostname}}"
   nokia.srl.jsonrpc_set:

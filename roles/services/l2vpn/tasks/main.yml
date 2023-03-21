@@ -5,29 +5,26 @@
   set_fact:
     my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
 
-- name: "{{ ansible_role_name }}: Generate config for /interface"
-  ansible.builtin.include_role:
-    name: utils/interface
-  vars:
-    intent: "{{ my_intent }}"
-  when: my_intent['subinterface'] | type_debug == 'dict'
-
-- name: "{{ ansible_role_name }}: Generate config for /network-instance"
-  ansible.builtin.include_role:
-    name: utils/network-instance
-  vars:
-    intent: "{{ my_intent }}"
-  when: my_intent.network_instance | type_debug == 'dict'
-
-- set_fact:
-    intent: 
-      network_instance: {}
-      tunnel_interface: {}
-      subinterface: {}
-  when: intent is undefined
-
-- debug:
-    var: intent
+#- name: "{{ ansible_role_name }}: Generate config for /interface"
+#  ansible.builtin.include_role:
+#    name: utils/interface
+#  vars:
+#    intent: "{{ my_intent }}"
+#  when: my_intent['subinterface'] | type_debug == 'dict'
+#
+#- name: "{{ ansible_role_name }}: Generate config for /network-instance"
+#  ansible.builtin.include_role:
+#    name: utils/network-instance
+#  vars:
+#    intent: "{{ my_intent }}"
+#  when: my_intent.network_instance | type_debug == 'dict'
+#
+#- set_fact:
+#    intent: 
+#      network_instance: {}
+#      tunnel_interface: {}
+#      subinterface: {}
+#  when: intent is undefined
 
 #- set_fact:
 #    intent: "{{ intent | combine(my_intent, recursive=true) }}"
@@ -42,7 +39,3 @@
 - set_fact:
     intent: "{{ intent | combine({'tunnel_interface': my_intent.tunnel_interface},recursive=true) }}"
   when: my_intent.tunnel_interface is defined
-- debug:
-    var: my_intent
-- debug:
-    var: intent

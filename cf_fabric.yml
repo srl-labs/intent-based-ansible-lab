@@ -1,7 +1,7 @@
 - name: Configure fabric
   gather_facts: no
   hosts: 
-#   - clab-4l2s-l1
+#   - clab-4l2s-l3
    - leaf
    - spine
   vars:
@@ -19,7 +19,8 @@
   - { role: infra/networkinstance, tags: [infra,]}
 ## SERVICES ##
   - { role: services/l2vpn, tags: [services, ]}
+  - { role: services/l3vpn, tags: [services, ]}
 ## CONFIG PUSH ##
-  - { role: common/purge, }   # purge should never run with partial run using tags
+#  - { role: common/purge, }   # purge should never run with partial run using tags
                               # due to incomplete intent (infra/services)
   - { role: common/configure, tags: [always]}

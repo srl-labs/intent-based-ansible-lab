@@ -1,0 +1,14 @@
+#jinja2: lstrip_blocks: "True"
+{% set status = namespace(ok=true) %}
+{% set msg = namespace(err='') %}
+
+{% for svc, svc_spec in l3vpn.items() %}
+{% for snet in svc_spec.snet_list[inventory_hostname] | default([]) %}
+{% if snet.macvrf not in l2vpn %}
+{% set status.ok = false %}
+{% set msg.err = "macvrf " + snet.macvrf + " not defined in l2vpn intent" %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+ok: {{ status.ok }}
+msg: {{ msg.err }}

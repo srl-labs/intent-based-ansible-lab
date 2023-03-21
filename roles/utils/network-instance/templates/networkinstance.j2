@@ -17,6 +17,7 @@
       - name: {{ vxlan_itf }}
     {% endfor %}
     {% endif %}
+    {% if prop.protocols is defined %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}
       bgp-evpn:
@@ -85,4 +86,5 @@
           {% endif %}
         {% endfor %}
       {% endif %}
+  {% endif %}
 {% endfor %}

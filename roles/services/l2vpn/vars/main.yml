@@ -25,5 +25,25 @@ l2vpn:
     export_rt: 100:201
     import_rt: 100:201
     vlan: untagged
+  macvrf-300:
+    id: 300
+    type: mac-vrf
+    description: MACVRF300
+    interface_list:
+      clab-4l2s-l1:
+      - ethernet-1/1.0
+    export_rt: 100:300
+    import_rt: 100:300
+    vlan: untagged
+  macvrf-301:
+    id: 301
+    type: mac-vrf
+    description: MACVRF301
+    interface_list:
+      clab-4l2s-l4:
+      - ethernet-1/2.0
+    export_rt: 100:300
+    import_rt: 100:300
+    vlan: untagged
     
   

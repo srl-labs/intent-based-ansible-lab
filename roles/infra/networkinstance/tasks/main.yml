@@ -8,6 +8,6 @@
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
 
-- name: "{{ ansible_role_name }}: Generate config for /network-instance[name=default]"
-  ansible.builtin.include_role:
-    name: utils/network-instance
+#- name: "{{ ansible_role_name }}: Generate config for /network-instance[name=default]"
+#  ansible.builtin.include_role:
+#    name: utils/network-instance
