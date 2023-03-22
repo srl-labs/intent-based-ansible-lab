@@ -1,18 +1,18 @@
 l2vpn:
-#  macvrf-200:
-#    id: 200
-#    type: mac-vrf
-#    description: MACVRF1
-#    interface_list:
-#      clab-4l2s-l1:
-#      - ethernet-1/1.0
-#      clab-4l2s-l2:
-#      - ethernet-1/1.0
-##      - ethernet-1/2.0
-#    export_rt: 100:200
-#    import_rt: 100:200
-##    vlan: 10
-#    vlan: untagged
+  macvrf-200:
+    id: 200
+    type: mac-vrf
+    description: MACVRF1
+    interface_list:
+      clab-4l2s-l1:
+      - ethernet-1/1.0
+      clab-4l2s-l2:
+      - ethernet-1/1.0
+#      - ethernet-1/2.0
+    export_rt: 100:200
+    import_rt: 100:200
+#    vlan: 10
+    vlan: untagged
   macvrf-201:
     id: 201
     type: mac-vrf

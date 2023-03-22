@@ -2,5 +2,5 @@
   set_fact:
     replace: "{{ replace + lookup('template', 'networkinstance.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
-  when: my_intent.network_instance is defined and my_intent.network_instance is mapping
+  when: intent.network_instance is defined and intent.network_instance is mapping
 

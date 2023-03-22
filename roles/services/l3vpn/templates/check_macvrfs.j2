@@ -6,7 +6,7 @@
 {% for snet in svc_spec.snet_list[inventory_hostname] | default([]) %}
 {% if snet.macvrf not in l2vpn %}
 {% set status.ok = false %}
-{% set msg.err = "macvrf " + snet.macvrf + " not defined in l2vpn intent" %}
+{% set msg.err = "macvrf " + snet.macvrf + " not defined in l2vpn intent, referenced by " + svc %}
 {% endif %}
 {% endfor %}
 {% endfor %}
