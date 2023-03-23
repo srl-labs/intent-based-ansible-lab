@@ -71,6 +71,12 @@ group_intent:
       ethernet-1/2:
         admin_state: enable
         vlan_tagging: yes
+      ethernet-1/3:
+        admin_state: enable
+        vlan_tagging: yes
+      ethernet-1/4:
+        admin_state: enable
+        vlan_tagging: yes
       ethernet-1/48:
         description: "to_spine2_1/1"
         admin_state: enable
@@ -88,6 +94,8 @@ group_intent:
       ethernet-1/2.0:
         type: bridged
         vlan: untagged
+
+      
 #    tunnel_interface:
 #      vxlan1: {}
   spine:

@@ -30,7 +30,7 @@
 #    intent: "{{ intent | combine(my_intent, recursive=true) }}"
 - set_fact:
     intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
-  when: my_intent.network_instance is defined 
+  when: my_intent.network_instance | type_debug == 'dict'
 
 - set_fact:
     intent: "{{ intent | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"

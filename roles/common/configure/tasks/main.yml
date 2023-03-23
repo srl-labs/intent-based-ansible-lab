@@ -47,16 +47,36 @@
 #- debug:
 #    var: replace
 
-- name: "Update resources on {{inventory_hostname}}"
-  nokia.srl.jsonrpc_set:
-    commands: "{{ update + replace }}"        
+- set_fact:
+    commands: "{{ update + replace }}"
 
-- name: "Purge resources on {{inventory_hostname}}"
-  nokia.srl.jsonrpc_set:
-    commands: "{{ delete }}"        
+- set_fact:
+    commands: "{{ commands + delete }}"
   when:
     - purge
     - delete | length>0
+
+- name: "Update resources on {{inventory_hostname}}"
+  nokia.srl.jsonrpc_set:
+    commands: "{{ commands }}"        
+
+- ansible.builtin.set_stats:
+    data:
+      network_instance: "{{ intent.network_instance | length }}"
+      subinterface: "{{ intent.subinterface | length }}"
+      routing_policy: "{{ intent.routing_policy | length }}"
+    per_host: yes
+
+#- name: "Update resources on {{inventory_hostname}}"
+#  nokia.srl.jsonrpc_set:
+#    commands: "{{ update + replace }}"        
+#
+#- name: "Purge resources on {{inventory_hostname}}"
+#  nokia.srl.jsonrpc_set:
+#    commands: "{{ delete }}"        
+#  when:
+#    - purge
+#    - delete | length>0
 
 #- name: Purge resources from device
 #  nokia_ni_cnpi.srlinux.srl_config:

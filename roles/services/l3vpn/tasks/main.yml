@@ -12,6 +12,10 @@
   set_fact:
     my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
 
+- debug:
+    var:
+      my_intent
+
 - name: "{{ ansible_role_name }}: Generate config for /interface"
   ansible.builtin.include_role:
     name: utils/interface

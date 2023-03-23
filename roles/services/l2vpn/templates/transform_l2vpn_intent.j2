@@ -9,6 +9,7 @@
 network_instance: 
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
+    {% if svc_spec._state|default('present') != 'deleted' %}
     {{ svc }}:
         interfaces:
         {% for itf in svc_spec.interface_list[inventory_hostname] %}
@@ -25,6 +26,7 @@ network_instance:
             bgp_vpn:
                 export_rt: {{svc_spec.export_rt}}
                 import_rt: {{svc_spec.import_rt}}
+    {% endif %}
     {% endif %}
 {% endfor %}
 subinterface:
