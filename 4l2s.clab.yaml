@@ -10,7 +10,8 @@ mgmt:
 topology:
   kinds:
     srl:
-      image: ghcr.io/wdesmedt/srlinux:0.0.0-42666
+      image: ghcr.io/wdesmedt/srlinux:23.3.1-beta1
+#      image: ghcr.io/wdesmedt/srlinux:0.0.0-42666
 #      image: ghcr.io/nokia/srlinux:22.11.1
     linux:
       image: ghcr.io/hellt/network-multitool

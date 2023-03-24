@@ -1,6 +1,6 @@
 l2vpn:
   macvrf-200:
-#    _state: deleted
+    _state: deleted
     id: 200
     type: mac-vrf
     description: MACVRF1

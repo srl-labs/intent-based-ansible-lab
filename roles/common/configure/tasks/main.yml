@@ -13,10 +13,6 @@
     name: utils/policy
   when: intent.routing_policy is defined
 
-- set_fact:
-    update: "{{ update | map('combine',{'action':'update'}) }}"
-    replace: "{{ replace | map('combine',{'action':'replace'}) }}"
-
 - name: Generate Delete sets
   vars:
     purge_exclude:
@@ -35,50 +31,16 @@
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))
   - ansible_run_tags == ["all"]
 
-#- name: Updating resources on device
-#  nokia_ni_cnpi.srlinux.srl_config:
-#    update: "{{ ansible_facts['update'] }}"
-#    replace: "{{ ansible_facts['replace'] }}"
-#- name: Purge resources from device
-#  nokia_ni_cnpi.srlinux.srl_config:
-#    delete: "{{ ansible_facts['delete'] }}"
-#  when: purge and (ansible_facts['delete']|length>0)
-
-#- debug:
-#    var: replace
-
-- set_fact:
-    commands: "{{ update + replace }}"
-
-- set_fact:
-    commands: "{{ commands + delete }}"
-  when:
-    - purge
-    - delete | length>0
-
 - name: "Update resources on {{inventory_hostname}}"
   nokia.srl.jsonrpc_set:
-    commands: "{{ commands }}"        
+    update: "{{ update }}"
+    replace: "{{ replace }}"
+    delete: "{{ delete }}"        
 
 - ansible.builtin.set_stats:
     data:
       network_instance: "{{ intent.network_instance | length }}"
       subinterface: "{{ intent.subinterface | length }}"
       routing_policy: "{{ intent.routing_policy | length }}"
+      sw_version: "{{ sw_version }}"
     per_host: yes
-
-#- name: "Update resources on {{inventory_hostname}}"
-#  nokia.srl.jsonrpc_set:
-#    commands: "{{ update + replace }}"        
-#
-#- name: "Purge resources on {{inventory_hostname}}"
-#  nokia.srl.jsonrpc_set:
-#    commands: "{{ delete }}"        
-#  when:
-#    - purge
-#    - delete | length>0
-
-#- name: Purge resources from device
-#  nokia_ni_cnpi.srlinux.srl_config:
-#    delete: "{{ ansible_facts['delete'] }}"
-#  when: purge and (ansible_facts['delete']|length>0)

@@ -5,13 +5,16 @@
     delete: []
     cacheable: true
 
-- name: load config from device
+- name: Get facts from device
 #  nokia_ni_cnpi.srlinux.srl_facts: {} # config in 'ansible_net_config' fact
   nokia.srl.jsonrpc_get:
     paths:
       - path: /
         datastore: running
-  register: get_config
+      - path: /platform/control[slot=A]/software-version
+        datastore: state
+  register: res
 
 - set_fact:
-    running_config: "{{ get_config['data']['result'][0] }}"
+    running_config: "{{ res['data']['result'][0] }}"
+    sw_version: "{{ res['data']['result'][1].split('-')[0] }}"

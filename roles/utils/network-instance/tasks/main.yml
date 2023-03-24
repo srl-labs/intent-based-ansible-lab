@@ -1,6 +1,9 @@
 - name: network-instance default
   set_fact:
-    replace: "{{ replace + lookup('template', 'networkinstance.j2', template_vars=intent) | from_yaml }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
     cacheable: true
   when: intent.network_instance is defined and intent.network_instance is mapping
+  vars:
+    template_file: "{{ sw_version + '/networkinstance.j2'}}"
+
 

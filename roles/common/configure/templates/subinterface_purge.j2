@@ -5,8 +5,7 @@
 {% set subif_name = itf.name + '.' + subitf.index|string %} 
 {% if subif_name not in purge_exclude['subinterface'] %}
 {% if subif_name not in subinterface.keys() %}
-- action: delete
-  path: /interface[name={{ itf.name }}]/subinterface[index={{ subitf.index }}]
+- path: /interface[name={{ itf.name }}]/subinterface[index={{ subitf.index }}]
 {% endif %}
 {% endif %}
 {% endfor %}

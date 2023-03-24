@@ -1,7 +1,7 @@
 - name: Configure fabric
   gather_facts: no
   hosts: 
-#   - clab-4l2s-l2
+#   - clab-4l2s-l1
    - leaf
    - spine
   vars:

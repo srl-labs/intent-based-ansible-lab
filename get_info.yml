@@ -1,14 +1,18 @@
 - name: get Info
   hosts:
-    - clab-4l2s-l1
-#    - leaf
-#    - spine
+#    - clab-4l2s-l1
+    - leaf
+    - spine
   tasks:
     - nokia.srl.jsonrpc_get:
         paths:
-        - path: /network-instance[name=default]/protocols/bgp/neighbor[peer-address=192.168.0.0]
+        - path: /
+          datastore: running
+        - path: /platform/control[slot=A]/software-version
           datastore: state
       register: res
+#    - set_fact:
+#        sw_version: "{{ res.data.result[0].split('-')[0] }}"
+
     - debug:
-        var: res.data.result[0]
-  
+        var: res
