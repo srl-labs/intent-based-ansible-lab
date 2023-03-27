@@ -3,7 +3,7 @@
 - path: /interface[name={{ itf }}]
   value:
     admin-state: enable
-    description: foo bar
+    description: {{ prop.description|default('no description')}}
     {% if prop.vlan_tagging is defined %}
     vlan-tagging: true
     {% endif %}

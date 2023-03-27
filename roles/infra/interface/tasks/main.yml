@@ -9,11 +9,15 @@
   ansible.builtin.include_role:
     name: utils/load_intent
 
+- name: Generate itf descriptions
+  set_fact:
+    itf_desc: "{{ lookup('template', template_file, template_vars=my_intent) | from_yaml }}"
+  when: lldp_nbrs is defined
+  vars:
+    template_file: "{{ sw_version + '/set_itf_desc.j2'}}"  
+
+- set_fact:
+    my_intent: "{{ my_intent | combine(itf_desc, recursive=true) }}"
+
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
-
-#- name: "{{ ansible_role_name }}: Generate config for /interface"
-#  ansible.builtin.include_role:
-#    name: utils/interface
-#  vars:
-#    intent: "{{ my_intent }}"

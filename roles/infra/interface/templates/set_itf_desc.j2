@@ -1,0 +1,8 @@
+#jinja2: lstrip_blocks: "True"
+interfaces:
+{% for itf, nbrs in lldp_nbrs.items() %}
+{% if itf in interfaces and itf.startswith('ethernet') %}
+    {{ itf }}:
+        description: {{ nbrs[0]['system-name']}}:{{ nbrs[0]['port-id']}}
+{% endif %}
+{% endfor %}
