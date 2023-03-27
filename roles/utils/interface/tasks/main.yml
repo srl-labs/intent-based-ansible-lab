@@ -4,7 +4,7 @@
     cacheable: true
   when: intent.interfaces is defined and intent.interfaces is mapping
   vars:
-    template_file: "{{ sw_version + '/interface.j2'}}"
+    template_file: "{{ platform + '/' + sw_version + '/interface.j2'}}"
 
 - name: Generate config for /interface/subinterface
   set_fact:
@@ -12,7 +12,7 @@
     cacheable: true
   when: intent.subinterface is defined and intent.subinterface is mapping
   vars:
-    template_file: "{{ sw_version + '/subinterface.j2'}}"  
+    template_file: "{{ platform + '/' + sw_version + '/subinterface.j2'}}"  
 
 - name: Generate config for /tunnel-interface
   set_fact:
@@ -20,4 +20,4 @@
     cacheable: true
   when: intent.tunnel_interface is defined and intent.tunnel_interface is mapping
   vars:
-    template_file: "{{ sw_version + '/tunnel.j2'}}"  
+    template_file: "{{ platform + '/' + sw_version + '/tunnel.j2'}}"  

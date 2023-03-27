@@ -11,6 +11,7 @@ Show how configuration management across lifecyle of a fabric could be done via 
 mkdir 4l2s
 python3 -mvenv .venv
 source .venv/bin/activate
+pip install ansible
 ```
 - containerlab: launch virtual lab with `sudo clab -c -t 4l2s.clab.yaml` 
 - nokia.srl Ansible collection that includes the `jsonrpc-set` and `jsonrpc-get` modules. See [srl-ansible-collection](https://github.com/srl-labs/srl-ansible-collection) for details
@@ -19,6 +20,8 @@ source .venv/bin/activate
 
 - manual mapping of Ansible inventory to clab topo. See `./inv` for inventory variables, host and group definitions.
 - intents are split between `infra` and `services` intents in `./infra/*/vars` and `./services/*/vars`.
+- intent vars are per environment, e.g. `<role>/vars/<env>/vars.yml`
+- environment is set via environment variable `ENV` and is mandatory. Playbook will fail at init phase if not set.
 - `infra` intents are low-level intents close to device model for `interface`, `subinterface`, `routing-policy` and `network-instance` resource instances
 - `services` intents are high-level intents for `l2vpn` and `l3vpn` service types
 
@@ -26,7 +29,7 @@ Main playbook `cf_fabric.yml` calls individual ansible roles for intialization, 
 An example of invocation is:
 
 ```
-ansible-playbook --diff cf_fabric.yml
+ENV=test ansible-playbook --diff cf_fabric.yml
 PLAY [Configure fabric] ******************************************************************************************************************
 
 TASK [infra/interface: Load Intent for /interfaces] ***********************************************************************************************

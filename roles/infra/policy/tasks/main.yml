@@ -3,7 +3,7 @@
 
 - name: "Load vars for ENV:{{ env }}"
   include_vars:
-    file: "{{ lookup('env', 'ENV') }}.yml"
+    dir: "{{ lookup('env', 'ENV') }}"
 
 - name: "{{ ansible_role_name }}: Load Intent: /routing-policy" 
   ansible.builtin.include_role:

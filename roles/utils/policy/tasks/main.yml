@@ -3,4 +3,4 @@
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
     cacheable: true
   vars:
-    template_file: "{{ sw_version + '/policy.j2'}}"
+    template_file: "{{ platform + '/' + sw_version + '/policy.j2'}}"

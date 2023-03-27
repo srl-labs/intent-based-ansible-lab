@@ -3,7 +3,8 @@
 
 - name: "Load vars for ENV:{{ env }}"
   include_vars:
-    file: "{{ lookup('env', 'ENV') }}.yml"
+#    file: "{{ lookup('env', 'ENV') }}.yml"
+    dir: "{{ lookup('env', 'ENV') }}"
 
 - name: "{{ ansible_role_name}}: Load Intent for /interfaces" 
   ansible.builtin.include_role:
@@ -14,7 +15,7 @@
     itf_desc: "{{ lookup('template', template_file, template_vars=my_intent) | from_yaml }}"
   when: lldp_nbrs is defined
   vars:
-    template_file: "{{ sw_version + '/set_itf_desc.j2'}}"  
+    template_file: "{{ platform + '/' + sw_version + '/set_itf_desc.j2'}}"  
 
 - set_fact:
     my_intent: "{{ my_intent | combine(itf_desc, recursive=true) }}"
