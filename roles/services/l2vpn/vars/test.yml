@@ -12,8 +12,8 @@ l2vpn:
 #      - ethernet-1/2.0
     export_rt: 100:200
     import_rt: 100:200
-#    vlan: 10
-    vlan: untagged
+    vlan: 10
+#   vlan: untagged
   macvrf-201:
     _state: deleted
     id: 201

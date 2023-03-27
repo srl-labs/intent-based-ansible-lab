@@ -80,9 +80,11 @@ group_intent:
       ethernet-1/48:
         description: "to_spine2_1/1"
         admin_state: enable
+        _tag: isl
       ethernet-1/49:
         description: "to_spine1_1/1"
         admin_state: enable
+        _tag: isl
       irb1:
 #      mgmt0:
       system0:
@@ -102,12 +104,16 @@ group_intent:
     interfaces:
       ethernet-1/1:
         admin_state: enable
+        _tag: isl
       ethernet-1/2:
         admin_state: enable
+        _tag: isl
       ethernet-1/3:
         admin_state: enable
+        _tag: isl
       ethernet-1/4:
         admin_state: enable
+        _tag: isl
       irb1:
 #      mgmt0:
       system0:

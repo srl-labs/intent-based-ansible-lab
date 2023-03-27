@@ -1,6 +1,10 @@
 - set_fact:
     my_intent: {}
 
+- name: "Load vars for ENV:{{ env }}"
+  include_vars:
+    file: "{{ lookup('env', 'ENV') }}.yml"
+
 - name: "{{ ansible_role_name}}: Load Intent for /interfaces" 
   ansible.builtin.include_role:
     name: utils/load_intent

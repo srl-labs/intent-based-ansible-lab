@@ -1,33 +1,14 @@
 - set_fact:
     my_intent: {}
 
+- name: "Load vars for ENV:{{ env }}"
+  include_vars:
+    file: "{{ lookup('env', 'ENV') }}.yml"
+
 - name: "{{ ansible_role_name }}: Generate low-level intent for L2VPN"
   set_fact:
     my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
 
-#- name: "{{ ansible_role_name }}: Generate config for /interface"
-#  ansible.builtin.include_role:
-#    name: utils/interface
-#  vars:
-#    intent: "{{ my_intent }}"
-#  when: my_intent['subinterface'] | type_debug == 'dict'
-#
-#- name: "{{ ansible_role_name }}: Generate config for /network-instance"
-#  ansible.builtin.include_role:
-#    name: utils/network-instance
-#  vars:
-#    intent: "{{ my_intent }}"
-#  when: my_intent.network_instance | type_debug == 'dict'
-#
-#- set_fact:
-#    intent: 
-#      network_instance: {}
-#      tunnel_interface: {}
-#      subinterface: {}
-#  when: intent is undefined
-
-#- set_fact:
-#    intent: "{{ intent | combine(my_intent, recursive=true) }}"
 - set_fact:
     intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
   when: my_intent.network_instance | type_debug == 'dict'
