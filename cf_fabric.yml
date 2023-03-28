@@ -18,7 +18,7 @@
   - { role: infra/policy, tags: [infra, policy] }
   - { role: infra/networkinstance, tags: [infra,]}
 ## SERVICES ##
-  - { role: services/l2vpn, tags: [services, ]}
-  - { role: services/l3vpn, tags: [services, ]}
+  - { role: services/l2vpn, tags: [services, l2vpn ]}
+  - { role: services/l3vpn, tags: [services, l3vpn ]}
 ## CONFIG PUSH ##
   - { role: common/configure, tags: [always]}

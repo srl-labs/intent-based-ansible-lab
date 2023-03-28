@@ -36,7 +36,7 @@
 #  when: my_intent.network_instance | type_debug == 'dict'
 
 - set_fact:
-    intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
+    intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true, list_merge='append') }}"
   when: my_intent.network_instance is defined 
 
 - set_fact:

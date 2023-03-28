@@ -13,6 +13,11 @@
     name: utils/policy
   when: intent.routing_policy is defined
 
+- set_fact:
+    intent: {}
+  when: intent is undefined  # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
+
+
 - name: Generate Delete sets
   vars:
     purge_exclude:
@@ -28,8 +33,10 @@
   loop: "{{ purgeable }}"
   when:  
   - purge
-  - item in (lookup('template', item + '_purge.j2', template_vars=intent))
   - ansible_run_tags == ["all"]
+  - intent[item] is mapping
+  - item in (lookup('template', item + '_purge.j2', template_vars=intent))
+
 
 - name: "Update resources on {{inventory_hostname}}"
   nokia.srl.jsonrpc_set:
@@ -44,3 +51,5 @@
       routing_policy: "{{ intent.routing_policy | length }}"
       sw_version: "{{ sw_version }}"
     per_host: yes
+  when:
+    - ansible_run_tags == ["all"]

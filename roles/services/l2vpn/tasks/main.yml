@@ -10,7 +10,7 @@
     my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
 
 - set_fact:
-    intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
+    intent: "{{ intent|default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
   when: my_intent.network_instance | type_debug == 'dict'
 
 - set_fact:
