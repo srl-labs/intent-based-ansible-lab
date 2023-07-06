@@ -8,6 +8,10 @@
 {% set status.ok = false %}
 {% set msg.err = "macvrf " + snet.macvrf + " not defined in l2vpn intent, referenced by " + svc %}
 {% endif %}
+{% if inventory_hostname not in l2vpn[snet.macvrf].interface_list %}
+{% set status.ok = false %}
+{% set msg.err = inventory_hostname + " does not have mac-vrf attachment defined for " + snet.macvrf + " in l2vpn intent" %}
+{% endif %}
 {% endfor %}
 {% endfor %}
 ok: {{ status.ok }}

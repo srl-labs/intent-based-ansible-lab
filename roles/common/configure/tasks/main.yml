@@ -34,12 +34,18 @@
   when:  
   - purge
   - ansible_run_tags == ["all"]
-  - intent[item] is mapping
+#  - intent[item] is mapping
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
-
+- debug:
+    var: update
+- debug:
+    var: replace
+- debug:
+    var: delete
+    
 - name: "Update resources on {{inventory_hostname}}"
-  nokia.srl.jsonrpc_set:
+  nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"        

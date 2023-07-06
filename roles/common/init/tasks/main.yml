@@ -6,8 +6,7 @@
     cacheable: true
 
 - name: Get facts from device
-#  nokia_ni_cnpi.srlinux.srl_facts: {} # config in 'ansible_net_config' fact
-  nokia.srl.jsonrpc_get:
+  nokia.srlinux.get:
     paths:
       - path: /
         datastore: running
@@ -16,11 +15,11 @@
       - path: /system/lldp/interface[name=*]/neighbor
         datastore: state
   register: res
-
+  
 - set_fact:
-    running_config: "{{ res['json']['result'][0] }}"
-    sw_version: "{{ res['json']['result'][1].split('-')[0] }}"
-    lldp_nbrs: "{{ res.json.result[2].interface | items2dict(key_name='name', value_name='neighbor') }}"
+    running_config: "{{ res['result'][0] }}"
+    sw_version: "{{ res['result'][1].split('-')[0] }}"
+    lldp_nbrs: "{{ res.result[2].interface | items2dict(key_name='name', value_name='neighbor') }}"
 
 - name: Check if 'ENV' environment var is set
   set_fact:

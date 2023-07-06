@@ -6,10 +6,10 @@ l3vpn:
     snet_list:
       clab-4l2s-l1:
       - macvrf: macvrf-300
-        gw: 10.100.0.1/24
-      clab-4l2s-l4:
-      - macvrf: macvrf-301
         gw: 10.100.1.1/24
+#      clab-4l2s-l4:
+#      - macvrf: macvrf-301
+#        gw: 10.100.1.1/24
     export_rt: 100:2001
     import_rt: 100:2001
   ipvrf-2002:
@@ -17,14 +17,30 @@ l3vpn:
     type: ip-vrf
     description: IPVRF2
     snet_list:
-      clab-4l2s-l1:
-      - macvrf: macvrf-310
-        gw: 10.100.10.1/24
-      clab-4l2s-l4:
-      - macvrf: macvrf-311
-        gw: 10.100.11.1/24
+      clab-4l2s-l2:
+      - macvrf: macvrf-301
+        gw: 10.100.2.1/24
     export_rt: 100:2002
     import_rt: 100:2002
-
+  ipvrf-2003:
+    id: 2003
+    type: ip-vrf
+    description: IPVRF3
+    snet_list:
+      clab-4l2s-l4:
+      - macvrf: macvrf-302
+        gw: 10.100.3.1/24
+    export_rt: 100:2003
+    import_rt: 100:2003
+#  ipvrf-2004:
+#    id: 2004
+#    type: ip-vrf
+#    description: IPVRF4
+#    snet_list:
+#      clab-4l2s-l4:
+#      - macvrf: macvrf-310
+#        gw: 10.100.10.1/24
+#    export_rt: 100:2004
+#    import_rt: 100:2004
     
   
