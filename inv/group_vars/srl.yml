@@ -1,7 +1,6 @@
 ansible_connection: httpapi
-# ansible_network_os: nokia_ni_cnpi.srlinux.srl_jsonrpc
-ansible_network_os: nokia.srl.srlinux
-# ansible_network_os: nokia.srlinux.srlinux
+#ansible_network_os: nokia.srl.srlinux
+ansible_network_os: nokia.srlinux.srlinux
 ansible_user: admin
 # ansible_password: admin
 ansible_password: NokiaSrl1!

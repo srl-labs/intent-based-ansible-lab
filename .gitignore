@@ -1,4 +1,8 @@
 clab*
 .venv
 *log
+*sav
 license*
+*.bak
+filter*
+startup
