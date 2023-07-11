@@ -49,9 +49,9 @@ topology:
       kind: linux
       exec:
         - ip addr add 10.0.0.1/24 dev eth1
-        - ip link add link eth1 name eth1.10 type vlan id 10
-        - ip addr add 10.1.1.1/24 dev eth1.10
-        - ip link set eth1.10 up
+        - ip link add link eth1 name eth1.300 type vlan id 300
+        - ip addr add 10.1.1.1/24 dev eth1.300
+        - ip link set eth1.300 up
         - ip route add 10.1.0.0/16 via 10.1.1.254
     cl11:
       kind: linux
@@ -64,9 +64,9 @@ topology:
       mgmt-ipv4: 172.20.21.132
       exec:
         - ip addr add 10.0.0.2/24 dev eth1
-        - ip link add link eth1 name eth1.10 type vlan id 10
-        - ip addr add 10.1.1.2/24 dev eth1.10
-        - ip link set eth1.10 up
+        - ip link add link eth1 name eth1.300 type vlan id 300
+        - ip addr add 10.1.1.2/24 dev eth1.300
+        - ip link set eth1.300 up
         - ip route add 10.1.0.0/16 via 10.1.1.254
     cl21:
       kind: linux
@@ -76,9 +76,9 @@ topology:
       mgmt-ipv4: 172.20.21.134
       exec:
         - ip addr add 10.0.0.3/24 dev eth1
-        - ip link add link eth1 name eth1.10 type vlan id 10
-        - ip addr add 10.1.2.1/24 dev eth1.10
-        - ip link set eth1.10 up
+        - ip link add link eth1 name eth1.301 type vlan id 301
+        - ip addr add 10.1.2.1/24 dev eth1.301
+        - ip link set eth1.301 up
         - ip route add 10.1.0.0/16 via 10.1.2.254
 
     cl40:
@@ -86,9 +86,9 @@ topology:
       mgmt-ipv4: 172.20.21.135
       exec:
         - ip addr add 10.0.0.4/24 dev eth1
-        - ip link add link eth1 name eth1.10 type vlan id 10
-        - ip addr add 10.1.2.2/24 dev eth1.10
-        - ip link set eth1.10 up
+        - ip link add link eth1 name eth1.301 type vlan id 301
+        - ip addr add 10.1.2.2/24 dev eth1.301
+        - ip link set eth1.301 up
         - ip route add 10.1.0.0/16 via 10.1.2.254
   links:
     - endpoints: ["l1:e1-49", "s1:e1-1"]
