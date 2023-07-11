@@ -1,7 +1,0 @@
-#jinja2: lstrip_blocks: "True"
-{% for itf in ansible_net_config['interface'] %}
-{% if itf.name not in interfaces.keys() %}
-- /interface[name={{ itf.name }}]
-{% endif %}
-{% endfor %}
-

@@ -3,8 +3,7 @@
 
 - name: "Load vars for ENV:{{ env }}"
   include_vars:
-#    file: "{{ lookup('env', 'ENV') }}.yml"
-    dir: "{{ lookup('env', 'ENV') }}"
+    dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
 
 - name: "{{ ansible_role_name}}: Load Intent for /interfaces" 
   ansible.builtin.include_role:

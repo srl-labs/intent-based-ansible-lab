@@ -37,12 +37,12 @@
 #  - intent[item] is mapping
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
-- debug:
-    var: update
-- debug:
-    var: replace
-- debug:
-    var: delete
+#- debug:
+#    var: update
+#- debug:
+#    var: replace
+#- debug:
+#    var: delete
     
 - name: "Update resources on {{inventory_hostname}}"
   nokia.srlinux.config:

@@ -1,8 +1,6 @@
 # topology documentation: http://containerlab.srlinux.dev/lab-examples/min-clos/
 name: 4l2s
 
-#mgmt:
-#   network: clab_mgmt
 mgmt:
     network: my_clab
     ipv4-subnet: 172.20.21.0/24
@@ -10,92 +8,88 @@ mgmt:
 topology:
   kinds:
     srl:
-      image: ghcr.io/nokia/srlinux:23.3.1
+      image: ghcr.io/nokia/srlinux:23.3.3
     linux:
       image: ghcr.io/hellt/network-multitool
-    vr-sros:
-      image: ghcr.io/wdesmedt/vr-sros:latest
-      type: sr-1
-      license: license-sros22.txt
   nodes:
     l1:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.11
-      labels: {role: leaf}
-#      startup-config: startup/l1.json
+      labels:
+        role: leaf
+        fabric: yes
     l2:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.12
-      labels: {role: leaf}
-#      startup-config: startup/l2.json
+      labels: {role: leaf, fabric: yes}
     l3:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.13
-      labels: {role: leaf}
-#      startup-config: startup/l3.json
+      labels: {role: leaf, fabric: yes}
     l4:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.14
-      labels: {role: leaf}
-#      startup-config: startup/l4.json
+      labels: {role: leaf, fabric: yes}
     s1:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.101
-      labels: {role: spine}
-#      startup-config: startup/s1.json
+      labels: {role: spine, fabric: yes}
     s2:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.102
-      labels: {role: spine}
-#      startup-config: startup/s2.json
-    tor12:
-      kind: srl
-      type: ixrd2
-      mgmt-ipv4: 172.20.21.140
-#      startup-config: startup/tor12.json
-    tor34:
-      kind: srl
-      type: ixrd2
-      mgmt-ipv4: 172.20.21.141
+      labels: {role: spine, fabric: yes}
     cl10:
       mgmt-ipv4: 172.20.21.130
       kind: linux
+      exec:
+        - ip addr add 10.0.0.1/24 dev eth1
+        - ip link add link eth1 name eth1.10 type vlan id 10
+        - ip addr add 10.1.1.1/24 dev eth1.10
+        - ip link set eth1.10 up
+        - ip route add 10.1.0.0/16 via 10.1.1.254
     cl11:
       kind: linux
       mgmt-ipv4: 172.20.21.131
       binds:
-#        - startup/cl11_startup.sh:/conf/startup.sh
       exec:
-#        - /conf/startup.sh
+        - 
     cl20:
       kind: linux
       mgmt-ipv4: 172.20.21.132
+      exec:
+        - ip addr add 10.0.0.2/24 dev eth1
+        - ip link add link eth1 name eth1.10 type vlan id 10
+        - ip addr add 10.1.1.2/24 dev eth1.10
+        - ip link set eth1.10 up
+        - ip route add 10.1.0.0/16 via 10.1.1.254
     cl21:
       kind: linux
       mgmt-ipv4: 172.20.21.133
     cl30:
       kind: linux
       mgmt-ipv4: 172.20.21.134
+      exec:
+        - ip addr add 10.0.0.3/24 dev eth1
+        - ip link add link eth1 name eth1.10 type vlan id 10
+        - ip addr add 10.1.2.1/24 dev eth1.10
+        - ip link set eth1.10 up
+        - ip route add 10.1.0.0/16 via 10.1.2.254
+
     cl40:
       kind: linux
       mgmt-ipv4: 172.20.21.135
-      binds:
-#        - startup/cl40_startup.sh:/conf/startup.sh
       exec:
-#        - /conf/startup.sh
-    dcgw1:
-      kind: vr-sros
-      mgmt-ipv4: 172.20.21.250
-    dcgw2:
-      kind: vr-sros
-      mgmt-ipv4: 172.20.21.251
-
+        - ip addr add 10.0.0.4/24 dev eth1
+        - ip link add link eth1 name eth1.10 type vlan id 10
+        - ip addr add 10.1.2.2/24 dev eth1.10
+        - ip link set eth1.10 up
+        - ip route add 10.1.0.0/16 via 10.1.2.254
   links:
     - endpoints: ["l1:e1-49", "s1:e1-1"]
     - endpoints: ["l1:e1-48", "s2:e1-1"]
@@ -111,11 +105,3 @@ topology:
     - endpoints: ["cl21:eth1", "l2:e1-2"]
     - endpoints: ["cl30:eth1", "l3:e1-1"]
     - endpoints: ["cl40:eth1", "l4:e1-1"]
-    - endpoints: ["tor12:e1-49", "l1:e1-10"]
-    - endpoints: ["tor12:e1-48", "l2:e1-10"]
-    - endpoints: ["tor34:e1-49", "l3:e1-10"]
-    - endpoints: ["tor34:e1-48", "l4:e1-10"]
-    - endpoints: ["s1:e1-49", "dcgw1:eth1"]
-    - endpoints: ["s2:e1-49", "dcgw1:eth2"]
-    - endpoints: ["s1:e1-48", "dcgw2:eth1"]
-    - endpoints: ["s2:e1-48", "dcgw2:eth2"]

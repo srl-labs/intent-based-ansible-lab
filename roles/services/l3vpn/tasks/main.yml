@@ -5,13 +5,13 @@
   include_vars:
     dir: "{{ lookup('env', 'ENV') }}"
 
-- name: "{{ ansible_role_name }}: Check intent for L3VPN"
-  set_fact:
-    l3vpn_check: "{{ lookup('template', 'check_macvrfs.j2') | from_yaml }}"
-
-- fail:
-    msg: "{{ l3vpn_check.msg | default('') }}"
-  when: not l3vpn_check.ok
+# - name: "{{ ansible_role_name }}: Check intent for L3VPN"
+#   set_fact:
+#     l3vpn_check: "{{ lookup('template', 'check_macvrfs.j2') | from_yaml }}"
+# 
+# - fail:
+#     msg: "{{ l3vpn_check.msg | default('') }}"
+#   when: not l3vpn_check.ok
 
 - name: "{{ ansible_role_name }}: Generate low-level intent for L3VPN"
   set_fact:
@@ -20,20 +20,6 @@
 #- debug:
 #    var:
 #      my_intent
-
-#- name: "{{ ansible_role_name }}: Generate config for /interface"
-#  ansible.builtin.include_role:
-#    name: utils/interface
-#  vars:
-#    intent: "{{ my_intent }}"
-#  when: my_intent['subinterface'] | type_debug == 'dict'
-#
-#- name: "{{ ansible_role_name }}: Generate config for /network-instance"
-#  ansible.builtin.include_role:
-#    name: utils/network-instance
-#  vars:
-#    intent: "{{ my_intent }}"
-#  when: my_intent.network_instance | type_debug == 'dict'
 
 - set_fact:
     intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true, list_merge='append') }}"

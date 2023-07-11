@@ -22,6 +22,10 @@
       admin-state: enable
       address:
       - ip-prefix: {{prop.ipv4_address }}
+      {% if prop.anycast_gw is defined %}
+        anycast-gw: true
+        primary: []
+      {% endif %}
     {% endif %}
     {% if prop.arp is defined %}
       arp:
@@ -33,4 +37,8 @@
           advertise:
           - route-type: dynamic
     {% endif %}
+    {% if prop.anycast_gw is defined %}
+    anycast-gw: {}
+    {% endif %}
+
 {% endfor %}
