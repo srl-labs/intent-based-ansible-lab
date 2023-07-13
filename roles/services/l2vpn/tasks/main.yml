@@ -14,11 +14,12 @@
   when: my_intent.network_instance | type_debug == 'dict'
 
 - set_fact:
-    intent: "{{ intent | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
+    intent: "{{ intent|default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
+#  when: my_intent.subinterface is defined
   when: my_intent.subinterface is defined
 
 - set_fact:
-    intent: "{{ intent | combine({'tunnel_interface': my_intent.tunnel_interface},recursive=true) }}"
+    intent: "{{ intent|default({}) | combine({'tunnel_interface': my_intent.tunnel_interface},recursive=true) }}"
   when: my_intent.tunnel_interface is defined
 
 #- debug:

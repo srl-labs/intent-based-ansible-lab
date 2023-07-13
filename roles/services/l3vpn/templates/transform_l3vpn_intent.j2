@@ -2,7 +2,6 @@
 {% set vrf = namespace() %}
 {% set vrf.macvrfs = {} %}
 {% set vrf.spec = {} %}
-
 {% for svc, svc_spec in l3vpn.items() %}
   {% for snet in svc_spec.snet_list %}
     {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}

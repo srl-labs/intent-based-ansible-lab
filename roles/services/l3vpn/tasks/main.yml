@@ -8,6 +8,7 @@
 - name: "{{ ansible_role_name }}: Generate low-level intent for L3VPN"
   set_fact:
     my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
+  when: l3vpn is mapping
 
 #- debug:
 #    var:
