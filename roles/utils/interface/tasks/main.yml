@@ -8,7 +8,7 @@
 
 - name: Generate config for /interface/subinterface
   set_fact:
-    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   when: intent.subinterface is defined and intent.subinterface is mapping
   vars:
