@@ -10,10 +10,6 @@
     my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
   when: l3vpn is mapping
 
-#- debug:
-#    var:
-#      my_intent
-
 - set_fact:
     intent: "{{ intent | combine({'network_instance': my_intent.network_instance}, recursive=true, list_merge='append') }}"
   when: my_intent.network_instance is defined 

@@ -1,5 +1,6 @@
 #jinja2: lstrip_blocks: "True"
 {% for ni, prop in network_instance.items() %}
+{% if prop._state|default('present') != 'deleted' %}
 - path: /network-instance[name={{ni}}]
   value:
     admin-state: enable
@@ -94,4 +95,6 @@
         {% endfor %}
       {% endif %}
   {% endif %}
+
+{% endif %}
 {% endfor %}

@@ -17,8 +17,8 @@
     intent: {}
   when: intent is undefined  # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
 
-
-- name: Generate Delete sets
+## this task is pruning resources from the device that are not in the intent
+- name: Generate Delete sets for implicit pruning
   vars:
     purge_exclude:
       network_instance: 
@@ -36,6 +36,14 @@
   - ansible_run_tags == ["all"]
 #  - intent[item] is mapping
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))
+
+## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
+- name: Generate Delete sets for explicit pruning
+  set_fact:
+    delete: "{{ delete + lookup('template', '{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
+    cacheable: true
+  loop: "{{ purgeable }}"
+
 
 #- debug:
 #    var: update

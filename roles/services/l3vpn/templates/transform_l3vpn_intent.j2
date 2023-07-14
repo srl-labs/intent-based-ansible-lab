@@ -6,7 +6,11 @@
   {% for snet in svc_spec.snet_list %}
     {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
       {% set _ = vrf.spec.update({svc: {'id': svc_spec.id} }) %}
-      {% set _ = vrf.macvrfs.update({snet.macvrf: {'id': l2vpn[snet.macvrf].id, 'gw': snet.gw } }) %}
+      {% set _ = vrf.macvrfs.update({snet.macvrf: {
+                    'id': l2vpn[snet.macvrf].id,
+                    'gw': snet.gw,
+                    'ipvrf': svc
+                    } }) %}
     {% endif %}
   {% endfor %}
 {% endfor %}
@@ -15,6 +19,7 @@
 network_instance:
     {% for ipvrf, ipvrf_spec in vrf.spec.items() %}
     {{ ipvrf }}:
+        _state: {{ l3vpn[ipvrf]._state|default('present') }}
         interfaces:
         {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
             - irb1.{{ macvrf_spec.id }}
@@ -33,12 +38,14 @@ network_instance:
     {% endfor %}
     {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
     {{ macvrf }}:
+        _state: {{ l3vpn[macvrf_spec.ipvrf]._state|default('present') }}
         interfaces:
            - irb1.{{ macvrf_spec.id }}
     {% endfor %}   
 subinterface:
     {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
     irb1.{{ macvrf_spec.id }}:
+        _state: {{ l3vpn[macvrf_spec.ipvrf]._state|default('present') }}
         ipv4_address: {{ macvrf_spec.gw }}
         arp: true
         anycast_gw: true
@@ -47,6 +54,7 @@ tunnel_interface:
     vxlan1:
     {% for ipvrf, ipvrf_spec in vrf.spec.items() %}
         {{ipvrf_spec.id}}:
+            _state: {{ l3vpn[ipvrf]._state|default('present') }}
             type: routed
             ingress_vni: {{ ipvrf_spec.id }}
     {% endfor %}

@@ -9,8 +9,8 @@
 network_instance: 
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
-    {% if svc_spec._state|default('present') != 'deleted' %}
     {{ svc }}:
+        _state: {{ svc_spec._state|default('present') }}
         interfaces:
         {% for itf in svc_spec.interface_list[inventory_hostname] %}
         - {{ itf }}
@@ -27,13 +27,13 @@ network_instance:
                 export_rt: {{svc_spec.export_rt}}
                 import_rt: {{svc_spec.import_rt}}
     {% endif %}
-    {% endif %}
 {% endfor %}
 subinterface:
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
     {% for itf in svc_spec.interface_list[inventory_hostname] %}
     {{ itf }}:
+        _state: {{ svc_spec._state|default('present') }}
         type: bridged
         vlan: {{ svc_spec.vlan }}
     {% endfor %}
@@ -44,6 +44,7 @@ tunnel_interface:
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
         {{svc_spec.id}}:
+            _state: {{ svc_spec._state|default('present') }}
             type: bridged
             ingress_vni: {{ svc_spec.id }}
     {% endif %}

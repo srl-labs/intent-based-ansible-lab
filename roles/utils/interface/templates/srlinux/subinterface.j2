@@ -1,5 +1,6 @@
 #jinja2: lstrip_blocks: "True"
 {%- for subif, prop in subinterface.items() %}
+{% if prop._state|default('present') != 'deleted' %}
 {% set l = subif.split('.') %}
 - path: /interface[name={{l[0]}}]/subinterface[index={{l[1]}}]
   value:
@@ -41,4 +42,5 @@
     anycast-gw: {}
     {% endif %}
 
+{% endif %}
 {% endfor %}

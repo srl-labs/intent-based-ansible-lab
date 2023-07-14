@@ -1,15 +1,16 @@
 l3vpn:
-  ipvrf-2001:
-    id: 2001
-    type: ip-vrf
-    description: IPVRF1
-    snet_list:
-      - macvrf: macvrf-300
-        gw: 10.1.1.254/24
-      - macvrf: macvrf-301
-        gw: 10.1.2.254/24
-    export_rt: 100:2001
-    import_rt: 100:2001
+#  ipvrf-2001:
+#    _state: deleted
+#    id: 2001
+#    type: ip-vrf
+#    description: IPVRF1
+#    snet_list:
+#      - macvrf: macvrf-300
+#        gw: 10.1.1.254/24
+#      - macvrf: macvrf-301
+#        gw: 10.1.2.254/24
+#    export_rt: 100:2001
+#    import_rt: 100:2001
 ## force a run-time validation error, while pre-validation passes
 ##   [FailedPrecondition] subinterface is already bound to .network-instance{.name==\"ipvrf-2001\"}
 #  ipvrf-2002:
