@@ -1,9 +1,8 @@
 - name: Configure fabric
   gather_facts: no
   hosts: 
-  - clab-4l2s-l3
-#  - leaf
-#  - spine
+  - leaf
+  - spine
   vars:
     purge: yes # purge resources from device not in intent
     purgeable:
