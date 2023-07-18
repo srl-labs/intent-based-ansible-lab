@@ -18,7 +18,7 @@ l3vpn:
 #    type: ip-vrf
 #    description: IPVRF1
 #    snet_list:
-#      - macvrf: macvrf-300
+#      - macvrf: macvrf-302
 #        gw: 10.1.1.254/24
-#      - macvrf: macvrf-301
+#      - macvrf: macvrf-303
 #        gw: 10.1.2.254/24
