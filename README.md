@@ -143,8 +143,9 @@ Roles also have _tags_ associated with them to run a subset of the roles in the 
 ENV=test ansible-playbook cf_fabric.yml --tags infra
 ```
 
-!!!note
-    To leverage the _pruning_ capability of the playbook, all roles must be executed to achieve a full intent. If tags are specified for a partial run, no purging will be performed by the playbook.
+
+> **Note**: To leverage the _pruning_ capability of the playbook, all roles must be executed to achieve a full intent. If tags are specified for a partial run, no purging will be performed by the playbook.
+
 
 ### Role structure
 
@@ -230,7 +231,7 @@ Two service roles are defined:
 For these roles, we decided to take the abstraction to a new level. Below is an example how a L2VPN is defined:
 
 *`roles/services/l2vpn/vars/test/l2vpn.yml:`*
-  ```yaml title="roles/services/l2vpn/vars/test/l2vpn.yml"
+  ```yaml
   l2vpn:                    # root of l2vpn intent, mapping of mac-vrf instances, with key=mac-vrf name 
     macvrf-200:             # name of the mac-vrf instance
       id: 200               # id of the mac-vrf instance: used for vlan-id and route-targets
@@ -254,7 +255,7 @@ The _l3vpn_ role follows a similar approach but depends on the _l2vpn_ role to d
 An example of a L3VPN intent is shown below:
 
 *`roles/services/l3vpn/vars/test/l3vpn.yml:`*
-```yaml title="roles/services/l3vpn/vars/test/l3vpn.yml"
+```yaml
 l3vpn:                      # root of l3vpn intent, mapping of ip-vrf instances, with key=ip-vrf name
   ipvrf-2001:               # name of the ip-vrf instance
     id: 2001                # id of the ip-vrf instance: used for route-targets
@@ -277,10 +278,8 @@ It also generates a `delete` variable containing a list of configuration paths t
 
 Following diagram gives an overview how the low-level device intent is constructed from the various roles:
 
-<figure markdown>
-  <div class="mxgraph" style="max-width:100%;border:1px solid transparent;margin:0 auto; display:block;" data-mxgraph='{"page":0,"zoom":2,"highlight":"#0000ff","nav":true,"check-visible-state":true,"resize":true,"url":"https://raw.githubusercontent.com/wdesmedt/ansible-srl-demo/main/img/ansible-srl-intent.drawio.svg"}'></div>
-  <figcaption>Transforming high-level intent to device configuration</figcaption>
-</figure>
+![](https://raw.githubusercontent.com/wdesmedt/ansible-srl-demo/main/img/ansible-srl-intent.drawio.svg)
+*Transforming high-level intent to device configuration*
 
 ## Configuring the fabric
 
@@ -290,7 +289,9 @@ The initial configuration of the fabric nodes after setting up your environment,
 
 If you have installed the [fcli](https://github.com/srl-labs/nornir-srl) tool, you can verify the initial state of the fabric with the following command that lists all the network-instances active on the fabric nodes. Alternatively, you can log into the nodes and verify the configuration manually. Only a single network instance `mgmt` should be present on each node.
 
-#### LLDP neighbors
+  <details>
+  <summary>LLDP neighbors</summary>
+  
 ```bash
 ❯ fcli -i fabric=yes lldp-nbrs -f interface="eth*"
                               LLDP Neighbors
@@ -326,7 +327,12 @@ If you have installed the [fcli](https://github.com/srl-labs/nornir-srl) tool, y
 |              | ethernet-1/4  | l4         | ethernet-1/48 |               |
 +---------------------------------------------------------------------------+
 ```
-#### Network instances and interfaces
+
+</details> 
+
+  <details>
+  <summary>Network instances and interfaces</summary>
+
 ```bash
 ❯ fcli -i fabric=yes nwi-itfs
                                         Network-Instance Interfaces
@@ -347,6 +353,8 @@ If you have installed the [fcli](https://github.com/srl-labs/nornir-srl) tool, y
 | clab-4l2s-s2 | mgmt | up   | ip-vrf |           | mgmt0.0 | up      | ['172.20.21.102/24'] | 1500 |      |
 +----------------------------------------------------------------------------------------------------------+
 ```
+</details>
+
 ### Configuring the underlay
 
 To configure the underlay of the fabric - the configuration of interfaces and routing to make overlay services possible - we apply the `infra` roles to all nodes in the `leaf` and `spine` groups. The `infra` roles are identified by the `infra` tag in the `cf_fabric.yml` playbook. The following command configures the underlay with the intent defined in the `roles/infra/*/vars/` files:
@@ -359,7 +367,9 @@ This will use the underlay intent stored in `roles/infra/*/vars/` that comes wit
 
 If you have the `fcli` tool installed, you can verify the configuration of the underlay with the following command that lists all the network-instances active on the fabric nodes. Alternatively, you can log into the nodes and verify the configuration manually. The `infra` roles should have configured the interfaces and routing on the nodes.
 
-#### Network-instances and interfaces
+  <details>
+  <summary>Network-instances and interfaces</summary>
+
 ```bash
 $ fcli -i fabric=yes nwi-itfs
                                                       Network-Instance Interfaces
@@ -402,8 +412,11 @@ $ fcli -i fabric=yes nwi-itfs
 |              | mgmt    | up   | ip-vrf  |                 | mgmt0.0         | up      | ['172.20.21.102/24']   | 1500 |      |
 +------------------------------------------------------------------------------------------------------------------------------+
 ```
+</details>
 
-#### BGP peers
+  <details>
+  <summary>BGP Peers</summary>
+
 ```bash
 ❯ fcli -i fabric=yes bgp-peers -b ascii
                                                                   BGP Peers
@@ -452,6 +465,7 @@ $ fcli -i fabric=yes nwi-itfs
 |              |          | 192.168.255.4   | 0/0/0     | disabled  | pass-evpn      | overlay | pass-evpn     | 100      | 100     | established |
 +-------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+</details>
 
 From the BGP Peers output, you can see that we use eBGP for underlay routing (ASNs 65001-65004 for the leafs and ASN 65100 for the spines) and that the iBGP mesh for the overlay (ASN 100) is established through route-reflector (RR) functionality on the spines.
 
@@ -463,7 +477,8 @@ Adding and modifying services follow the same process. It takes a full **declara
 
 Let's start by **adding** a l2vpn service on 2 leafs with interface `ethernet-1/1` on each leaf as downlink or access interface. Only untagged traffic is mapped into the l2vpn. This corresponds with the initial intent that comes with the project:
 
-```yaml title="roles/services/l2vpn/vars/test/l2vpn.yml"
+*`roles/services/l2vpn/vars/test/l2vpn.yml`:*
+```yaml
 l2vpn:
   macvrf-200:
     id: 200
@@ -562,7 +577,9 @@ To verify the _idempotence_ of the playbook, you can run this command multiple t
 
 With `fcli` we can verify that the service is configured correctly:
 
-*Network Instances:*
+  <details>
+  <summary>Network Instances</summary>
+  
 ```
 ❯ fcli -i fabric=yes nwi-itfs -f ni="macvrf*"
                                       Network-Instance Interfaces
@@ -576,8 +593,11 @@ With `fcli` we can verify that the service is configured correctly:
 | clab-4l2s-l2 | macvrf-200 | up   | mac-vrf |           | ethernet-1/1.0 | up      |      | 9232 |      |
 +--------------------------------------------------------------------------------------------------------+
 ```
+</details>
 
-*MAC table of `macvrf-200`*:
+  <details>
+  <summary>MAC table of `macvrf-200`</summary>
+
 ```
 ❯ fcli -i fabric=yes mac-table -f Netw-Inst=macvrf-200
                                                     MAC Table
@@ -593,11 +613,14 @@ With `fcli` we can verify that the service is configured correctly:
 |              |            | AA:C1:AB:B2:42:95 | ethernet-1/1.0                                        | learnt |
 +----------------------------------------------------------------------------------------------------------------+
 ```
+</details>
 
 In the topology, we have linux containers connected to these interfaces: `cl10` and `cl20` are connected to `clab-4l2s-l1` and `clab-4l2s-l2`respectively. We can verify that the containers can reach each other:
 
-*Server `cl10`:*
-```
+  <details>
+  <summary>Server `cl10`</summary>
+
+  ```
     ❯ docker exec -it clab-4l2s-cl10 ip addr show dev eth1
     1229: eth1@if1228: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9500 qdisc noqueue state UP group default
     link/ether aa:c1:ab:7b:e7:ef brd ff:ff:ff:ff:ff:ff link-netnsid 1
@@ -612,8 +635,11 @@ In the topology, we have linux containers connected to these interfaces: `cl10` 
     64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=1.18 ms
     64 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.553 ms        
 ```
+</details>
 
-*Server `cl20`:*
+  <details>
+  <summary>Server `cl20`</summary>
+
 ```
 ❯ docker exec -it clab-4l2s-cl20 ip addr sh dev eth1
 1249: eth1@if1248: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9500 qdisc noqueue state UP group default
@@ -631,7 +657,8 @@ PING 10.0.0.1 (10.0.0.1) 56(84) bytes of data.
 --- 10.0.0.1 ping statistics ---
 3 packets transmitted, 3 received, 0% packet loss, time 2002ms
 rtt min/avg/max/mdev = 0.986/1.054/1.146/0.067 ms
-```      
+```
+</details>  
 
 In a next step we **update** the service to include the 2 other leafs with the following intent:
 
@@ -679,13 +706,8 @@ Run the playbook again as before, and we can see that the service is now configu
 
 To further illustrate the _declarative_ nature of the intents, you could change the `vlan` field to e.g. 10. This will break connectivty between the connected servers but it will yield a correct configuration on the leafs.
 
-{% note %}
-
-**Note:** When an update to a service intent results in low-level resources (subinteface, network-instance, tunnel-interface, ...) being replaced (e.g. change subinterface ethernet-1/1.0 to ethernet-1/1.1), running a partial playbook with `--tags services` may fail model validation by SR Linux because the old interface is not deleted, resulting in 2 sub-interfaces on same parent interface with same encapsulation.
+> **Note**: When an update to a service intent results in low-level resources (subinteface, network-instance, tunnel-interface, ...) being replaced (e.g. change subinterface ethernet-1/1.0 to ethernet-1/1.1), running a partial playbook with `--tags services` may fail model validation by SR Linux because the old interface is not deleted, resulting in 2 sub-interfaces on same parent interface with same encapsulation.
 We therefore recommend to run the full playbook (no tags or `--tags all`) when updating a service intent.
-
-{% endnote %}
-
 
 Next, we add a new l2vpn instance `macvrf-201` so that th l2vpn intent looks like this:
 
@@ -723,11 +745,7 @@ l2vpn:
     vlan: 20
 ```
 
-{% note %}
-
-**Note:** You can also split the `l2vpn` intents in multiple files inside the role's `vars` directory. Ansible will load variables from all files in aplhabetical order. This is useful if you want to split the configuration in multiple files for better readability, e.g. a file per service instance.
-
-{% endnote %}
+> **Note**: You can also split the `l2vpn` intents in multiple files inside the role's `vars` directory. Ansible will load variables from all files in aplhabetical order. This is useful if you want to split the configuration in multiple files for better readability, e.g. a file per service instance.
 
 Run the playbook again and verify that the new service instance is configured on the leafs.
 
@@ -755,9 +773,8 @@ Pruning is controlled via the `purge` and `purgeable` variables in the `cf_fabri
       - subinterface
       - network-instance
 ```
-{% note %}
-**Note:** In order for pruning to work, you must run a full play, i.e. don't specify tags with `ansible-playbook` (like `--tags services`) that limit the scope of the play. Pruning is disabled if there is a partial run via tags since it results in an incomplete intent.
-{% endnote %}
+
+>**Warning**: In order for pruning to work, you must run a full play, i.e. don't specify tags with `ansible-playbook` (like `--tags services`) that limit the scope of the play. Pruning is disabled if there is a partial run via tags since it results in an incomplete intent.
 
 You can try out pruning by commenting out or removing e.g. the `macvrf-200` service in the `l2vpn` intent amd run the playbook as follows:
 
@@ -770,9 +787,7 @@ Check the status with `fcli` or on the Linux containers attached to that service
 With explicit deletion, you set the `_state` field of a resource or service to `deleted` in the intent. This will remove the service (or resource) from the device configuration. This approach is suited for cases where only parts of the configuration are managed by the playbook. The playbook will only touch resources that are present in the intent and will only delete resources if through explicit tagging.
 
 
-{% note %}
 **Note:** Use of the initial `_` in a field name is a convention to indicate that the field is not part of the intent but is _metadata_ used by the playbook to control the behaviour of the playbook.
-{% endnote %}
 
 
 To try this out, make sure macvrf-200 is present in the `l2vpn` intent and run the playbook to ensure that the service is configured on the leafs. Now remove the service explicitly by adding the `_state` field as follows:
