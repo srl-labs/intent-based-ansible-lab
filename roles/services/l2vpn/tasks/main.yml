@@ -8,6 +8,7 @@
 - name: "{{ ansible_role_name }}: Generate low-level intent for L2VPN"
   set_fact:
     my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
+  when: l2vpn is defined and l2vpn is not none
 
 - set_fact:
     intent: "{{ intent|default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
