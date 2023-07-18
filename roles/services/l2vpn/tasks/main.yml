@@ -21,6 +21,3 @@
 - set_fact:
     intent: "{{ intent|default({}) | combine({'tunnel_interface': my_intent.tunnel_interface},recursive=true) }}"
   when: my_intent.tunnel_interface is defined
-
-#- debug:
-#    var: intent

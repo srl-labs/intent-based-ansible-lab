@@ -3,26 +3,39 @@
 {% set vrf.macvrfs = {} %}
 {% set vrf.spec = {} %}
 {% for svc, svc_spec in l3vpn.items() %}
-  {% for snet in svc_spec.snet_list %}
-    {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
-      {% set _ = vrf.spec.update({svc: {'id': svc_spec.id} }) %}
-      {% set _ = vrf.macvrfs.update({snet.macvrf: {
+    {% if svc_spec._state|default("present") == "deleted" %}
+        {% set _ = vrf.spec.update({
+                    svc: {
+                            '_state': "deleted",
+                            'id': svc_spec.id
+                        } }) %}
+    {% endif %}
+    {% for snet in svc_spec.snet_list %}
+        {% if snet.macvrf in l2vpn %}
+            {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
+                {% set _ = vrf.spec.update({svc: {'_state': svc_spec._state|default("present"), 'id': svc_spec.id} }) %}
+                {% set _ = vrf.macvrfs.update({snet.macvrf: {
                     'id': l2vpn[snet.macvrf].id,
                     'gw': snet.gw,
                     'ipvrf': svc
-                    } }) %}
-    {% endif %}
-  {% endfor %}
+                } }) %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
 {% endfor %}
 
 {% if vrf.spec|length > 0 %}
 network_instance:
     {% for ipvrf, ipvrf_spec in vrf.spec.items() %}
     {{ ipvrf }}:
-        _state: {{ l3vpn[ipvrf]._state|default('present') }}
+        {% if ipvrf_spec._state|default('present') == "deleted" %}
+        _state: deleted
+        {% else %}
         interfaces:
         {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
+        {% if macvrf_spec.ipvrf == ipvrf %}
             - irb1.{{ macvrf_spec.id }}
+        {% endif %}
         {% endfor %}
         description: {{ l3vpn.ipvrf.description | default("VRF" + ipvrf_spec.id|string) }}
         type: ip-vrf
@@ -35,6 +48,7 @@ network_instance:
             bgp_vpn:
                 export_rt: {{ l3vpn.ipvrf.export_rt | default("100:" + ipvrf_spec.id|string) }}
                 import_rt: {{ l3vpn.ipvrf.import_rt | default("100:" + ipvrf_spec.id|string) }}
+        {% endif %}
     {% endfor %}
     {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
     {{ macvrf }}:

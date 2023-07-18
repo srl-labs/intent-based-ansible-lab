@@ -1,19 +1,29 @@
 #jinja2: lstrip_blocks: "True"
-{% if tunnel_interface is defined %}
-{%- for tunnel, tun_spec in tunnel_interface.items() %}
-{% if tun_spec._state|default('present') != 'deleted' %}
+{% set my = namespace() %}
+{% set my.tunnels = {} %}
+{% if tunnel_interface is defined and tunnel_interface is not none %}
+  {%- for tunnel, tun_spec in tunnel_interface.items() %}
+    {% if tun_spec is defined and tun_spec is not none %}
+      {% set _ = my.tunnels.update( { tunnel: [] }) %}
+      {% for idx, idx_spec in tun_spec.items() %}
+        {% if idx_spec._state|default('present') != "deleted" %}
+          {% set _ = my.tunnels[tunnel].append(idx) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+
+  {% for tunnel, tunnel_ids in my.tunnels.items() %}
+    {% if tunnel_ids|length >0 %}
 - path: /tunnel-interface[name={{ tunnel }}]
   value:
-    {% if tun_spec is defined %}
     vxlan-interface:
-    {% for idx, idx_spec in tun_spec.items() %}
-      - index: {{ idx }}
-        type: {{ idx_spec.type }}
+      {% for id in tunnel_ids %}
+      - index: {{ id }}
+        type: {{ tunnel_interface[tunnel][id].type }}
         ingress:
-          vni: {{ idx_spec.ingress_vni }}
-    {% endfor %}
+          vni: {{ tunnel_interface[tunnel][id].ingress_vni }}
+      {% endfor %}
     {% endif %}
-
-{% endif %}
-{% endfor %}
+  {% endfor %}
 {% endif %}

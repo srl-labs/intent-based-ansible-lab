@@ -2,7 +2,7 @@
   set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml }}"
     cacheable: true
-  when: intent.interfaces is defined and intent.interfaces is mapping
+  when: intent.interfaces is defined and intent.interfaces is not none
   vars:
     template_file: "{{ platform + '/' + sw_version + '/interface.j2'}}"
 
@@ -10,14 +10,14 @@
   set_fact:
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
-  when: intent.subinterface is defined and intent.subinterface is mapping
+  when: intent.subinterface is defined and intent.subinterface is not none
   vars:
     template_file: "{{ platform + '/' + sw_version + '/subinterface.j2'}}"  
 
 - name: Generate config for /tunnel-interface
   set_fact:
-    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
-  when: intent.tunnel_interface is defined and intent.tunnel_interface is mapping
+  when: intent.tunnel_interface is defined and intent.tunnel_interface is not none
   vars:
     template_file: "{{ platform + '/' + sw_version + '/tunnel.j2'}}"  
