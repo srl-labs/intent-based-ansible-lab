@@ -1,14 +1,16 @@
 #jinja2: lstrip_blocks: "True"
+{% if subinterface is defined and subinterface is not none %}
 {% for itf in running_config['srl_nokia-interfaces:interface'] %}
-{% if itf.subinterface is defined %}
+{% if itf.subinterface is defined and itf.subinterface is not none %}
 {% for subitf in itf.subinterface %}
 {% set subif_name = itf.name + '.' + subitf.index|string %} 
 {% if subif_name not in purge_exclude['subinterface'] %}
-{% if subif_name not in subinterface.keys() %}
+{% if subif_name not in subinterface %}
 - path: /interface[name={{ itf.name }}]/subinterface[index={{ subitf.index }}]
 {% endif %}
 {% endif %}
 {% endfor %}
 {% endif %}
 {% endfor %}
+{% endif %}
 

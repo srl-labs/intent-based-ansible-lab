@@ -33,8 +33,9 @@
   loop: "{{ purgeable }}"
   when:  
   - purge
-  - ansible_run_tags == ["all"]
+  - ansible_run_tags == ["all"] # need full intent to prune resources
 #  - intent[item] is mapping
+  - item in intent and intent[item] is not none
   - item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
 ## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
@@ -60,9 +61,9 @@
 
 - ansible.builtin.set_stats:
     data:
-      network_instance: "{{ intent.network_instance | length }}"
-      subinterface: "{{ intent.subinterface | length }}"
-      routing_policy: "{{ intent.routing_policy | length }}"
+      network_instance: "{{ intent.network_instance |default({}, true) | length }}"
+      subinterface: "{{ intent.subinterface | default({}, true) | length }}"
+      routing_policy: "{{ intent.routing_policy | default({}, true) | length }}"
       sw_version: "{{ sw_version }}"
     per_host: yes
   when:
