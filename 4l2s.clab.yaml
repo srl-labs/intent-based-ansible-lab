@@ -1,8 +1,7 @@
-# topology documentation: http://containerlab.srlinux.dev/lab-examples/min-clos/
 name: 4l2s
 
 mgmt:
-    network: my_clab
+    network: intent-lab
     ipv4-subnet: 172.20.21.0/24
 
 topology:
@@ -23,27 +22,38 @@ topology:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.12
-      labels: {role: leaf, fabric: yes}
+      labels:
+        role: leaf
+        fabric: yes
     l3:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.13
-      labels: {role: leaf, fabric: yes}
+      labels:
+        role: leaf
+        fabric: yes
     l4:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.14
-      labels: {role: leaf, fabric: yes}
+      labels:
+        role: leaf
+        fabric: yes
     s1:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.101
-      labels: {role: spine, fabric: yes}
+      labels:
+        role: spine
+        fabric: yes
     s2:
       kind: srl
       type: ixrd2
       mgmt-ipv4: 172.20.21.102
-      labels: {role: spine, fabric: yes}
+      labels:
+        role: spine
+        fabric: yes
+
     cl10:
       mgmt-ipv4: 172.20.21.130
       kind: linux
@@ -56,9 +66,6 @@ topology:
     cl11:
       kind: linux
       mgmt-ipv4: 172.20.21.131
-      binds:
-      exec:
-        - 
     cl20:
       kind: linux
       mgmt-ipv4: 172.20.21.132
@@ -80,7 +87,6 @@ topology:
         - ip addr add 10.1.2.1/24 dev eth1.301
         - ip link set eth1.301 up
         - ip route add 10.1.0.0/16 via 10.1.2.254
-
     cl40:
       kind: linux
       mgmt-ipv4: 172.20.21.135
