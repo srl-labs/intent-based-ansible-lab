@@ -15,7 +15,7 @@
       - path: /system/lldp/interface[name=*]/neighbor
         datastore: state
   register: res
-  
+
 - set_fact:
     running_config: "{{ res['result'][0] }}"
     sw_version: "{{ res['result'][1].split('-')[0] }}"

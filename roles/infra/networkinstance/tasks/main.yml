@@ -5,13 +5,12 @@
   include_vars:
     dir: "{{ lookup('env', 'ENV') }}"
 
-- name: "{{ ansible_role_name }}: load Intent: /network-instance" 
+- name: "{{ ansible_role_name }}: load Intent: /network-instance"
   ansible.builtin.include_role:
     name: utils/load_intent
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
-
 #- name: "{{ ansible_role_name }}: Generate config for /network-instance[name=default]"
 #  ansible.builtin.include_role:
 #    name: utils/network-instance

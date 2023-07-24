@@ -1,8 +1,8 @@
 - name: Configure fabric
   gather_facts: no
-  hosts: 
-  - leaf
-  - spine
+  hosts:
+    - leaf
+    - spine
   vars:
     purge: yes # purge resources from device not in intent
     purgeable:
@@ -10,14 +10,14 @@
       - subinterface
       - network-instance
   roles:
-  - { role: common/init, tags: [always] }
-## INFRA ##
-  - { role: infra/system, tags: [infra, system]}
-  - { role: infra/interface, tags: [infra, interface] }
-  - { role: infra/policy, tags: [infra, policy] }
-  - { role: infra/networkinstance, tags: [infra,]}
-## SERVICES ##
-  - { role: services/l2vpn, tags: [services, l2vpn ]}
-  - { role: services/l3vpn, tags: [services, l3vpn ]}
-## CONFIG PUSH ##
-  - { role: common/configure, tags: [always]}
+    - { role: common/init, tags: [always] }
+    ## INFRA ##
+    - { role: infra/system, tags: [infra, system] }
+    - { role: infra/interface, tags: [infra, interface] }
+    - { role: infra/policy, tags: [infra, policy] }
+    - { role: infra/networkinstance, tags: [infra] }
+    ## SERVICES ##
+    - { role: services/l2vpn, tags: [services, l2vpn] }
+    - { role: services/l3vpn, tags: [services, l3vpn] }
+    ## CONFIG PUSH ##
+    - { role: common/configure, tags: [always] }

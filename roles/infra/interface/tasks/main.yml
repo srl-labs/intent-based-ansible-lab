@@ -5,7 +5,7 @@
   include_vars:
     dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
 
-- name: "{{ ansible_role_name}}: Load Intent for /interfaces" 
+- name: "{{ ansible_role_name}}: Load Intent for /interfaces"
   ansible.builtin.include_role:
     name: utils/load_intent
 
@@ -14,7 +14,7 @@
     itf_desc: "{{ lookup('template', template_file, template_vars=my_intent) | from_yaml }}"
   when: lldp_nbrs is defined
   vars:
-    template_file: "{{ platform + '/' + sw_version + '/set_itf_desc.j2'}}"  
+    template_file: "{{ platform + '/' + sw_version + '/set_itf_desc.j2'}}"
 
 - set_fact:
     my_intent: "{{ my_intent | combine(itf_desc, recursive=true) }}"

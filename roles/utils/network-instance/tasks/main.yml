@@ -5,5 +5,3 @@
   when: intent.network_instance is defined and intent.network_instance is mapping
   vars:
     template_file: "{{ platform + '/' + sw_version + '/networkinstance.j2'}}"
-
-
