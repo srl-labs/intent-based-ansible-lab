@@ -10,6 +10,7 @@
       - subinterface
       - network-instance
   roles:
+    ## INIT ##
     - { role: common/init, tags: [always] }
     ## INFRA ##
     - { role: infra/system, tags: [infra, system] }
