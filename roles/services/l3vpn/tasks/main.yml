@@ -12,19 +12,18 @@
 
 - set_fact:
     intent: "{{ intent|default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true, list_merge='append') }}"
-  when: 
-  - my_intent is defined and my_intent is not none
-  - my_intent.network_instance is defined and my_intent.network_instance is not none 
+  when:
+    - my_intent is defined and my_intent is not none
+    - my_intent.network_instance is defined and my_intent.network_instance is not none
 
 - set_fact:
     intent: "{{ intent|default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
-  when: 
-  - my_intent is defined and my_intent is not none
-  - my_intent.subinterface is defined and my_intent.subinterface is not none
+  when:
+    - my_intent is defined and my_intent is not none
+    - my_intent.subinterface is defined and my_intent.subinterface is not none
 
 - set_fact:
     intent: "{{ intent|default({}) | combine({'tunnel_interface': my_intent.tunnel_interface},recursive=true) }}"
-  when: 
-  - my_intent is defined and my_intent is not none
-  - my_intent.tunnel_interface is defined and my_intent.tunnel_interface is not none
-
+  when:
+    - my_intent is defined and my_intent is not none
+    - my_intent.tunnel_interface is defined and my_intent.tunnel_interface is not none

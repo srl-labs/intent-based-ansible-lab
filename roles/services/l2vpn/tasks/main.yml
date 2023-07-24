@@ -16,7 +16,7 @@
 
 - set_fact:
     intent: "{{ intent|default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
-#  when: my_intent.subinterface is defined
+  #  when: my_intent.subinterface is defined
   when: my_intent.subinterface is defined
 
 - set_fact:
