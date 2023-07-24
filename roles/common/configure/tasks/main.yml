@@ -15,27 +15,27 @@
 
 - set_fact:
     intent: {}
-  when: intent is undefined  # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
+  when: intent is undefined # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
 
 ## this task is pruning resources from the device that are not in the intent
 - name: Generate Delete sets for implicit pruning
   vars:
     purge_exclude:
-      network_instance: 
-      - mgmt  # never purge mgmt network-instance
+      network_instance:
+        - mgmt # never purge mgmt network-instance
       interfaces:
-      - mgmt0
+        - mgmt0
       subinterface:
-      - mgmt0.0
+        - mgmt0.0
   set_fact:
     delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml }}"
     cacheable: true
   loop: "{{ purgeable }}"
-  when:  
-  - purge
-  - ansible_run_tags == ["all"] # need full intent to prune resources
-#  - intent[item] is mapping
-  - item in (lookup('template', item + '_purge.j2', template_vars=intent))
+  when:
+    - purge
+    - ansible_run_tags == ["all"] # need full intent to prune resources
+    #  - intent[item] is mapping
+    - item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
 ## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
 - name: Generate Delete sets for explicit pruning
@@ -44,19 +44,18 @@
     cacheable: true
   loop: "{{ purgeable }}"
 
-
 #- debug:
 #    var: update
 #- debug:
 #    var: replace
 #- debug:
 #    var: delete
-    
+
 - name: "Update resources on {{inventory_hostname}}"
   nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
-    delete: "{{ delete }}"        
+    delete: "{{ delete }}"
 
 - ansible.builtin.set_stats:
     data:

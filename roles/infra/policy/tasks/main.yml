@@ -5,13 +5,12 @@
   include_vars:
     dir: "{{ lookup('env', 'ENV') }}"
 
-- name: "{{ ansible_role_name }}: Load Intent: /routing-policy" 
+- name: "{{ ansible_role_name }}: Load Intent: /routing-policy"
   ansible.builtin.include_role:
     name: utils/load_intent
 
 - set_fact:
     intent: "{{ intent | default({}) | combine(my_intent, recursive=true) }}"
-
 #- name: "{{ ansible_role_name }}: Generate config for /routing-policy"
 #  ansible.builtin.include_role:
 #    name: utils/policy

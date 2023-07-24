@@ -23,7 +23,7 @@ host_intent:
         ipv4_address: 192.168.0.5/31
       system0.0:
         ipv4_address: 192.168.255.3/32
-  clab-4l2s-l4:    
+  clab-4l2s-l4:
     subinterface:
       ethernet-1/48.0:
         ipv4_address: 192.168.1.7/31
@@ -43,7 +43,7 @@ host_intent:
         ipv4_address: 192.168.0.6/31
       system0.0:
         ipv4_address: 192.168.255.101/32
-  clab-4l2s-s2:    
+  clab-4l2s-s2:
     subinterface:
       ethernet-1/1.0:
         ipv4_address: 192.168.1.0/31
@@ -73,7 +73,7 @@ group_intent:
         vlan_tagging: yes
       ethernet-1/10:
         admin_state: enable
-        vlan_tagging: yes      
+        vlan_tagging: yes
       ethernet-1/48:
         admin_state: enable
         _tag: isl
