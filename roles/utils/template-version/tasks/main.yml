@@ -1,6 +1,6 @@
 - name: Check available template versions
   ansible.builtin.stat:
-    path: "{{ role_path + '/templates/' + platform + '/' + item }}"
+    path: "{{ calling_path + '/templates/' + platform + '/' + item }}"
   register: dirs
   loop:
     - "{{ sw_version }}"
@@ -12,3 +12,6 @@
   set_fact: 
     tpl_base: "{{ dirs.results[3].stat | combine(dirs.results[2].stat, dirs.results[1].stat, dirs.results[0].stat) }}"
   failed_when: not tpl_base.isdir
+
+# - debug:
+#     msg: "Using template {{ tpl_base.path }}"

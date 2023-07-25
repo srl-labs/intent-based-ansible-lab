@@ -4,6 +4,7 @@ ansible_user: admin
 ansible_password: NokiaSrl1!
 ansible_httpapi_use_ssl: true
 ansible_httpapi_validate_certs: false
+ansible_httpapi_ciphers: ECDHE-RSA-AES256-SHA
 ansible_become: no
 platform: srlinux
 
@@ -13,4 +14,3 @@ system:
   information:
     location: SomeWhere
     contact: SomeOne
-

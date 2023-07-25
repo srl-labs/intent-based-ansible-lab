@@ -1,3 +1,13 @@
+- name: Get role path
+  set_fact:
+    my_dir: "{{ role_path }}"
+
+- name: Get template version
+  vars:
+    calling_path: "{{ my_dir }}" # cannot pass special var 'role_path' as this is replaced by the path of the called role
+  ansible.builtin.include_role:
+    name: utils/template-version
+
 - name: Generate config for /interface
   set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml }}"
