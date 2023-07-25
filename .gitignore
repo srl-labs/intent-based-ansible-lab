@@ -6,3 +6,4 @@ license*
 *.bak
 filter*
 startup
+.vscode

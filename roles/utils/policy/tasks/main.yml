@@ -1,17 +1,12 @@
-- name: Check available template versions
-  stat:
-    path: "{{ role_path + '/templates/' + platform + '/' + item }}"
-  register: dirs
-  loop:
-    - "{{ sw_version }}"
-    - "{{ sw_version|regex_replace('(\\.\\d+$)', '') }}"
-    - "{{ sw_version|regex_replace('(\\.\\d+\\.\\d+$)', '') }}"
-    - "default"
+- name: Get role path
+  set_fact:
+    my_dir: "{{ role_path }}"
 
-- name: Set template version
-  set_fact: 
-    tpl_base: "{{ dirs.results[3].stat | combine(dirs.results[2].stat, dirs.results[1].stat, dirs.results[0].stat) }}"
-  failed_when: not tpl_base.isdir
+- name: Get template version
+  vars:
+    calling_path: "{{ my_dir }}" # cannot pass special var 'role_path' as this is replaced by the path of the called role
+  ansible.builtin.include_role:
+    name: utils/template-version
 
 - name: Generate config for /routing-policy
   set_fact:
