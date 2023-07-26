@@ -21,9 +21,6 @@
     sw_version: "{{ res['result'][1].split('-')[0] }}"
     lldp_nbrs: "{{ res.result[2].interface | items2dict(key_name='name', value_name='neighbor') }}"
 
-- debug:
-    msg: "major sw-version: {{ sw_version | regex_search('^v(\\d+)', '\\1') }}"
-
 - name: Check SR Linux version
   ansible.builtin.assert:
     that:
