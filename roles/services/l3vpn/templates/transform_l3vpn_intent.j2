@@ -1,75 +1,89 @@
 #jinja2: lstrip_blocks: "True"
-{% set vrf = namespace() %}
-{% set vrf.macvrfs = {} %}
-{% set vrf.spec = {} %}
+{% set ipvrf_ns = namespace() %}
+{% set ipvrf_ns.itfs = {} %}
+{% set ipvrf_ns.macvrfs = {} %}
+
+{% if l3vpn is mapping %}
 {% for svc, svc_spec in l3vpn.items() %}
-    {% if svc_spec._state|default("present") == "deleted" %}
-        {% set _ = vrf.spec.update({
-                    svc: {
-                            '_state': "deleted",
-                            'id': svc_spec.id
-                        } }) %}
-    {% endif %}
-    {% for snet in svc_spec.snet_list %}
-        {% if snet.macvrf in l2vpn %}
+    {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( { svc: {} }) %}
+    {% for snet in svc_spec.snet_list|default([]) %}
+        {% if snet.macvrf in l2vpn|default({}, true) %}
             {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
-                {% set _ = vrf.spec.update({svc: {'_state': svc_spec._state|default("present"), 'id': svc_spec.id} }) %}
-                {% set _ = vrf.macvrfs.update({snet.macvrf: {
-                    'id': l2vpn[snet.macvrf].id,
-                    'gw': snet.gw,
-                    'ipvrf': svc
-                } }) %}
+                {% set irb_itf = 'irb1.' + l2vpn[snet.macvrf].id | string %}
+                {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( 
+                    {
+                        svc:
+                        {
+                            irb_itf:
+                                {
+                                    'gw': snet.gw,
+                                    '_state': svc_spec._state|default('present')
+                                }
+                        }
+                    }
+                , recursive=True) %}
+                {% if svc_spec._state|default('present') != 'deleted' %}
+                   {% set ipvrf_ns.macvrfs = ipvrf_ns.macvrfs | combine( 
+                        { snet.macvrf: { 
+                            'irb': irb_itf, 
+                            'state': svc_spec.state|default('present')
+                            } 
+                      }
+                 ) %}
+                {% endif %}
             {% endif %}
         {% endif %}
     {% endfor %}
 {% endfor %}
 
-{% if vrf.spec|length > 0 %}
 network_instance:
-    {% for ipvrf, ipvrf_spec in vrf.spec.items() %}
+{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+    {% if ipvrf_spec | length > 0 %}
     {{ ipvrf }}:
-        {% if ipvrf_spec._state|default('present') == "deleted" %}
+        {% if l3vpn[ipvrf]._state|default('present') == 'deleted' %}
         _state: deleted
         {% else %}
         interfaces:
-        {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
-        {% if macvrf_spec.ipvrf == ipvrf %}
-            - irb1.{{ macvrf_spec.id }}
-        {% endif %}
-        {% endfor %}
-        description: {{ l3vpn.ipvrf.description | default("VRF" + ipvrf_spec.id|string) }}
+            {% for itf in ipvrf_spec|default({}, true) %}
+            - {{ itf }}
+            {% endfor %}
+        description: {{ l3vpn[ipvrf].description | default("VRF" + l3vpn[ipvrf].id|string) }}
         type: ip-vrf
         vxlan_interface:
-            - vxlan1.{{ipvrf_spec.id}}
+            - vxlan1.{{ l3vpn[ipvrf].id }}
         protocols:
             bgp_evpn:
-                vxlan_interface: vxlan1.{{ ipvrf_spec.id }}
-                evi: {{ ipvrf_spec.id }}
+                vxlan_interface: vxlan1.{{ l3vpn[ipvrf].id }}
+                evi: {{ l3vpn[ipvrf].id }}
             bgp_vpn:
-                export_rt: {{ l3vpn.ipvrf.export_rt | default("100:" + ipvrf_spec.id|string) }}
-                import_rt: {{ l3vpn.ipvrf.import_rt | default("100:" + ipvrf_spec.id|string) }}
+                export_rt: {{ l3vpn[ipvrf].export_rt | default("100:" + l3vpn[ipvrf].id|string) }}
+                import_rt: {{ l3vpn[ipvrf].import_rt | default("100:" + l3vpn[ipvrf].id|string) }}
         {% endif %}
-    {% endfor %}
-    {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
+    {% endif %}
+{% endfor %}
+{% for macvrf, macvrf_spec in ipvrf_ns.macvrfs.items() %}
     {{ macvrf }}:
-        _state: {{ l3vpn[macvrf_spec.ipvrf]._state|default('present') }}
         interfaces:
-           - irb1.{{ macvrf_spec.id }}
-    {% endfor %}   
+           - {{ macvrf_spec.irb }}
+{% endfor %}
+
 subinterface:
-    {% for macvrf, macvrf_spec in vrf.macvrfs.items() %}
-    irb1.{{ macvrf_spec.id }}:
-        _state: {{ l3vpn[macvrf_spec.ipvrf]._state|default('present') }}
-        ipv4_address: {{ macvrf_spec.gw }}
+{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+    {% for itf, itf_spec in ipvrf_spec.items() %}
+    {{ itf }}:
+        _state: {{ itf_spec._state }}
+        ipv4_address: {{ itf_spec.gw }}
         arp: true
         anycast_gw: true
     {% endfor %}
+{% endfor %}
 tunnel_interface:
     vxlan1:
-    {% for ipvrf, ipvrf_spec in vrf.spec.items() %}
-        {{ipvrf_spec.id}}:
+{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+        {{ l3vpn[ipvrf].id }}:
             _state: {{ l3vpn[ipvrf]._state|default('present') }}
             type: routed
-            ingress_vni: {{ ipvrf_spec.id }}
-    {% endfor %}
+            ingress_vni: {{ l3vpn[ipvrf].id }}
+{% endfor %}
+
 {% endif %} 

@@ -9,6 +9,7 @@
       - interface
       - subinterface
       - network-instance
+      - tunnel-interface
   roles:
     ## INIT ##
     - { role: common/init, tags: [always] }
