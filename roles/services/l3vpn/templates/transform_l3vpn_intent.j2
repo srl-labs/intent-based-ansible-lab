@@ -80,10 +80,12 @@ subinterface:
 tunnel_interface:
     vxlan1:
 {% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+    {% if ipvrf_spec | length > 0 %}  {# make sure node has service #}
         {{ l3vpn[ipvrf].id }}:
             _state: {{ l3vpn[ipvrf]._state|default('present') }}
             type: routed
             ingress_vni: {{ l3vpn[ipvrf].id }}
+    {% endif %}
 {% endfor %}
 
 {% endif %} 
