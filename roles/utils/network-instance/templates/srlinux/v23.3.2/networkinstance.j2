@@ -8,17 +8,19 @@
     {% if prop.type is defined %}
     type: {{ prop.type }}
     {% endif %}
+    {% if prop.interfaces is defined and prop.interfaces is not none %}
     interface:
-    {% for itf in prop.interfaces %} 
+      {% for itf in prop.interfaces %} 
       - name: {{ itf }}
-    {% endfor %}
-    {% if prop.vxlan_interface is defined %}
-    vxlan-interface:
-    {% for vxlan_itf in prop.vxlan_interface %}
-      - name: {{ vxlan_itf }}
-    {% endfor %}
+      {% endfor %}
     {% endif %}
-    {% if prop.protocols is defined %}
+    {% if prop.vxlan_interface is defined and prop.vxlan_interface is not none %}
+    vxlan-interface:
+      {% for vxlan_itf in prop.vxlan_interface %}
+      - name: {{ vxlan_itf }}
+      {% endfor %}
+    {% endif %}
+    {% if prop.protocols is defined and prop.protocols is not none %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}
       bgp-evpn:

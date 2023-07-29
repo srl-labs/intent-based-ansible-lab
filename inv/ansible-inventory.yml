@@ -42,9 +42,3 @@ all:
       hosts:
         clab-4l2s-s1:
         clab-4l2s-s2:
-    sros:
-      hosts:
-        clab-4l2s-dcgw1:
-          ansible_host: 172.20.21.250
-        clab-4l2s-dcgw2:
-          ansible_host: 172.20.21.251

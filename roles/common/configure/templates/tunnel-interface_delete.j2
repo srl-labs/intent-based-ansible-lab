@@ -1,0 +1,20 @@
+#jinja2: lstrip_blocks: "True"
+{% set my = namespace() %}
+{% set my.tunnels = {} %}
+{% if tunnel_interface is defined and tunnel_interface is not none %}
+  {%- for tunnel, tun_spec in tunnel_interface.items() %}
+    {% if tun_spec is defined and tun_spec is not none %}
+      {% set _ = my.tunnels.update( { tunnel: [] }) %}
+      {% for idx, idx_spec in tun_spec.items() %}
+        {% if idx_spec._state|default('present') == "deleted" %}
+          {% set _ = my.tunnels[tunnel].append(idx) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+    {% for tunnel, tunnel_ids in my.tunnels.items() %}
+        {% for idx in tunnel_ids|default([], true) %}
+- path: /tunnel-interface[name={{ tunnel }}]/vxlan-interface[index={{ idx }}]
+        {% endfor %}
+    {% endfor %}
+{% endif %}

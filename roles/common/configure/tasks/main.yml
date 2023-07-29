@@ -28,14 +28,14 @@
       subinterface:
         - mgmt0.0
   set_fact:
-    delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml }}"
+    delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
   when:
     - purge
     - ansible_run_tags == ["all"] # need full intent to prune resources
     #  - intent[item] is mapping
-    - item in (lookup('template', item + '_purge.j2', template_vars=intent))
+    #- item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
 ## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
 - name: Generate Delete sets for explicit pruning

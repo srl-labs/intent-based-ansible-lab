@@ -1,0 +1,26 @@
+#jinja2: lstrip_blocks: "True"
+{% set my = namespace() %}
+{% set my.tunnels = {} %}
+{% if tunnel_interface is defined and tunnel_interface is not none %}
+  {%- for tunnel, tun_spec in tunnel_interface.items() %}
+    {% if tun_spec is defined and tun_spec is not none %}
+      {% set _ = my.tunnels.update( { tunnel: [] }) %}
+      {% for idx, idx_spec in tun_spec.items() %}
+        {% if idx_spec._state|default('present') != "deleted" %}
+          {% set _ = my.tunnels[tunnel].append(idx) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if 'srl_nokia-tunnel-interfaces:tunnel-interface' in running_config %}
+  {% for tunnel_itf in running_config['srl_nokia-tunnel-interfaces:tunnel-interface'] %}
+    {% if 'vxlan-interface' in tunnel_itf %}
+      {% for vxlan_itf in tunnel_itf['vxlan-interface'] %}
+        {% if tunnel_itf.name not in my.tunnels or vxlan_itf.index not in my.tunnels[tunnel_itf.name] %}
+- path: /tunnel-interface[name={{ tunnel_itf.name }}]/vxlan-interface[index={{ vxlan_itf.index }}]
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
