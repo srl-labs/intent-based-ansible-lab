@@ -1,6 +1,3 @@
-- set_fact:
-    my_intent: {}
-
 - name: "Load vars for ENV:{{ env }}"
   include_vars:
     name: host_intent
