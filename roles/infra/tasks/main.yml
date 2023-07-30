@@ -1,0 +1,39 @@
+- set_fact:
+    my_intent: {}
+
+- name: "Load vars for ENV:{{ env }}"
+  include_vars:
+    name: host_intent
+    dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
+    files_matching: "host_"
+
+- name: "Load vars for ENV:{{ env }}"
+  include_vars:
+    name: group_intent
+    dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
+    files_matching: "group_"
+
+- name: Load group intent
+  set_fact:
+    intent: "{{ intent | default({}) | combine(group_intent[item], recursive=True) }}"
+  loop: "{{ group_names }}"
+  when: item in group_intent|default({}, true)
+
+- name: Load nodal intent
+  set_fact:
+    intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname], recursive=True) }}"
+  when: inventory_hostname in host_intent|default({}, true)
+
+- name: Generate itf descriptions
+  block:
+    - set_fact:
+        itf_desc: "{{ lookup('template', template_file, template_vars=intent) | from_yaml }}"
+      vars:
+        template_file: 'set_itf_desc.j2'
+
+    - set_fact:
+        intent: "{{ intent | combine(itf_desc, recursive=true) }}"
+  when:
+    - lldp_nbrs is defined 
+    - intent._features is defined and intent._features is not none
+    - intent._features.auto_itf_desc is true

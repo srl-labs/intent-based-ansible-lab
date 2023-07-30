@@ -1,3 +1,8 @@
+- name: "{{ ansible_role_name}}: Generate config for /system"
+  ansible.builtin.include_role:
+    name: utils/system
+  when: intent.system is defined and intent.system is not none
+  
 - name: "{{ ansible_role_name}}: Generate config for /interface"
   ansible.builtin.include_role:
     name: utils/interface

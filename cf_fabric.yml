@@ -14,10 +14,7 @@
     ## INIT ##
     - { role: common/init, tags: [always] }
     ## INFRA ##
-    - { role: infra/system, tags: [infra, system] }
-    - { role: infra/interface, tags: [infra, interface] }
-    - { role: infra/policy, tags: [infra, policy] }
-    - { role: infra/networkinstance, tags: [infra] }
+    - { role: infra, tags: [ infra] }
     ## SERVICES ##
     - { role: services/l2vpn, tags: [services, l2vpn] }
     - { role: services/l3vpn, tags: [services, l3vpn] }
