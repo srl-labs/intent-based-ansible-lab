@@ -2,12 +2,14 @@
 {% set ipvrf_ns = namespace() %}
 {% set ipvrf_ns.itfs = {} %}
 {% set ipvrf_ns.macvrfs = {} %}
+{% set ipvrf_ns.tunnels = {} %}
 
 {% if l3vpn is mapping %}
 {% for svc, svc_spec in l3vpn.items() %}
     {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( { svc: {} }) %}
     {% for snet in svc_spec.snet_list|default([]) %}
-        {% if snet.macvrf in l2vpn|default({}, true) %}
+        {% if snet.macvrf in l2vpn|default({}, true) and 
+                    l2vpn[snet.macvrf]._state | default('present') != 'deleted' %}
             {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
                 {% set irb_itf = 'irb1.' + l2vpn[snet.macvrf].id | string %}
                 {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( 
@@ -22,6 +24,14 @@
                         }
                     }
                 , recursive=True) %}
+                {% set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
+                    {
+                        svc_spec.id:
+                        {
+                            '_state': svc_spec._state | default('present')
+                        }
+                    }
+                ) %}
                 {% if svc_spec._state|default('present') != 'deleted' %}
                    {% set ipvrf_ns.macvrfs = ipvrf_ns.macvrfs | combine( 
                         { snet.macvrf: { 
@@ -77,15 +87,14 @@ subinterface:
         anycast_gw: true
     {% endfor %}
 {% endfor %}
+{% if ipvrf_ns.tunnels | length > 0 %}
 tunnel_interface:
     vxlan1:
-{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
-    {% if ipvrf_spec | length > 0 %}  {# make sure node has service #}
-        {{ l3vpn[ipvrf].id }}:
-            _state: {{ l3vpn[ipvrf]._state|default('present') }}
+    {% for id, tunnel_spec in ipvrf_ns.tunnels.items() %}
+        {{ id }}:
+            _state: {{ tunnel_spec._state }}
             type: routed
-            ingress_vni: {{ l3vpn[ipvrf].id }}
-    {% endif %}
-{% endfor %}
-
+            ingress_vni: {{ id }}
+    {% endfor %}
+{% endif %}
 {% endif %} 
