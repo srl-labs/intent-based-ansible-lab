@@ -1,28 +1,29 @@
-- set_fact:
+- name: Reset var 'my_intent'
+  ansible.builtin.set_fact:
     my_intent: {}
 
-- name: "{{ ansible_role_name }}: Generate low-level intent for L3VPN"
-  set_fact:
+- name: Generate low-level intent for L3VPN
+  ansible.builtin.set_fact:
     my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
   when: l3vpn is mapping
 
 - name: Update 'network_instance' in intent
-  set_fact:
-    intent: "{{ intent|default({}) | combine({'network_instance': my_intent.network_instance|default({}, true)}, recursive=true, list_merge='append') }}"
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance | default({}, true)}, recursive=true, list_merge='append') }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.network_instance is defined and my_intent.network_instance is not none
 
 - name: Update 'subinterface' in intent
-  set_fact:
-    intent: "{{ intent|default({}) | combine({'subinterface': my_intent.subinterface|default({}, true)}, recursive=true) }}"
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'subinterface': my_intent.subinterface | default({}, true)}, recursive=true) }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.subinterface is defined and my_intent.subinterface is not none
 
 - name: Update 'tunnel_interface' in intent
-  set_fact:
-    intent: "{{ intent|default({}) | combine({'tunnel_interface': my_intent.tunnel_interface|default({}, true)},recursive=true) }}"
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface | default({}, true)},recursive=true) }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.tunnel_interface is defined and my_intent.tunnel_interface is not none

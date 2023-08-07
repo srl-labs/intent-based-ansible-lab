@@ -9,7 +9,7 @@
     - "default"
 
 - name: Set template version
-  set_fact: 
+  ansible.builtin.set_fact:
     tpl_base: "{{ dirs.results[3].stat | combine(dirs.results[2].stat, dirs.results[1].stat, dirs.results[0].stat) }}"
   failed_when: not tpl_base.isdir
 

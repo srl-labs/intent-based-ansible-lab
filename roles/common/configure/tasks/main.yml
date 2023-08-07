@@ -1,24 +1,25 @@
-- name: "{{ ansible_role_name}}: Generate config for /system"
+- name: "Generate config for /system"
   ansible.builtin.include_role:
     name: utils/system
   when: intent.system is defined and intent.system is not none
-  
-- name: "{{ ansible_role_name}}: Generate config for /interface"
+
+- name: "Generate config for /interface"
   ansible.builtin.include_role:
     name: utils/interface
   when: intent.subinterface is defined
 
-- name: "{{ ansible_role_name }}: Generate config for /network-instance"
+- name: "Generate config for /network-instance"
   ansible.builtin.include_role:
     name: utils/network-instance
   when: intent.network_instance | type_debug == 'dict'
 
-- name: "{{ ansible_role_name }}: Generate config for /routing-policy"
+- name: "Generate config for /routing-policy"
   ansible.builtin.include_role:
     name: utils/policy
   when: intent.routing_policy is defined
 
-- set_fact:
+- name: Initialize intent var
+  ansible.builtin.set_fact:
     intent: {}
   when: intent is undefined # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
 
@@ -32,7 +33,7 @@
         - mgmt0
       subinterface:
         - mgmt0.0
-  set_fact:
+  ansible.builtin.set_fact:
     delete: "{{ delete + lookup('template', '{{item}}_purge.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
@@ -40,34 +41,27 @@
     - purge
     - ansible_run_tags == ["all"] # need full intent to prune resources
     #  - intent[item] is mapping
-    #- item in (lookup('template', item + '_purge.j2', template_vars=intent))
 
 ## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
 - name: Generate Delete sets for explicit pruning
-  set_fact:
+  ansible.builtin.set_fact:
     delete: "{{ delete + lookup('template', '{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
 
-#- debug:
-#    var: update
-#- debug:
-#    var: replace
-#- debug:
-#    var: delete
-
-- name: "Update resources on {{inventory_hostname}}"
+- name: "Update resources on {{ inventory_hostname }}"
   nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"
 
-- ansible.builtin.set_stats:
+- name: Show playbook stats
+  ansible.builtin.set_stats:
     data:
-      network_instance: "{{ intent.network_instance |default({}, true) | length }}"
+      network_instance: "{{ intent.network_instance | default({}, true) | length }}"
       subinterface: "{{ intent.subinterface | default({}, true) | length }}"
       routing_policy: "{{ intent.routing_policy | default({}, true) | length }}"
       sw_version: "{{ sw_version }}"
-    per_host: yes
+    per_host: true
   when:
     - ansible_run_tags == ["all"]

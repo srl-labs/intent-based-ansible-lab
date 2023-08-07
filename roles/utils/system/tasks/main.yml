@@ -1,5 +1,5 @@
 - name: Get role path
-  set_fact:
+  ansible.builtin.set_fact:
     my_dir: "{{ role_path }}"
 
 - name: Get template version
@@ -8,8 +8,8 @@
   ansible.builtin.include_role:
     name: utils/template-version
 
-- name: Generate config for /system
-  set_fact:
+- name: Generate JSON-RPC data for /system
+  ansible.builtin.set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml }}"
     cacheable: true
   when: intent.system is defined and intent.system is not none

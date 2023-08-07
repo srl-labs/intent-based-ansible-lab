@@ -1,11 +1,11 @@
 - name: "Load l2vpn intents for ENV:{{ env }}"
-  include_vars:
+  ansible.builtin.include_vars:
     name: l2vpn
-    dir: "{{ playbook_dir + '/intent/' + env }}" 
+    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
     files_matching: "l2vpn"
 
-- name: "load l3vpn intents for ENV:{{ env }}"
-  include_vars:
+- name: "Load l3vpn intents for ENV:{{ env }}"
+  ansible.builtin.include_vars:
     name: l3vpn
-    dir: "{{ playbook_dir + '/intent/' + env }}"
+    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
     files_matching: "l3vpn"

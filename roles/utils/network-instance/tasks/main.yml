@@ -1,5 +1,5 @@
 - name: Get role path
-  set_fact:
+  ansible.builtin.set_fact:
     my_dir: "{{ role_path }}"
 
 - name: Get template version
@@ -8,10 +8,10 @@
   ansible.builtin.include_role:
     name: utils/template-version
 
-- name: network-instance default
-  set_fact:
+- name: Generate JSON-RPC data for 'network-instance'
+  ansible.builtin.set_fact:
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   when: intent.network_instance is defined and intent.network_instance is mapping
   vars:
-    template_file: "{{ tpl_base.path + '/networkinstance.j2'}}"
+    template_file: "{{ tpl_base.path + '/networkinstance.j2' }}"
