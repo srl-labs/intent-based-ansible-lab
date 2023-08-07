@@ -42,14 +42,14 @@ leaf:
             admin_state: enable
           group:
             overlay:
-              peer_as: 100
+              peer_as: "{{ overlay_asn }}"
               export_policy: pass-evpn
               import_policy: pass-evpn
               ipv4:
                 admin_state: disable
               evpn:
                 admin_state: enable
-              local_as: 100
+              local_as: "{{ overlay_asn }}"
               local_address: "{{ router_id }}"
             spines:
               description: "Peer-group for spine neighbors"
@@ -102,14 +102,14 @@ spine:
               peer_group: overlay
           group:
             overlay:
-              peer_as: 100
+              peer_as: "{{ overlay_asn }}"
               export_policy: pass-evpn
               import_policy: pass-evpn
               ipv4:
                 admin_state: disable
               evpn:
                 admin_state: enable
-              local_as: 100
+              local_as: "{{ overlay_asn }}"
               local_address: "{{ router_id }}"
               cluster_id: "{{ router_id }}"
             leafs:

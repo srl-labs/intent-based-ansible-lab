@@ -1,14 +1,14 @@
-- name: "Load vars for ENV:{{ env }}"
+- name: "Load host vars for ENV:{{ env }}"
   include_vars:
     name: host_intent
-    dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
-    files_matching: "host_"
+    dir: "{{ playbook_dir + '/intent/' + env }}" # Load vars from files in 'dir'
+    files_matching: "host_infra"
 
-- name: "Load vars for ENV:{{ env }}"
+- name: "Load group vars for ENV:{{ env }}"
   include_vars:
     name: group_intent
-    dir: "{{ lookup('env', 'ENV') }}" # Load vars from files in 'dir'
-    files_matching: "group_"
+    dir: "{{ playbook_dir + '/intent/' + env }}" # Load vars from files in 'dir'
+    files_matching: "group_infra"
 
 - name: Load group intent
   set_fact:
@@ -23,12 +23,14 @@
 
 - name: Generate itf descriptions
   block:
-    - set_fact:
+    - name: Generate itf descriptions from LLDP state
+      set_fact:
         itf_desc: "{{ lookup('template', template_file, template_vars=intent) | from_yaml }}"
       vars:
         template_file: 'set_itf_desc.j2'
 
-    - set_fact:
+    - name: Update intent with generated itf descriptions
+      set_fact:
         intent: "{{ intent | combine(itf_desc, recursive=true) }}"
   when:
     - lldp_nbrs is defined 

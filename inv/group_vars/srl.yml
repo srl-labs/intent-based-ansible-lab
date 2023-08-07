@@ -7,3 +7,5 @@ ansible_httpapi_validate_certs: false
 ansible_httpapi_ciphers: ECDHE-RSA-AES256-SHA
 ansible_become: no
 platform: srlinux
+#
+overlay_asn: 100
