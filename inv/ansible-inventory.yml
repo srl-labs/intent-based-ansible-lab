@@ -18,16 +18,28 @@ all:
       hosts:
         clab-4l2s-l1:
           ansible_host: 172.20.21.11
+          router_id: 192.168.255.1
+          asn: 65001
         clab-4l2s-l2:
           ansible_host: 172.20.21.12
+          router_id: 192.168.255.2
+          asn: 65002
         clab-4l2s-l3:
           ansible_host: 172.20.21.13
+          router_id: 192.168.255.3
+          asn: 65003
         clab-4l2s-l4:
           ansible_host: 172.20.21.14
+          router_id: 192.168.255.4
+          asn: 65004
         clab-4l2s-s1:
           ansible_host: 172.20.21.101
+          router_id: 192.168.255.101
+          asn: 65100
         clab-4l2s-s2:
           ansible_host: 172.20.21.102
+          router_id: 192.168.255.102
+          asn: 65100
         clab-4l2s-tor12:
           ansible_host: 172.20.21.140
         clab-4l2s-tor34:

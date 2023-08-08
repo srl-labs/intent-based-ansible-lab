@@ -7,3 +7,4 @@ license*
 filter*
 startup
 .vscode
+/vault*
