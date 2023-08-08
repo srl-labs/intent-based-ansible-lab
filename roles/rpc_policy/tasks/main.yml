@@ -4,13 +4,13 @@
 
 - name: Get template version
   vars:
-    calling_path: "{{ my_dir }}" # cannot pass special var 'role_path' as this is replaced by the path of the called role
+    calling_path: "{{ my_dir }}" # noqa: var-naming[no-role-prefix]
   ansible.builtin.include_role:
-    name: utils/template-version
+    name: utils_tpl_version
 
 - name: Generate JSON-RPC data for /routing-policy
   ansible.builtin.set_fact:
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
     cacheable: true
   vars:
-    template_file: "{{ tpl_base.path + '/policy.j2'}}"
+    template_file: "{{ tpl_base.path + '/policy.j2' }}"

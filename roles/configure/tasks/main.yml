@@ -1,21 +1,21 @@
 - name: "Generate config for /system"
   ansible.builtin.include_role:
-    name: utils/system
+    name: rpc_system
   when: intent.system is defined and intent.system is not none
 
 - name: "Generate config for /interface"
   ansible.builtin.include_role:
-    name: utils/interface
+    name: rpc_interface
   when: intent.subinterface is defined
 
 - name: "Generate config for /network-instance"
   ansible.builtin.include_role:
-    name: utils/network-instance
+    name: rpc_network-instance
   when: intent.network_instance | type_debug == 'dict'
 
 - name: "Generate config for /routing-policy"
   ansible.builtin.include_role:
-    name: utils/policy
+    name: rpc_policy
   when: intent.routing_policy is defined
 
 - name: Initialize intent var
