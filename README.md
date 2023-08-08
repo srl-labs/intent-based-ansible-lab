@@ -17,7 +17,7 @@ cd intent-based-ansible-lab
 Main differences:
 
 * restructured inventory: all host_vars are now included in the single ansible inventory file [ansible-inventory.yml](https://github.com/srl-labs/intent-based-ansible-lab/blob/dev/inv/ansible-inventory.yml). This is for ease-of-use to have all node-specfic vars in a single file
-* intents are stored in a  dedicated directory `./intent/${ENV}` in the playbook dir. Previously, these were stored in the role-specific `vars` directory under the role directory. Below is an example for `ENV=test`. 
+* intents are stored in a  dedicated directory `./intent/${ENV}` in the playbook dir[^1]. Previously, these were stored in the role-specific `vars` directory under the role directory. Below is an example for `ENV=test`. 
 
     ```bash
     intent
@@ -35,4 +35,4 @@ Main differences:
 * Behaviour change for l2vpn: if all associated mac-vrfs associated with l3vpn subnets are not in the l2vpn-intent or have `_state: deleted`, the l3vpn service will not be created or will be deleted if it existed before. When the mac-vrfs are created or have their deleted state removed, the ipvrf service with spring into existence.
 * bug fixing
 
-
+[^1]: Intents could have been placed in Ansible `host_vars` and `group_vars` but issues arise when variables are redefined as is the case in host- and group-level intents, due to the hierarchical nature of the variables/device model (e.g. `.network-instance.protocols.bgp` has host-level and group-level definitions but it's a single variable `network-instance`). It requires that variables are *merged* rather than *replaced* which is the default behavior with ansible's `host_vars` and `group_vars`. This behavior can be controlled via `hash_bahaviour=merge` in the `ansible.cfg` file. Ansible development discorages setting this playbook-wide parameter as existing modules and roles assume the default `replace` behavior and may deprecate this option in later releases. To achieve the desired behavior, the `combine` filter is proposed, which is exactly what we're doing in the roles of this playbook.
