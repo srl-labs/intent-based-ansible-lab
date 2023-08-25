@@ -1,0 +1,46 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^.*" : {
+            "type": "object",
+            "required": ["id", "snet_list"],
+            "properties": {
+                "id": {
+                    "type": "number"
+                },
+                "_state": {
+                    "type": "string",
+                    "enum": ["deleted", "present"]
+                },
+                "type": {
+                    "type": "string",
+                    "const": "ip-vrf"
+                },
+                "snet_list": {
+                    "type": "array",
+                    "items" : {
+                        "type": "object",
+                        "required": ["macvrf", "gw"],
+                        "properties": {
+                            "macvrf": {
+                                "type": "string"
+                            },
+                            "gw": {
+                                "type": "string",
+                                "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}(?:\/\\d{1,2})?$"
+                            }
+                        }
+                    }
+                },
+                "export_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                },
+                "import_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                }
+            }
+        }
+    }
+}
