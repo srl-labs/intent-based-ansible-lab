@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^.*" : {
+            "type": "object",
+            "properties": {
+                "ipv4_address": {
+                    "type": "string",
+                    "pattern": "^(([0-9]{1,3}\\.){3}[0-9]{1,3})/[0-9]{1,2}$",
+                    "description": "IPv4 address with prefix"
+                }
+            }
+        }
+    }
+}

@@ -21,6 +21,31 @@
     intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname], recursive=True) }}"
   when: inventory_hostname in host_intent|default({}, true)
 
+- name: "validate infra intent"
+  ansible.utils.validate:
+    data: "{{ intent[item] }}"
+    criteria: 
+      - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
+    engine: ansible.utils.jsonschema
+  loop:
+    - interfaces
+    - subinterface
+    - network_instance
+
+#- name: "validate /subinterface intent"
+#  ansible.utils.validate:
+#    data: "{{ intent.subinterface }}"
+#    criteria: 
+#      - "{{ lookup('file', 'criteria/subinterface.json') | from_json }}"
+#    engine: ansible.utils.jsonschema
+#
+#- name: "validate /network_instance intent"
+#  ansible.utils.validate:
+#    data: "{{ intent.network_instance }}"
+#    criteria: 
+#      - "{{ lookup('file', 'criteria/network_instance.json') | from_json }}"
+#    engine: ansible.utils.jsonschema
+#
 - name: Generate itf descriptions
   when:
     - lldp_nbrs is defined
