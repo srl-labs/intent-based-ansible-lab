@@ -15,6 +15,7 @@ cd intent-based-ansible-lab
 python3 -mvenv .venv
 source .venv/bin/activate
 pip install -U pip && pip install -r requirements.txt
+ansible-galaxy collection install nokia.srlinux
 ```
 
 Main differences:
