@@ -1,0 +1,105 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^.*" : {
+            "type": "object",
+            "required": ["interfaces"],
+            "properties": {
+                "interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                        }
+                    },
+                "autonomous-system": {
+                    "type": "number"
+                    },
+                "protocols": {
+                    "type": "object",
+                    "properties": {
+                        "bgp": {
+                            "type": "object",
+                            "properties": {
+                                "ipv4": {
+                                    "type": "object",
+                                    "properties": {
+                                        "admin_state": {
+                                            "type": "string",
+                                            "enum": ["enable", "disable"]
+                                        }
+                                    }
+                                },
+                                "group": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^.*": {
+                                            "type": "object",
+                                            "properties": {
+                                                "peer_as": {
+                                                    "type": "number"
+                                                },
+                                                "local_as": {
+                                                    "type": "number"
+                                                },
+                                                "cluster_id": {
+                                                    "type": "string"
+                                                },
+                                                "local_address": {
+                                                    "type": "string",
+                                                    "anyOf": [
+                                                        {"format": "ipv4"},
+                                                        {"format": "ipv6"}
+                                                    ]
+                                                },
+                                                "export_policy": {
+                                                    "type": "string"
+                                                },
+                                                "import_policy": {
+                                                    "type": "string"
+                                                },
+                                                "ipv4": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "admin_state": {
+                                                            "type": "string",
+                                                            "enum": ["disable", "enable"]
+                                                        }
+                                                    }
+                                                },
+                                                "evpn": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "admin_state": {
+                                                            "type": "string",
+                                                            "enum": ["disable", "enable"]
+                                                        }
+                                                    }
+                                                }
+
+                                            }
+                                        }
+                                    }
+                                },
+                                "neighbor": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "patternProperties": {
+                                        "^([0-9]{1,3}\\.){3}[0-9]{1,3}$": {
+                                            "type": "object",
+                                            "properties": {
+                                                "peer_group": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": ["peer_group"]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

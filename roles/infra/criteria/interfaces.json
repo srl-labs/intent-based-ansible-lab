@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^ethernet.*" : {
+            "type": "object",
+            "properties": {
+                "admin_state": {
+                    "type": "string",
+                    "enum": ["enable", "disable"]
+                },
+                "vlan_tagging": { "type": "boolean" }
+            }
+        }
+    }
+}
