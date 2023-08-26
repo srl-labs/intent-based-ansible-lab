@@ -144,7 +144,7 @@ srl:
         default-action:
           policy-result: reject
         statement:
-          - name: 1
+          - name: "1"
             match:
               prefix-set: loopbacks
             action:
@@ -153,12 +153,12 @@ srl:
         default-action:
           policy-result: reject
         statement:
-          - name: 10
+          - name: "10"
             match:
               prefix-set: loopbacks
             action:
               policy-result: accept
-          - name: 20
+          - name: "20"
             match:
               prefix-set: servers
             action:
@@ -167,7 +167,7 @@ srl:
         default-action:
           policy-result: accept
         statement:
-          - name: 1
+          - name: "1"
             match:
               protocol: bgp
             action:
@@ -176,9 +176,8 @@ srl:
         default-action:
           policy-result: accept
         statement:
-          - name: 1
+          - name: "1"
             match:
               protocol: bgp-evpn
             action:
               policy-result: accept
-

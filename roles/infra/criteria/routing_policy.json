@@ -1,0 +1,80 @@
+{
+    "type": "object",
+    "properties": {
+        "prefix_set": {
+            "type": "object",
+            "patternProperties": {
+                "^.*" : {
+                    "type": "object",
+                    "properties": {
+                        "prefix": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "ip-prefix": {
+                                        "type": "string",
+                                        "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}(?:\/\\d{1,2})?$"
+                                    },
+                                    "mask-length-range": {
+                                        "type": "string",
+                                        "pattern": "^\\d+\\.\\.\\d+"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "policy": {
+            "type": "object",
+            "patternProperties": {
+                "^.*" : {
+                    "type": "object",
+                    "properties": {
+                        "default-action": {
+                            "type": "object",
+                            "properies": {
+                                "policy-result": {
+                                    "type": "string",
+                                    "enum": ["accept", "reject"]
+                                }
+                            }    
+                        },
+                        "statement": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["name"],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "match": {
+                                        "type": "object",
+                                        "properties": {
+                                            "prefix-set": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "action": {
+                                        "type": "object",
+                                        "properties": {
+                                            "policy-result": {
+                                                "type": "string",
+                                                "enum": ["accept", "reject"]
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
