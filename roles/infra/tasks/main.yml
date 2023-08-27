@@ -31,6 +31,7 @@
     - interfaces
     - subinterface
     - network_instance
+    - routing_policy
 
 - name: Generate itf descriptions
   when:
