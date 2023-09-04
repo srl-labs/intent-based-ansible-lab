@@ -28,6 +28,15 @@
         primary: []
       {% endif %}
     {% endif %}
+    {% if prop.ipv6 is defined %}
+    ipv6:
+      admin-state: enable
+      {% if prop.ipv6.ra == 'enable' %}
+      router-advertisement:
+        router-role: 
+          admin-state: enable
+      {% endif %}
+    {% endif %}
     {% if prop.arp is defined %}
       arp:
         learn-unsolicited: true

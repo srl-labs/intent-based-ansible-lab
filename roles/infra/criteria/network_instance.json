@@ -20,6 +20,31 @@
                         "bgp": {
                             "type": "object",
                             "properties": {
+                                "dynamic": {
+                                    "type": "object",
+                                    "properties": {
+                                        "interfaces": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                ".+": {
+                                                    "type": "object",
+                                                    "required": ["allow-as", "peer-group"],
+                                                    "properties": {
+                                                        "allow-as": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "peer-group": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
                                 "ipv4": {
                                     "type": "object",
                                     "properties": {

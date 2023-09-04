@@ -49,7 +49,7 @@
     cacheable: true
   loop: "{{ purgeable }}"
 
-- name: "Update resources on {{ inventory_hostname }}"
+- name: "Deploy conflguration to device"
   nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
