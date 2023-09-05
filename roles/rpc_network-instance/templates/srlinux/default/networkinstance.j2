@@ -8,8 +8,10 @@
     {% if prop.type is defined %}
     type: {{ prop.type }}
     {% endif %}
-    ip-forwarding: 
+    {% if prop.type|default('default') == 'default' %}
+    ip-forwarding:
       receive-ipv4-check: {{ prop["receive-ipv4-check"] | default(True) }}
+    {% endif %}
     {% if prop.interfaces is defined and prop.interfaces is not none %}
     interface:
       {% for itf in prop.interfaces %} 
