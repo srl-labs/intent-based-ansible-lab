@@ -75,9 +75,24 @@ topology:
         - ip addr add 10.1.1.2/24 dev eth1.300
         - ip link set eth1.300 up
         - ip route add 10.1.0.0/16 via 10.1.1.254
-    cl21:
+    cl121:
       kind: linux
       mgmt-ipv4: 172.20.21.133
+      exec:
+        - ip link add bond0 type bond mode 802.3ad
+        - ip link set addr 00:c1:ab:00:01:21 dev bond0
+        - ip link add link bond0 name bond0.312 type vlan id 312
+        - ip addr add 10.12.1.1/24 dev bond0.312
+        - ip link set eth1 down
+        - ip link set eth2 down
+        - ip link set eth1 master bond0
+        - ip link set eth2 master bond0
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - ip link set bond0 up
+    cl341:
+      kind: linux
+      mgmt-ipv4: 172.20.21.136
     cl30:
       kind: linux
       mgmt-ipv4: 172.20.21.134
@@ -108,6 +123,9 @@ topology:
     - endpoints: ["cl10:eth1", "l1:e1-1"]
     - endpoints: ["cl11:eth1", "l1:e1-2"]
     - endpoints: ["cl20:eth1", "l2:e1-1"]
-    - endpoints: ["cl21:eth1", "l2:e1-2"]
     - endpoints: ["cl30:eth1", "l3:e1-1"]
     - endpoints: ["cl40:eth1", "l4:e1-1"]
+    - endpoints: ["cl121:eth1", "l1:e1-20"]
+    - endpoints: ["cl121:eth2", "l2:e1-20"]
+    - endpoints: ["cl341:eth1", "l3:e1-20"]
+    - endpoints: ["cl341:eth2", "l4:e1-20"]

@@ -1,29 +1,26 @@
 #jinja2: lstrip_blocks: "True"
 {%- for itf, prop in interfaces.items() %}
+  {% if prop._state | default('present') == 'present' %}
 - path: /interface[name={{ itf }}]
   value:
-    admin-state: enable
+    admin-state: {{ prop.admin_state | default('enable') }}
     description: {{ prop.description|default('no description')}}
     {% if prop.vlan_tagging is defined %}
     vlan-tagging: true
     {% elif prop.lag_id is defined %}
     ethernet:
-      aggregate-id: lag{{ prop.lag_id }}
+      aggregate-id: {{ prop.lag_id }}
     {% endif %}
-{% endfor %}
-{% if lags is defined and lags is not none %}
-  {% for lag_id, lag_spec in lags.items() %}
-- path: /interface[name=lag{{ lag_id }}]
-  value:
-    admin-state: {{ lag_spec.admin_state | default('enable') }}
-    vlan-tagging: {{ lag_spec.vlan_tagging | default('false') }}
+    {% if itf.startswith("lag") %}
     lag:
-      lag-type: {{ lag_spec.type | default('lacp') }}
-      min-links: {{ lag_spec.min_links | default(1) }}
+      lag-type: {{ prop.lag_type | default('lacp') }}
+      min-links: {{ prop.min_links | default(1) }}
       lacp:
-        admin-key: {{ lag_spec.admin_key | default(lag_id) }}
-        {% set sfx = "%02d" | format(lag_id) %}
+        {% set lagid = itf.split('lag')[1] | int %}
+        admin-key: {{ lag_spec.admin_key | default(lagid) }}
+        {% set sfx = "%02d" | format(lagid) %}
         system-id-mac: {{ lag_spec.system_id | default('00:ba:db:ee:f0:' + sfx) }}
         system-priority: {{ lag_spec.system_priority | default(1) }}
-  {% endfor %}
-{% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}

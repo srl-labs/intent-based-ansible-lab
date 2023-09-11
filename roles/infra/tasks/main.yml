@@ -21,10 +21,10 @@
     intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname], recursive=True) }}"
   when: inventory_hostname in host_intent|default({}, true)
 
-- name: "validate infra intent"
+- name: Validate infra intent
   ansible.utils.validate:
     data: "{{ intent[item] }}"
-    criteria: 
+    criteria:
       - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
     engine: ansible.utils.jsonschema
   loop:

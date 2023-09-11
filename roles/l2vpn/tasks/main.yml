@@ -2,10 +2,10 @@
   ansible.builtin.set_fact:
     my_intent: {}
 
-- name: "validate l2vpn intent"
+- name: "Validate l2vpn intent"
   ansible.utils.validate:
     data: "{{ l2vpn }}"
-    criteria: 
+    criteria:
       - "{{ lookup('file', 'criteria/l2vpn.json') | from_json }}"
     engine: ansible.utils.jsonschema
 
@@ -18,6 +18,11 @@
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
   when: my_intent.network_instance | type_debug == 'dict'
+
+- name: Update 'interfaces' in intent
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
+  when: my_intent.interfaces is defined
 
 - name: Update 'subinterface' in intent
   ansible.builtin.set_fact:

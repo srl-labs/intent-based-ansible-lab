@@ -15,24 +15,6 @@ leaf:
     ethernet-1/10:
       admin_state: enable
       vlan_tagging: yes
-    ethernet-1/20:
-      admin_state: enable
-      lag_id: 1
-    ethernet-1/21:
-      admin_state: enable
-      lag_id: 2
-    ethernet-1/22:
-      admin_state: enable
-      lag_id: 3
-    ethernet-1/23:
-      admin_state: enable
-      lag_id: 4
-    ethernet-1/24:
-      admin_state: enable
-      lag_id: 5
-    ethernet-1/25:
-      admin_state: enable
-      lag_id: 6
     ethernet-1/48:
       admin_state: enable
       _tag: isl
@@ -42,33 +24,6 @@ leaf:
     irb1:
     system0:
       admin_state: enable
-  lags:
-    1:
-      admin_state: enable
-      type: lacp # lacp | static
-      vlan_tagging: true
-      min_links: 1
-      lacp:
-        mode: active # active | passive
-        system_priority: 1
-        system_id: 00:00:00:00:aa:01
-    2:
-      vlan_tagging: true
-    3:
-      vlan_tagging: true
-    4:
-      vlan_tagging: true
-    5:
-      vlan_tagging: true
-    6:
-      vlan_tagging: true
-    10:
-      vlan_tagging: true
-    12:
-      vlan_tagging: true
-
-      interfaces:
-        - ethernet-1/10
   network_instance:
     default:
       interfaces:

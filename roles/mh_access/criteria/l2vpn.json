@@ -1,0 +1,50 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^.*" : {
+            "type": "object",
+            "required": ["id", "interface_list", "vlan"],
+            "properties": {
+                "id": {
+                    "type": "number"
+                },
+                "_state": {
+                    "type": "string",
+                    "enum": ["deleted", "present"]
+                },
+                "type": {
+                    "type": "string",
+                    "const": "mac-vrf"
+                },
+                "interface_list": {
+                    "type": "object",
+                    "patternProperties" : {
+                        "^.*": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "export_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                },
+                "vlan": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "const": "untagged"
+                        },
+                        {
+                            "type": "number",
+                            "miminum": 1,
+                            "maximum": 4094
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

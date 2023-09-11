@@ -9,14 +9,19 @@
 network_instance: 
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
+    {% if svc_spec.vlan == 'untagged' %}
+        {% set subif_idx = 0 %}
+    {% else %}
+        {% set subif_idx = svc_spec.vlan %}
+    {% endif %}
     {{ svc }}:
         _state: {{ svc_spec._state|default('present') }}
         interfaces:
         {% for itf in svc_spec.interface_list[inventory_hostname] %}
-        - {{ itf }}
+        - {{ itf }}.{{ subif_idx }}
         {% endfor %}
         description: {{ svc_spec.description | default("no description") }}
-        type: {{ svc_spec.type }}
+        type: {{ svc_spec.type | default('mac-vrf') }}
         vxlan_interface:
             - vxlan1.{{svc_spec.id}}
         protocols:
@@ -24,18 +29,33 @@ network_instance:
                 vxlan_interface: vxlan1.{{ svc_spec.id }}
                 evi: {{ svc_spec.id }}
             bgp_vpn:
-                export_rt: {{svc_spec.export_rt}}
-                import_rt: {{svc_spec.import_rt}}
+                export_rt: {{svc_spec.export_rt | default('100:%s'|format(svc_spec.id)) }}
+                import_rt: {{svc_spec.import_rt | default('100:%s'|format(svc_spec.id)) }}
     {% endif %}
 {% endfor %}
 subinterface:
+{% for svc, svc_spec in l2vpn.items() %}
+    {% if svc_spec.vlan == 'untagged' %}
+        {% set subif_idx = 0 %}
+    {% else %}
+        {% set subif_idx = svc_spec.vlan %}
+    {% endif %}
+    {% if inventory_hostname in svc_spec.interface_list %}
+    {% for itf in svc_spec.interface_list[inventory_hostname] %}
+    {{ itf }}.{{ subif_idx }}:
+        _state: {{ svc_spec._state|default('present') }}
+        type: bridged
+        vlan: {{ svc_spec.vlan }}
+    {% endfor %}
+    {% endif %}
+{% endfor %}
+interfaces:
 {% for svc, svc_spec in l2vpn.items() %}
     {% if inventory_hostname in svc_spec.interface_list %}
     {% for itf in svc_spec.interface_list[inventory_hostname] %}
     {{ itf }}:
         _state: {{ svc_spec._state|default('present') }}
-        type: bridged
-        vlan: {{ svc_spec.vlan }}
+        vlan_tagging: true
     {% endfor %}
     {% endif %}
 {% endfor %}

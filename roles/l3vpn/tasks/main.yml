@@ -2,10 +2,10 @@
   ansible.builtin.set_fact:
     my_intent: {}
 
-- name: "validate l3vpn intent"
+- name: Validate l3vpn intent
   ansible.utils.validate:
     data: "{{ l3vpn }}"
-    criteria: 
+    criteria:
       - "{{ lookup('file', 'criteria/l3vpn.json') | from_json }}"
     engine: ansible.utils.jsonschema
 

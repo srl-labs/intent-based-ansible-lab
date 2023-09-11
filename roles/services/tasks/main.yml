@@ -1,3 +1,9 @@
+- name: "Load multi-homed access intent for ENV:{{ env }}"
+  ansible.builtin.include_vars:
+    name: mh_access
+    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    files_matching: "mh_access"
+
 - name: "Load l2vpn intents for ENV:{{ env }}"
   ansible.builtin.include_vars:
     name: l2vpn
