@@ -19,10 +19,11 @@
                 "interface_list": {
                     "type": "object",
                     "patternProperties" : {
-                        "^.*": {
+                        ".+": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "type": "string",
+                                "pattern": "^(ethernet-[^\\.]+)$|^(lag\\d+)$"
                             }
                         }
                     }

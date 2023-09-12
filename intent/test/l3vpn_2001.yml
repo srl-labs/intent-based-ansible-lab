@@ -1,5 +1,5 @@
 ipvrf-2001:
-  _state: deleted
+#  _state: deleted
   id: 2001
   type: ip-vrf
   description: IPVRF1
