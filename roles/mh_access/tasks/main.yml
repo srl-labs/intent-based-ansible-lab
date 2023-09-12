@@ -2,20 +2,17 @@
   ansible.builtin.set_fact:
     my_intent: {}
 
-#- name: "Validate l2vpn intent" 
-#  ansible.utils.validate:
-#    data: "{{ l2vpn }}"
-#    criteria:
-#      - "{{ lookup('file', 'criteria/l2vpn.json') | from_json }}"
-#    engine: ansible.utils.jsonschema
+- name: "Validate mh_access intent" 
+  ansible.utils.validate:
+    data: "{{ mh_access }}"
+    criteria:
+      - "{{ lookup('file', 'criteria/mh_access.json') | from_json }}"
+    engine: ansible.utils.jsonschema
 
 - name: Generate low-level intent for mh_access
   ansible.builtin.set_fact:
     my_intent: "{{ lookup('template', 'transform_mh_access_intent.j2') | from_yaml }}"
   when: mh_access is defined and mh_access is not none
-
-- debug:
-    var: my_intent
 
 - name: Update 'interface' in intent
   ansible.builtin.set_fact:
