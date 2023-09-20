@@ -1,0 +1,49 @@
+- name: "Load fabric intent for ENV:{{ env }}"
+  ansible.builtin.include_vars:
+    name: fabric_intent
+    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    files_matching: "fabric"
+
+
+- name: Process fabric
+  when: fabric_intent is defined and fabric_intent is not none and fabric_intent | length
+  block:
+
+  - name: Validate fabric intent
+    ansible.utils.validate:
+      data: "{{ fabric_intent[item] }}"
+      criteria:
+        - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
+      engine: ansible.utils.jsonschema
+    loop:
+      - ipfabric
+      - edge_interfaces
+
+  - name: Reset var 'my_intent'
+    ansible.builtin.set_fact:
+      my_intent: {}
+
+  - name: Fabric pre-processing
+    process_fabric:
+      ipfabric_data: "{{ fabric_intent.ipfabric }}"
+      edge_interfaces_data: "{{ fabric_intent.edge_interfaces }}"
+    register: preprocessed_fabric
+    delegate_to: localhost
+    run_once: true
+
+  #- name: DEBUG fabric pre-processing
+  #  ansible.builtin.debug:
+  #    var: preprocessed_fabric
+
+  - name: Generate low-level intent for FABRIC
+    ansible.builtin.set_fact:
+      my_intent: "{{ lookup('template', 'transform_fabric_intent.j2') | from_yaml }}"
+
+  #- name: DEBUG fabric pre-processing
+  #  ansible.builtin.debug:
+  #    var: my_intent
+
+  - name: Load fabric intent
+    ansible.builtin.set_fact:
+      intent: "{{ intent | default({}) | combine(my_intent, recursive=True) }}"
+    when: my_intent is defined

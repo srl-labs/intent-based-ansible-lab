@@ -1,0 +1,113 @@
+#jinja2: lstrip_blocks: "True"
+routing_policy:
+  prefix_set:
+    loopbacks:
+      prefix:
+        - ip-prefix: {{ preprocessed_fabric.fabric.loopback }}
+          mask-length-range: "32..32"
+
+interfaces:
+  irb1:
+  system0:
+    admin_state: enable
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+  {{iface}}:
+    admin_state: enable
+    _tag: isl
+  {% endfor %}
+  {% for iface in preprocessed_fabric[inventory_hostname].edge_interfaces %}
+  {{iface}}:
+    admin_state: enable
+    vlan_tagging: yes
+  {% endfor %}
+
+subinterface:
+  system0.0:
+    ipv4_address: {{ preprocessed_fabric[inventory_hostname].loopback }}/32
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+  {{ iface }}.0:
+    {% if preprocessed_fabric.fabric.bgp_unnumbered %}
+    ipv6:
+      ra: enable
+    {% else %}
+    ipv4_address: {{ preprocessed_fabric[inventory_hostname].isls[iface].p2p_address }}/31
+    {% endif %}
+  {% endfor %}
+
+network_instance:
+  default:
+    {% if preprocessed_fabric.fabric.bgp_unnumbered %}
+    receive-ipv4-check: false
+    {% endif %}
+    interfaces:
+      - system0.0
+      {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+      - {{iface}}.0
+      {% endfor %}
+    autonomous-system: {{ preprocessed_fabric[inventory_hostname].asn }}
+    protocols:
+      bgp:
+        ipv4:
+          admin_state: enable
+          {% if preprocessed_fabric.fabric.bgp_unnumbered %}
+          multipath: 8
+          {% endif %}
+        {% if preprocessed_fabric.fabric.bgp_unnumbered %}
+        dynamic:
+          interfaces:
+            {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+            {% for iface in preprocessed_fabric[inventory_hostname].bgp.groups[group].dynamic %}
+            {{ iface }}.0:
+              allow-as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group].dynamic[iface]["allow-as"] }}
+              peer-group: {{ group }}
+            {% endfor %}
+            {% endfor %}
+        {% endif %}
+        neighbor:
+          {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+          {% for neighbor in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors %}
+          {{ neighbor }}:
+            peer_group: {{ group }}
+            {% if "peer_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors[neighbor] %}
+            peer_as: {{preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors[neighbor]["peer_as"]}}
+            {%endif%}
+          {% endfor %}
+          {% endfor %}
+        group:
+          {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+          {{ group }}:
+            {% if "local_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            local_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_as"] }}
+            {% endif %}
+            {% if "local_address" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            local_address: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_address"] }}
+            {% endif %}
+            {% if "peer_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            peer_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["peer_as"] }}
+            {% endif %}
+            {% if "cluster_id" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            cluster_id: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["cluster_id"] }}
+            {% endif %}
+            {% if "description" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            description: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["description"] }}
+            {% endif %}
+            {% if preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "overlay" %}
+            export_policy: pass-evpn
+            import_policy: pass-evpn
+            ipv4:
+              admin_state: disable
+            evpn:
+              admin_state: enable
+            {% elif preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "underlay" %}
+            {% if preprocessed_fabric[inventory_hostname]["role"] in ["leaf", "borderleaf"] %}
+            export_policy: lo-and-servers
+            {% else %}
+            export_policy: pass-all
+            {% endif %} 
+            import_policy: pass-all
+            ipv4:
+              admin_state: enable
+            evpn:
+              admin_state: disable
+            {% endif %}
+          {% endfor %}

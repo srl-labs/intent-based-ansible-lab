@@ -8,6 +8,11 @@
     - role: initialize
       tags: [always]
     ## INFRA - Load infrastructure-related intent
+    - role: fabric
+      vars:
+        intent_dir: "intent"
+      tags:
+        - infra
     - role: infra
       vars:
         intent_dir: "intent"

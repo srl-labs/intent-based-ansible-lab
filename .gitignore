@@ -8,3 +8,5 @@ filter*
 startup
 .vscode
 /vault*
+__pycache__/
+*.py[cod]
