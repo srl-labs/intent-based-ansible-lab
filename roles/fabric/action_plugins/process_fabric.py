@@ -177,6 +177,11 @@ class IpFabricParser:
         ret["fabric"] = deepcopy(self._topo.graph)
         return ret
 
+    def lookup_ipfabric_host(self, aliasname):
+        if aliasname in self._ipfabric_nodes:
+            return self._ipfabric_nodes[aliasname]["hostname"]
+        return aliasname
+
     def max_leaf_in_pod(self, pod=0):
         if not self._advanced_opts['dynamic_max_leaf_in_pod']:
             return self._advanced_opts['max_leaf_in_pod']
@@ -246,12 +251,13 @@ class IpFabricParser:
             if "nodes" in self._ipfabric_data[rolename]:
                 # method 2
                 for entry in self._ipfabric_data[rolename]['nodes']:
-                    nodes[entry['hostname']] = {
+                    nodes["{}{:02d}".format(rolename, int(entry['id']))] = {
                         "asn": entry['asn'],
                         "hardware": entry['hardware'],
                         "software_version": self._ipfabric_data[rolename]['software_version'],
                         "role": rolename,
                         "id": int(entry['id']),
+                        "hostname": entry['hostname'],
                     }
             elif "node_list" in self._ipfabric_data[rolename]:
                 # method 1.2
@@ -267,12 +273,13 @@ class IpFabricParser:
                             # Not found, assume default 2
                             hostname_fmtstr = "{}{:02d}"
                     for num in range(entry['amount']):
-                        nodes[hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], amount + num + 1)] = {
+                        nodes["{}{:02d}".format(rolename, amount + num + 1)] = {
                             "asn_base": self._ipfabric_data[rolename]['asn_base'],
                             "hardware": entry['hardware'],
                             "software_version": self._ipfabric_data[rolename]['software_version'],
                             "role": rolename,
                             "id": amount + num + 1,
+                            "hostname": hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], amount + num + 1),
                         }
                     amount += entry['amount']
             else:
@@ -287,24 +294,28 @@ class IpFabricParser:
                         else:
                             # Not found, assume default 2
                             hostname_fmtstr = "{}{:02d}"
-                    nodes[hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], num + 1)] = {
+                    nodes["{}{:02d}".format(rolename, num + 1)] = {
                         "asn_base": self._ipfabric_data[rolename]['asn_base'],
                         "hardware": self._ipfabric_data[rolename]['hardware'],
                         "software_version": self._ipfabric_data[rolename]['software_version'],
                         "role": rolename,
                         "id": num + 1,
+                        "hostname": hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], num + 1),
                     }
             return nodes
 
         # Populate network-graph with nodes fabric_nodes (from ansible inventory)
         # and link them together with attributes from ipfabric_data
         for nodetype, nodelist in self._fabric_nodes.items():
-            self._ipfabric_nodes[nodetype] = _parse_nodes_from_ipfabric(nodetype)
-            if set(self._ipfabric_nodes[nodetype].keys()) != set(nodelist):
+            parsed_nodes = _parse_nodes_from_ipfabric(nodetype)
+            self._ipfabric_nodes.update(parsed_nodes)
+            if {parsed_nodes[n]["hostname"] for n in parsed_nodes} != set(nodelist):
                 # TODO: check if I need to correct for gaps
                 raise Exception(f"Unable to match nodes from inventory with ipfabric_data for {nodetype}")
-            self._topo.add_nodes_from([((node, self._ipfabric_nodes[nodetype][node],)
-                                        if node in self._ipfabric_nodes[nodetype]
+            parsed_nodes_per_hostname = {parsed_nodes[n]["hostname"]: {k: v for k, v in parsed_nodes[n].items() if k != "hostname"}
+                                         for n in parsed_nodes}
+            self._topo.add_nodes_from([((node, parsed_nodes_per_hostname[node],)
+                                        if node in parsed_nodes_per_hostname
                                         else (node, {"role": nodetype},))
                                        for node in nodelist])
 
@@ -321,14 +332,16 @@ class IpFabricParser:
                              }
                 properties = {k: v for k, v in entry.items() if k != "endpoints"}
             elif set.issubset({"local_device", "uplink", "remote_device", "downlink"}, entry.keys()):
-                endpoints = {entry["local_device"]: shortport_re.sub(r"ethernet-\g<1>/\g<2>", entry["uplink"]),
-                             entry["remote_device"]: shortport_re.sub(r"ethernet-\g<1>/\g<2>", entry["downlink"])}
+                local_device = entry["local_device"] if entry["local_device"] in self._topo.nodes else self.lookup_ipfabric_host(entry["local_device"])
+                remote_device = entry["remote_device"] if entry["remote_device"] in self._topo.nodes else self.lookup_ipfabric_host(entry["remote_device"])
+                endpoints = {local_device: shortport_re.sub(r"ethernet-\g<1>/\g<2>", entry["uplink"]),
+                             remote_device: shortport_re.sub(r"ethernet-\g<1>/\g<2>", entry["downlink"])}
                 properties = {k: v for k, v in entry.items() if k not in {"local_device", "uplink", "remote_device", "downlink"}}
             else:
                 raise AttributeError("Wrong data in fabric_cabling")
 
             if any([node not in self._topo.nodes for node in endpoints.keys()]):
-                raise AttributeError("Wrong data in fabric_cabling")
+                raise AttributeError("Wrong data in fabric_cabling; node not found!")
 
             self._topo.add_edges_from([tuple(endpoints.keys())], **endpoints, **properties)
 
@@ -386,41 +399,41 @@ class IpFabricParser:
                 self._topo.nodes[leaf]["podid"] = podid
                 self._topo.nodes[leaf]["id"] -= podleafidoffset  # Make leafs in the pod count from 1 again
 
-        # Preparation for loopback and mgmt allocation
-        # TODO: include some validation?
+        # Preparation for asn, loopback and mgmt allocation
+        allocated_asns = dict()
         allocated_loopbacks = list()
-        loopbackperrole = (isinstance(self._ipfabric_data['loopback'], list)
-                           and all([isinstance(entry, dict) and 'role' in entry for entry in self._ipfabric_data['loopback']]))
-        loopbackpernode = (isinstance(self._ipfabric_data['loopback'], list)
-                           and all([isinstance(entry, dict) and 'node' in entry for entry in self._ipfabric_data['loopback']]))
+        loopbackperrole = (isinstance(self._ipfabric_data['addressing']['loopback'], list)
+                           and all([isinstance(entry, dict) and 'role' in entry for entry in self._ipfabric_data['addressing']['loopback']]))
+        loopbackpernode = (isinstance(self._ipfabric_data['addressing']['loopback'], list)
+                           and all([isinstance(entry, dict) and 'node' in entry for entry in self._ipfabric_data['addressing']['loopback']]))
         if loopbackpernode:
-            loopback = {entry['node']: netaddr.IPAddress(entry['system']) for entry in self._ipfabric_data['loopback']}
+            loopback = {entry['node']: netaddr.IPAddress(entry['system']) for entry in self._ipfabric_data['addressing']['loopback']}
         elif loopbackperrole:
-            loopback = {entry['role']: netaddr.IPAddress(entry['start']) for entry in self._ipfabric_data['loopback']}
+            loopback = {entry['role']: netaddr.IPAddress(entry['start']) for entry in self._ipfabric_data['addressing']['loopback']}
         else:
-            loopback = netaddr.IPNetwork(self._ipfabric_data['loopback'])
+            loopback = netaddr.IPNetwork(self._ipfabric_data['addressing']['loopback'])
             self._topo.graph['loopback'] = str(loopback)
 
-        # mgmtperrole = (isinstance(self._ipfabric_data['mgmt'], list)
-        #                and all([isinstance(entry, dict) and 'role' in entry for entry in self._ipfabric_data['mgmt']]))
-        # mgmtpernode = (isinstance(self._ipfabric_data['mgmt'], list)
-        #                and all([isinstance(entry, dict) and 'node' in entry for entry in self._ipfabric_data['mgmt']]))
+        # mgmtperrole = (isinstance(self._ipfabric_data['addressing']['mgmt'], list)
+        #                and all([isinstance(entry, dict) and 'role' in entry for entry in self._ipfabric_data['addressing']['mgmt']]))
+        # mgmtpernode = (isinstance(self._ipfabric_data['addressing']['mgmt'], list)
+        #                and all([isinstance(entry, dict) and 'node' in entry for entry in self._ipfabric_data['addressing']['mgmt']]))
         # if mgmtpernode:
         #     mgmt = {entry['node']: {
         #                                "subnet": str(netaddr.IPNetwork(entry['subnet'])),
         #                                "gateway": str(netaddr.IPAddress(entry['gateway'])),
         #                                "address": str(netaddr.IPAddress(entry['address'])),
         #                            }
-        #             for entry in self._ipfabric_data['mgmt']}
+        #             for entry in self._ipfabric_data['addressing']['mgmt']}
         # elif mgmtperrole:
         #     mgmt = {entry['role']: {
         #                                "subnet": str(netaddr.IPNetwork(entry['subnet'])),
         #                                "gateway": str(netaddr.IPAddress(entry['gateway'])),
         #                                "base": netaddr.IPAddress(entry['address']),
         #                            }
-        #             for entry in self._ipfabric_data['mgmt']}
+        #             for entry in self._ipfabric_data['addressing']['mgmt']}
         # else:
-        #     mgmtnet = netaddr.IPNetwork(self._ipfabric_data['mgmt'])
+        #     mgmtnet = netaddr.IPNetwork(self._ipfabric_data['addressing']['mgmt'])
         #     mgmt = {
         #         "subnet": str(mgmtnet),
         #         "gateway": str(mgmtnet[1]),
@@ -473,7 +486,17 @@ class IpFabricParser:
                 else:
                     podoffset = 0
                 offset = nodeid if properties['role'] in ['leaf', 'borderleaf'] else 0
-                self._topo.nodes[node]['asn'] = self._topo.nodes[node]['asn_base'] + podoffset + offset
+                allocated_asn = self._topo.nodes[node]['asn_base'] + podoffset + offset
+                if allocated_asn in allocated_asns:
+                    r, p = allocated_asns[allocated_asn]
+                    if properties['role'] in ['leaf', 'borderleaf']:
+                        # (border-)leafs need their own ASN
+                        raise Exception(f"ASN {allocated_asn} already in use!")
+                    if allocated_asns[allocated_asn] != (properties['role'], properties['podid'] if 'podid' in properties else None,):
+                        # for other roles, only allow reuse within same role, podid
+                        raise Exception(f"ASN {allocated_asn} already in use!")
+                self._topo.nodes[node]['asn'] = allocated_asn
+                allocated_asns[allocated_asn] = (properties['role'], properties['podid'] if 'podid' in properties else None,)
                 del self._topo.nodes[node]['asn_base']
 
             # Allocate loopback and mgmt?
@@ -503,8 +526,6 @@ class IpFabricParser:
             if 'loopback' not in properties:
                 if loopbackpernode:
                     allocated_loopback = str(loopback[node])
-                    allocated_loopbacks.append(allocated_loopback)
-                    self._topo.nodes[node]['loopback'] = allocated_loopback
                 else:
                     if loopbackperrole:
                         if len(self._topo.graph["pods"]) > 1:
@@ -514,8 +535,10 @@ class IpFabricParser:
                     else:
                         base = loopback[roleoffset + podoffset]
                     allocated_loopback = str(base + offset)
-                    allocated_loopbacks.append(allocated_loopback)
-                    self._topo.nodes[node]['loopback'] = allocated_loopback
+                if allocated_loopback in allocated_loopbacks:
+                    raise Exception(f"Loopback address {allocated_loopback} already in use!")
+                allocated_loopbacks.append(allocated_loopback)
+                self._topo.nodes[node]['loopback'] = allocated_loopback
 
             # # Allocate mgmt TODO: remove? MGMT is already allocated and known to ansible via inventory; should not change!!!
             #  if 'mgmt' not in properties:
@@ -546,11 +569,26 @@ class IpFabricParser:
             self._topo.graph['loopback'] = str(loopback)
 
         # Iterate over the network-graph edges for ISL-address assignment
-        self._topo.graph['bgp_unnumbered'] = 'p2p' not in self._ipfabric_data or len(self._ipfabric_data['p2p']) == 0
+        self._topo.graph['bgp_unnumbered'] = 'p2p' not in self._ipfabric_data['addressing'] or len(self._ipfabric_data['addressing']['p2p']) == 0
         if not self._topo.graph['bgp_unnumbered']:
-            roleorder = ["spine", "dcgw", "superspine", "borderleaf", "leaf"]
-            # TODO: this itertools.chain stuff chokes if you supply massive ammounts of /31 subnets, e.g. 10.0.0.0/8
-            p2ppool = list(itertools.chain(*[netaddr.IPNetwork(x).subnet(31) for x in self._ipfabric_data['p2p']]))
+            roleorder = ["spine", "dcgw", "superspine", "borderleaf", "leaf"]  # used to allocate address within /31 p2p subnet to nodes.
+            if isinstance(self._ipfabric_data['addressing']['p2p'], list):
+                p2ppool_gen = itertools.chain(*[netaddr.IPNetwork(x).subnet(31) for x in self._ipfabric_data['addressing']['p2p']])
+            else:
+                p2ppool_gen = netaddr.IPNetwork(self._ipfabric_data['addressing']['p2p']).subnet(31)
+            # p2ppool_gen is a generator, could be huge!
+            p2ppool = list(itertools.islice(p2ppool_gen, 16))  # convert genrator into list to allocate p2p from, initial 16, grows later
+
+            # The allocation happens based on the usable ports in the spine layer since (almost) every p2p-link involves the spine layer.
+
+            # allocation scheme:
+            # | reserved range for | ------------- pod 1 ------------ | ------------- pod 2 ------------ | ...
+            # | DCGW connected to  | spine1 | ... | max_spine_per_pod | spine1 | ... | max_spine_per_pod |
+            # | superspine or      |          \                       |          \                       |
+            # | borderleaf         | max isl-   \                     | max isl-   \                     |
+            # | (not involving the | capable port \                   | capable port \                   |
+            # | spine-layer)       | for hardware   \                 | for hardware   \                 |
+
             for endpoint1, endpoint2, key, properties in self._topo.edges(data=True, keys=True):
                 ep1_properties = self._topo.nodes[endpoint1]
                 ep2_properties = self._topo.nodes[endpoint2]
@@ -561,6 +599,7 @@ class IpFabricParser:
                     spineendpoint = endpoint2
                 else:
                     # TODO: what if it is a dcgw uplink from superspine or borderleaf?
+                    # use DCGW id + port to sort ISL
                     continue
 
                 nodeid = self._topo.nodes[spineendpoint]['id'] - 1  # make 0 based!
@@ -577,6 +616,13 @@ class IpFabricParser:
                     raise Exception(f"Used an invalid port {properties[spineendpoint]} as ISL on spine {spineendpoint}")
 
                 offset = reserved_offset + podoffset + nodeoffset + portoffset
+
+                # Grow p2ppool with new items from generator if needed
+                while offset >= len(p2ppool):
+                    curr = len(p2ppool)
+                    p2ppool.extend(itertools.islice(p2ppool_gen, 16))  # Extend with 16 more items (16 = arbitrary)
+                    if len(p2ppool) <= curr:
+                        raise IndexError("p2ppool exhausted!")
 
                 # self._topo.edges[endpoint1, endpoint2, key]["p2poffset"] = offset  # TODO: remove this!
                 self._topo.edges[endpoint1, endpoint2, key]["p2p"] = str(p2ppool[offset])
@@ -644,8 +690,11 @@ class IpFabricParser:
             if self._ipfabric_data["rr"]["location"] == 'spine':
                 neighborlist = list()
                 if properties['role'] == 'spine':
-                    # TODO: inter-pod!
                     neighborlist = self._topo.graph["pods"][properties["podid"]]["leaf"] + self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+                    if len(self._topo.graph["pods"]) > 1:
+                        for podid in self._topo.graph["pods"]:
+                            neighborlist.extend(self._topo.graph["pods"][podid]["spine"])
+
                 elif properties['role'] in ['leaf', 'borderleaf']:
                     neighborlist = self._topo.graph["pods"][properties["podid"]]["spine"]
 

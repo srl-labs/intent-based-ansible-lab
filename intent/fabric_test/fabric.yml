@@ -14,21 +14,22 @@ ipfabric:
     hostname: 'clab-4l2s-s'  # ID is appended, e.g. spine01
     asn_base: 65177
 
-  p2p:
-    - 192.168.0.0/24
-    #- 100.64.0.0/16
+  addressing:
+    p2p:
+      - 192.168.0.0/24
+      #- 100.64.0.0/16
 
-  #loopback: 10.0.0.0/24
-  # loopback:
-  #   - { 'role': 'spine', 'start': '10.0.0.1' }
-  #   - { 'role': 'leaf', 'start': '10.0.0.20' }
-  loopback:
-    - { 'node': 'clab-4l2s-l1', 'system': '192.168.255.1' }
-    - { 'node': 'clab-4l2s-l2', 'system': '192.168.255.2' }
-    - { 'node': 'clab-4l2s-l3', 'system': '192.168.255.3' }
-    - { 'node': 'clab-4l2s-l4', 'system': '192.168.255.4' }
-    - { 'node': 'clab-4l2s-s1', 'system': '192.168.255.101' }
-    - { 'node': 'clab-4l2s-s2', 'system': '192.168.255.102' }
+    #loopback: 10.0.0.0/24
+    # loopback:
+    #   - { 'role': 'spine', 'start': '10.0.0.1' }
+    #   - { 'role': 'leaf', 'start': '10.0.0.20' }
+    loopback:
+      - { 'node': 'clab-4l2s-l1', 'system': '192.168.255.1' }
+      - { 'node': 'clab-4l2s-l2', 'system': '192.168.255.2' }
+      - { 'node': 'clab-4l2s-l3', 'system': '192.168.255.3' }
+      - { 'node': 'clab-4l2s-l4', 'system': '192.168.255.4' }
+      - { 'node': 'clab-4l2s-s1', 'system': '192.168.255.101' }
+      - { 'node': 'clab-4l2s-s2', 'system': '192.168.255.102' }
 
   fabric_cabling:
     #- endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s1:e1-1"]

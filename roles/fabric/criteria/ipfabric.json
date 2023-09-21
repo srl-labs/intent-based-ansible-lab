@@ -1,6 +1,6 @@
 {
     "type": "object",
-    "required": ["leaf", "rr", "loopback", "fabric_cabling"],
+    "required": ["leaf", "rr", "addressing", "fabric_cabling"],
     "properties": {
         "leaf": {
             "anyOf": [
@@ -201,54 +201,68 @@
                 }
             }
         },
-        "p2p": {
-            "type": "array",
-            "items": {
-                "type": "string",
-                "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/(?:3[0-2]|[0-2]?[0-9])$"
-            }
-        },
-        "loopback": {
-            "oneOf": [
-                {
-                    "type": "string",
-                    "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/(?:3[0-2]|[0-2]?[0-9])$"
-                },
-                {
-                    "type": "array",
-                    "items": {
-                        "oneOf": [
-                            {
-                                "type": "object",
-                                "required": ["role", "start"],
-                                "properties" : {
-                                    "role": {
-                                        "type": "string",
-                                        "enum": ["leaf", "borderleaf", "spine", "superspine", "dcgw"]
-                                    },
-                                    "start": {
-                                        "type": "string",
-                                        "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                                    }
-                                }
-                            },
-                            {
-                                "type": "object",
-                                "required": ["node", "system"],
-                                "properties" : {
-                                    "node": {
-                                        "type": "string"
-                                    },
-                                    "system": {
-                                        "type": "string",
-                                        "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                                    }
-                                }
+        "addressing": {
+            "type": "object",
+            "required": ["loopback"],
+            "properties" : {
+                "p2p": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "ipv4network"
                             }
-                        ]
-                    }
+                        },
+                        {
+                            "type": "string",
+                            "format": "ipv4network"
+                        }
+                    ]
+                },
+                "loopback": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "format": "ipv4network"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "required": ["role", "start"],
+                                        "properties" : {
+                                            "role": {
+                                                "type": "string",
+                                                "enum": ["leaf", "borderleaf", "spine", "superspine", "dcgw"]
+                                            },
+                                            "start": {
+                                                "type": "string",
+                                                "format": "ipv4"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "object",
+                                        "required": ["node", "system"],
+                                        "properties" : {
+                                            "node": {
+                                                "type": "string"
+                                            },
+                                            "system": {
+                                                "type": "string",
+                                                "format": "ipv4"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 }
-            ]
+            }
         },
         "fabric_cabling": {
             "type": "array",

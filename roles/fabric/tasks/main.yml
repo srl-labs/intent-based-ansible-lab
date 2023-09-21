@@ -47,3 +47,11 @@
     ansible.builtin.set_fact:
       intent: "{{ intent | default({}) | combine(my_intent, recursive=True) }}"
     when: my_intent is defined
+
+  - name: Set var 'asn'
+    ansible.builtin.set_fact:
+      asn: "{{ preprocessed_fabric[inventory_hostname]['asn'] }}"
+
+  - name: Set var 'router_id'
+    ansible.builtin.set_fact:
+      router_id: "{{ preprocessed_fabric[inventory_hostname]['loopback'] }}"
