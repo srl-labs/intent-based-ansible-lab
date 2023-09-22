@@ -46,7 +46,7 @@ class IpFabricParser:
             "dynamic_max_leaf_in_pod": False,
             "spine_hardware": {
                 "IXR_D3": {
-                    "isl_ports": list([f"ethernet-1/{x+1}" for x in range(32)]),
+                    "isl_ports": list([f"ethernet-1/{x+3}" for x in range(32)]),
                     "max_leaf": 12
                 },
                 "IXR_D3L": {
