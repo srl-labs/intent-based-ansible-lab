@@ -14,6 +14,10 @@
                 "autonomous-system": {
                     "type": "number"
                     },
+                "router-id": {
+                    "type": "string",
+                    "format": "ipv4"
+                    },
                 "protocols": {
                     "type": "object",
                     "properties": {

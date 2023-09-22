@@ -183,6 +183,8 @@ class IpFabricParser:
         return aliasname
 
     def max_leaf_in_pod(self, pod=0):
+        if "single-tier" in self._topo.graph and self._topo.graph["single-tier"]:
+            return min(self._advanced_opts['max_leaf_in_pod'], 2)
         if not self._advanced_opts['dynamic_max_leaf_in_pod']:
             return self._advanced_opts['max_leaf_in_pod']
         else:
@@ -310,7 +312,7 @@ class IpFabricParser:
             parsed_nodes = _parse_nodes_from_ipfabric(nodetype)
             self._ipfabric_nodes.update(parsed_nodes)
             if {parsed_nodes[n]["hostname"] for n in parsed_nodes} != set(nodelist):
-                # TODO: check if I need to correct for gaps
+                # TODO: check if I need to correct for gaps, example when multiple PODs, but not yet max leaf/pod
                 raise Exception(f"Unable to match nodes from inventory with ipfabric_data for {nodetype}")
             parsed_nodes_per_hostname = {parsed_nodes[n]["hostname"]: {k: v for k, v in parsed_nodes[n].items() if k != "hostname"}
                                          for n in parsed_nodes}
@@ -318,6 +320,7 @@ class IpFabricParser:
                                         if node in parsed_nodes_per_hostname
                                         else (node, {"role": nodetype},))
                                        for node in nodelist])
+        self._topo.graph["single-tier"] = len(self.leafs) == 2 and len(self.nodes) == 2
 
         shortport_re = re.compile(r"^e?([\d]+)[-/]([\d]+)$")
         # Populate network-graph with links from ipfabric_data
@@ -357,45 +360,64 @@ class IpFabricParser:
 
             # From that leaf, list all adjacent spines => spines of the pod.
             spines_in_pod = [neighbor for neighbor in self._topo[node] if self._topo.nodes(data='role')[neighbor] == "spine"]
+
             if len(spines_in_pod) == 0:
-                continue
-            if 'podid' in spines_in_pod[0]:
+                if self._topo.graph["single-tier"]:
+                    podid = 0
+                else:
+                    raise Exception(f"Leaf {node} not connected to a spine!")
+            elif 'podid' in self._topo.nodes[spines_in_pod[0]]:
                 podid = self._topo.nodes[spines_in_pod[0]]["podid"]
             else:
                 podid = podid_allocation
-                self._topo.graph["pods"][podid] = dict()
-                self._topo.graph["pods"][podid]["spine_hardware"] = self._topo.nodes[spines_in_pod[0]]["hardware"]
-                self._topo.graph["pods"][podid]["spine"] = spines_in_pod
-                self._topo.graph["pods"][podid]["leaf"] = list()
-                self._topo.graph["pods"][podid]["borderleaf"] = list()
                 podid_allocation += 1
 
-            # From that spine, list all adjacent leafs => leafs of the pod.
-            leafs_in_pod = [neighbor for neighbor in self._topo[spines_in_pod[0]] if self._topo.nodes(data='role')[neighbor] == leafrole]
+            if podid not in self._topo.graph["pods"]:
+                self._topo.graph["pods"][podid] = dict()
+                if not self._topo.graph["single-tier"]:
+                    self._topo.graph["pods"][podid]["spine_hardware"] = self._topo.nodes[spines_in_pod[0]]["hardware"]
+                    self._topo.graph["pods"][podid]["spine"] = spines_in_pod
+                    self._topo.graph["pods"][podid]["leaf"] = list()
+                else:
+                    self._topo.graph["pods"][podid]["spine_hardware"] = None
+                    self._topo.graph["pods"][podid]["spine"] = list()
+                    self._topo.graph["pods"][podid]["leaf"] = list()
+                self._topo.graph["pods"][podid]["borderleaf"] = list()
+
+            if not self._topo.graph["single-tier"]:
+                # From that spine, list all adjacent leafs => leafs of the pod.
+                leafs_in_pod = [neighbor for neighbor in self._topo[spines_in_pod[0]] if self._topo.nodes(data='role')[neighbor] == leafrole]
+            else:
+                leafs_in_pod = self.leafs
             self._topo.graph["pods"][podid][leafrole] = leafs_in_pod
 
             # Verify that all spines/leafs in the pod have same adjacent nodes to validate full mesh.
             # Add pod info to all leafs and spines
-            # Sanity check spine layer and set podid
-            spineids = [nodeid for node, nodeid in self._topo.nodes(data="id") if node in spines_in_pod]
-            podspineidoffset = min(spineids) - 1
-            for spine in spines_in_pod:
-                if {neighbor for neighbor in self._topo[spine] if self._topo.nodes(data='role')[neighbor] == leafrole} != set(leafs_in_pod):
-                    raise Exception("No full mesh!")
-                self._topo.nodes[spine]["podid"] = podid
-                self._topo.nodes[spine]["id"] -= podspineidoffset  # Make spines in the pod count from 1 again
-                if self.superspine_count > 0:
-                    if len([neighbor for neighbor in self._topo[spine] if self._topo.nodes(data='role')[neighbor] == "superspine"]) == 0:
-                        raise Exception(f"spine {node} has no connection to superspine layer")
-                if self._topo.nodes[spine]["hardware"] != self._topo.graph["pods"][podid]["spine_hardware"]:
-                    raise Exception(f"Not all spines in pod {podid} have same HW type!")
+            if not self._topo.graph["single-tier"]:
+                # Sanity check spine layer and set podid
+                spineids = [nodeid for node, nodeid in self._topo.nodes(data="id") if node in spines_in_pod]
+                podspineidoffset = min(spineids) - 1
+                for spine in spines_in_pod:
+                    if {neighbor for neighbor in self._topo[spine] if self._topo.nodes(data='role')[neighbor] == leafrole} != set(leafs_in_pod):
+                        raise Exception("No full mesh!")
+                    self._topo.nodes[spine]["podid"] = podid
+                    self._topo.nodes[spine]["id"] -= podspineidoffset  # Make spines in the pod count from 1 again
+                    if self.superspine_count > 0:
+                        if len([neighbor for neighbor in self._topo[spine] if self._topo.nodes(data='role')[neighbor] == "superspine"]) == 0:
+                            raise Exception(f"spine {node} has no connection to superspine layer")
+                    if self._topo.nodes[spine]["hardware"] != self._topo.graph["pods"][podid]["spine_hardware"]:
+                        raise Exception(f"Not all spines in pod {podid} have same HW type!")
 
             # Sanity check leaf layer and set podid
             leafids = [nodeid for node, nodeid in self._topo.nodes(data="id") if node in leafs_in_pod]
             podleafidoffset = min(leafids) - 1
             for leaf in leafs_in_pod:
-                if {neighbor for neighbor in self._topo[leaf] if self._topo.nodes(data='role')[neighbor] == "spine"} != set(spines_in_pod):
-                    raise Exception("No full mesh!")
+                if not self._topo.graph["single-tier"]:
+                    if {neighbor for neighbor in self._topo[leaf] if self._topo.nodes(data='role')[neighbor] == "spine"} != set(spines_in_pod):
+                        raise Exception("No full mesh!")
+                else:
+                    if set(self._topo[leaf]) != set(leafs_in_pod).difference({leaf}):
+                        raise Exception("Single tier not interconnected!")
                 self._topo.nodes[leaf]["podid"] = podid
                 self._topo.nodes[leaf]["id"] -= podleafidoffset  # Make leafs in the pod count from 1 again
 
@@ -472,7 +494,7 @@ class IpFabricParser:
             # Validate podid
             if 'podid' in properties:
                 if properties['podid'] >= self.max_pod:
-                    raise Exception(f"DCGW {node} exceeds maximum # DCGWs!")
+                    raise Exception("Maximum number of pods exceeded!")
 
             # Allocate asn
             # allocation is per role
@@ -577,7 +599,8 @@ class IpFabricParser:
             else:
                 p2ppool_gen = netaddr.IPNetwork(self._ipfabric_data['addressing']['p2p']).subnet(31)
             # p2ppool_gen is a generator, could be huge!
-            p2ppool = list(itertools.islice(p2ppool_gen, 16))  # convert genrator into list to allocate p2p from, initial 16, grows later
+            # convert genrator into list to allocate p2p from, initially the reserved space for DCGW (minimum 16), grows later
+            p2ppool = list(itertools.islice(p2ppool_gen, max(16, 4 * self.max_dcgw)))
 
             # The allocation happens based on the usable ports in the spine layer since (almost) every p2p-link involves the spine layer.
 
@@ -598,14 +621,48 @@ class IpFabricParser:
                 elif ep2_properties['role'] == 'spine':
                     spineendpoint = endpoint2
                 else:
-                    # TODO: what if it is a dcgw uplink from superspine or borderleaf?
-                    # use DCGW id + port to sort ISL
+                    if self._topo.graph["single-tier"]:
+                        # Single tier
+                        # Allocate based on alphabetical sort of interface-names on leaf with lowest id
+                        primary = endpoint1 if ep1_properties["id"] < ep2_properties["id"] else endpoint2
+                        secondary = endpoint1 if primary == endpoint2 else endpoint2
+                        primaryportorder = sorted([port for _, _, _, port in self._topo.edges([primary], data=primary, keys=True)])
+                        offset = primaryportorder.index(properties[primary])
+                        self._topo.edges[endpoint1, endpoint2, key]["p2p"] = str(p2ppool[offset])
+                        self._topo.edges[endpoint1, endpoint2, key]["p2p_address"] = {
+                            primary: str(p2ppool[offset][0]),
+                            secondary: str(p2ppool[offset][1]),
+                        }
+                    else:
+                        if ep1_properties['role'] == 'dcgw':
+                            dcgwendpoint = endpoint1
+                        elif ep2_properties['role'] == 'dcgw':
+                            dcgwendpoint = endpoint2
+                        else:
+                            raise Exception(f"No idea how to allocate P2P between {endpoint1} and {endpoint2}")
+
+                        dcgwportorder = sorted([port for _, _, _, port in self._topo.edges([dcgwendpoint], data=dcgwendpoint, keys=True)])
+                        if len(dcgwportorder) > 4:
+                            raise Exception("No more than 4 uplinks per DCGW allowed!")
+
+                        nodeid = self._topo.nodes[dcgwendpoint]['id'] - 1  # make 0 based!
+                        nodeoffset = dcgwportorder.index(properties[dcgwendpoint])
+                        offset = (4 * nodeid) + nodeoffset
+
+                        self._topo.edges[endpoint1, endpoint2, key]["p2p"] = str(p2ppool[offset])
+                        self._topo.edges[endpoint1, endpoint2, key]["p2p_address"] = {
+                            endpoint1: str(p2ppool[offset][0 if endpoint1 == dcgwendpoint else 1]),
+                            endpoint2: str(p2ppool[offset][0 if endpoint2 == dcgwendpoint else 1]),
+                            primary: str(p2ppool[offset][0]),
+                            secondary: str(p2ppool[offset][1]),
+                        }
+
                     continue
 
                 nodeid = self._topo.nodes[spineendpoint]['id'] - 1  # make 0 based!
                 podid = self._topo.nodes[spineendpoint]['podid']
 
-                reserved_offset = 0  # TODO: for external DCGW on borderleaf or superspine based on adv_opts[max_*]
+                reserved_offset = 4 * self.max_dcgw  # max 4 links per dcgw (e.g. 4x 100G)
                 podoffset = sum([self.max_spine_in_pod * len(self._advanced_opts['spine_hardware'][self._topo.graph["pods"][x]["spine_hardware"]]['isl_ports'])
                                  for x in range(podid)])
                 nodeoffset = nodeid * len(self._advanced_opts['spine_hardware'][self._topo.graph["pods"][podid]["spine_hardware"]]['isl_ports'])
@@ -624,7 +681,6 @@ class IpFabricParser:
                     if len(p2ppool) <= curr:
                         raise IndexError("p2ppool exhausted!")
 
-                # self._topo.edges[endpoint1, endpoint2, key]["p2poffset"] = offset  # TODO: remove this!
                 self._topo.edges[endpoint1, endpoint2, key]["p2p"] = str(p2ppool[offset])
 
                 ep1index = (roleorder.index(ep1_properties["role"]), ep1_properties["id"])
@@ -636,28 +692,12 @@ class IpFabricParser:
 
         # Third pass through the network-graph nodes for BGP peering calculation
         nodeproperties = self._topo.nodes(data=True)
-        # rrlocation = self._ipfabric_data["rr"]["location"] if "location" in self._ipfabric_data["rr"] else "spine"
         for node, properties in self._topo.nodes(True):
             nodeid = properties['id'] - 1  # make 0 based!
             self._topo.nodes[node]["bgp"] = dict()
             self._topo.nodes[node]["bgp"]["groups"] = dict()
 
-            # Underlay.
-            # peer via ISL-IP eBGP!
-            # (border-)leafs peer with all spines from pod
-            # spines peer with all (border-)leafs from pod
-
-            # Overlay
-            # peer via loopback-IP iBGP!
-            # loc=spines:
-            # Spine peers with all other spines + all (border-)leafs in pod
-            # loc=external:
-            # all (border-)leafs peer with all external RRs
-            # loc=borderleaf:
-            # borderleafs peer with all other borderleafs + all leafs in pod
-
             # Underlay peer via ISLs
-            # TODO: How does this handle in 1-TIER?
             for n1, n2, key, edgeproperties in self._topo.edges([node], data=True, keys=True):
                 peer = n2 if node == n1 else n2
                 peergroup = nodeproperties[peer]["role"] + "s"
@@ -666,6 +706,7 @@ class IpFabricParser:
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["dynamic"] = dict()
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"] = dict()
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["type"] = "underlay"
+                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["description"] = f"Peer-group for {nodeproperties[peer]['role']} neighbors"
                 if not self._topo.graph['bgp_unnumbered']:
                     neighbor = edgeproperties["p2p_address"][peer]
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor] = dict()
@@ -687,30 +728,47 @@ class IpFabricParser:
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["peer_as"] = self._topo.graph["overlay_asn"]
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
-            if self._ipfabric_data["rr"]["location"] == 'spine':
+
+            if "location" not in self._ipfabric_data["rr"] or self._ipfabric_data["rr"]["location"] == 'spine':
                 neighborlist = list()
+                # Spines peer with all (border-)leafs in pod
                 if properties['role'] == 'spine':
                     neighborlist = self._topo.graph["pods"][properties["podid"]]["leaf"] + self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+                    # If there is more then 1 pod, also full interconnect all spines
                     if len(self._topo.graph["pods"]) > 1:
                         for podid in self._topo.graph["pods"]:
                             neighborlist.extend(self._topo.graph["pods"][podid]["spine"])
 
+                # (Border-)leafs peer with all spines in pod (unless in single tier, they peer with the other leaf)
                 elif properties['role'] in ['leaf', 'borderleaf']:
-                    neighborlist = self._topo.graph["pods"][properties["podid"]]["spine"]
+                    if self._topo.graph["single-tier"]:
+                        neighborlist = list(set(self._topo.graph["pods"][properties["podid"]]["leaf"]).difference({node}))
+                    else:
+                        neighborlist = self._topo.graph["pods"][properties["podid"]]["spine"]
 
-                if len(neighborlist) > 0:
-                    neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
-                    self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighbor_addresses, itertools.repeat(dict(), len(neighborlist))))
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
 
             elif self._ipfabric_data["rr"]["location"] == 'external':
                 if properties['role'] in ['leaf', 'borderleaf']:
-                    neighborlist = self._ipfabric_data["rr"]["neighbor_list"]
-                    self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighborlist, itertools.repeat(dict(), len(neighborlist))))
+                    neighbor_addresses = self._ipfabric_data["rr"]["neighbor_list"]
 
             elif self._ipfabric_data["rr"]["location"] == 'borderleaf':
-                # TODO!
-                raise NotImplementedError("Whoops!")
-                pass
+                neighborlist = list()
+                # Borderleafs peer with all leafs in pod
+                if properties['role'] == 'borderleaf':
+                    neighborlist = self._topo.graph["pods"][properties["podid"]]["leaf"]
+                    # If there is more then 1 pod, also full interconnect all borderleafs
+                    if len(self._topo.graph["pods"]) > 1:
+                        for podid in self._topo.graph["pods"]:
+                            neighborlist.extend(self._topo.graph["pods"][podid]["borderleaf"])
+
+                # Leafs peer with all borderleafs in pod
+                elif properties['role'] == 'leaf':
+                    neighborlist = self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
+
+            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighbor_addresses, itertools.repeat(dict(), len(neighbor_addresses))))
 
 
 class ActionModule(ActionBase):

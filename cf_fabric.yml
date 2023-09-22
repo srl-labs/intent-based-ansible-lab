@@ -3,6 +3,7 @@
   hosts:
     - leaf
     - spine
+    - borderleaf
   roles:
     ## INIT -m Set device facts
     - role: initialize

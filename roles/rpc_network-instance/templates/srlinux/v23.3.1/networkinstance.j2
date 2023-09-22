@@ -40,8 +40,8 @@
       {% if prop.protocols.bgp is defined %}
       bgp:
         {% if prop.type|default('routed') != 'bridged' %}
-        autonomous-system: {{ asn }}
-        router-id: {{router_id }}
+        autonomous-system: {{ prop["autonomous-system"] }}
+        router-id: {{ prop["router-id"] }}
         {% endif %}
         afi-safi:
         {% if prop.protocols.bgp.ipv4 is defined %}

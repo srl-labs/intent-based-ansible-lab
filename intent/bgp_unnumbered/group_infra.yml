@@ -39,6 +39,7 @@ leaf:
         - ethernet-1/48.0
         - ethernet-1/49.0
       autonomous-system: "{{ asn }}"
+      router-id: "{{ router_id }}"
       protocols:
         bgp:
           dynamic:
@@ -117,6 +118,7 @@ spine:
         - ethernet-1/3.0
         - ethernet-1/4.0
       autonomous-system: "{{ asn }}"
+      router-id: "{{ router_id }}"
       protocols:
         bgp:
           dynamic:

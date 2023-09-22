@@ -46,8 +46,8 @@
       {% if prop.protocols.bgp is defined %}
       bgp:
         {% if prop.type|default('routed') != 'bridged' %}
-        autonomous-system: {{ asn }}
-        router-id: {{router_id }}
+        autonomous-system: {{ prop["autonomous-system"] }}
+        router-id: {{ prop["router-id"] }}
         {% endif %}
         {% if prop.protocols.bgp.dynamic is defined %}
         dynamic-neighbors:

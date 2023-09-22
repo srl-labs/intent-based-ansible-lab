@@ -188,11 +188,11 @@
         },
         "rr": {
             "type": "object",
-            "required": ["asn_base", "location"],
+            "required": ["asn_base"],
             "properties": {
                 "location": {
                     "type": "string",
-                    "enum": ["spine", "external"]
+                    "enum": ["spine", "borderleaf", "external"]
                 },
                 "asn_base": {
                     "type": "number",

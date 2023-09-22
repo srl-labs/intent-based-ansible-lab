@@ -45,6 +45,7 @@ network_instance:
       - {{iface}}.0
       {% endfor %}
     autonomous-system: {{ preprocessed_fabric[inventory_hostname].asn }}
+    router-id: {{ preprocessed_fabric[inventory_hostname].loopback }}
     protocols:
       bgp:
         ipv4:
