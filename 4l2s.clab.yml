@@ -41,14 +41,14 @@ topology:
         fabric: yes
     s1:
       kind: srl
-      type: ixrd2
+      type: ixrh2
       mgmt-ipv4: 172.20.21.101
       labels:
         role: spine
         fabric: yes
     s2:
       kind: srl
-      type: ixrd2
+      type: ixrh2
       mgmt-ipv4: 172.20.21.102
       labels:
         role: spine

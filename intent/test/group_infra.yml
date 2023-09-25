@@ -75,7 +75,6 @@ spine:
     ethernet-1/4:
       admin_state: enable
       _tag: isl
-    irb1:
     system0:
       admin_state: enable
   network_instance:

@@ -32,8 +32,4 @@
           - ethernet-interface: {{ es_prop.interface }}
     {% endif %}
   {% endfor %}
-{% else %}
-- path: /system/network-instance/protocols/evpn/ethernet-segments/bgp-instance[id=1]
-  value:
-    ethernet-segment: []
 {% endif %}
