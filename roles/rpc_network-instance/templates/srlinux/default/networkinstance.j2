@@ -107,6 +107,8 @@
           {% if nbr_spec.peer_as is defined %}
           peer-as: {{ nbr_spec.peer_as }}
           {% endif %}
+        {% else %}
+          []
         {% endfor %}
       {% endif %}
   {% endif %}

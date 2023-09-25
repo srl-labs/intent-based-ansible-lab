@@ -89,6 +89,10 @@
                                     }
                                 }
                             }
+                        },
+                        "software_version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+$"
                         }
                     }
                 }
@@ -181,6 +185,106 @@
                                     }
                                 }
                             }
+                        },
+                        "software_version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                        }
+                    }
+                }
+            ]
+        },
+        "superspine": {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "required": ["hostname", "amount", "asn_base", "hardware"],
+                    "properties": {
+                        "hostname": {
+                            "type": "string"
+                        },
+                        "amount": {
+                            "type": "number"
+                        },
+                        "asn_base": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 4294967294
+                        },
+                        "software_version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                        },
+                        "hardware": {
+                            "type": "string",
+                            "enum": ["IXR_D2", "IXR_D2L", "IXR_D3", "IXR_D3L", "IXR_H2"]
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": ["hostname", "node_list", "asn_base"],
+                    "properties": {
+                        "hostname": {
+                            "type": "string"
+                        },
+                        "node_list": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["amount", "hardware"],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "hardware": {
+                                        "type": "string",
+                                        "enum": ["IXR_D2", "IXR_D2L", "IXR_D3", "IXR_D3L", "IXR_H2"]
+                                    }
+                                }
+                            }
+                        },
+                        "asn_base": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 4294967294
+                        },
+                        "software_version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "nodes": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["id", "hostname", "asn", "hardware"],
+                                "properties": {
+                                    "id": {
+                                        "type": "number"
+                                    },
+                                    "hardware": {
+                                        "type": "string",
+                                        "enum": ["IXR_D2", "IXR_D2L", "IXR_D3", "IXR_D3L", "IXR_H2"]
+                                    },
+                                    "hostname": {
+                                        "type": "string"
+                                    },
+                                    "asn": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 4294967294
+                                    }
+                                }
+                            }
+                        },
+                        "software_version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+$"
                         }
                     }
                 }

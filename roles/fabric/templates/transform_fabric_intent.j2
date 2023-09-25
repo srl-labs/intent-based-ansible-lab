@@ -67,8 +67,10 @@ network_instance:
             {% endfor %}
         {% endif %}
         neighbor:
+          {% set NEIGHBORS = namespace(found = false) %}
           {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
           {% for neighbor in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors %}
+          {% set NEIGHBORS.found = true %}
           {{ neighbor }}:
             peer_group: {{ group }}
             {% if "peer_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors[neighbor] %}
@@ -76,6 +78,9 @@ network_instance:
             {%endif%}
           {% endfor %}
           {% endfor %}
+          {% if not NEIGHBORS.found %}
+            {}
+          {% endif %}
         group:
           {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
           {{ group }}:
