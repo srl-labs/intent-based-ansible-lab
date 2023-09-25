@@ -4,6 +4,7 @@
     - leaf
     - spine
     - borderleaf
+    - superspine
   roles:
     ## INIT -m Set device facts
     - role: initialize

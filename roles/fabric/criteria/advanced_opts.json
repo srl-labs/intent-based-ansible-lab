@@ -1,0 +1,54 @@
+{
+    "type": "object",
+    "properties": {
+        "max_pod": {
+            "type": "number",
+            "minimum": 0
+        },
+        "max_dcgw": {
+            "type": "number",
+            "minimum": 0
+        },
+        "max_superspine": {
+            "type": "number",
+            "minimum": 0
+        },
+        "max_spine_in_pod": {
+            "type": "number",
+            "minimum": 0
+        },
+        "max_borderleaf_in_pod": {
+            "type": "number",
+            "minimum": 0
+        },
+        "max_leaf_in_pod": {
+            "type": "number",
+            "minimum": 0
+        },
+        "dynamic_max_leaf_in_pod": {
+            "type": "bool"
+        },
+        "spine_hardware": {
+            "type": "object",
+            "patternProperties": {
+                "^.*" : {
+                    "type": "object",
+                    "required" : [ "isl_ports", "max_leaf" ],
+                    "properties": {
+                        "isl_ports": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "pattern": "^ethernet-\\d+/\\d+"
+                            }
+                        },
+                        "max_leaf": {
+                            "type": "number",
+                            "minimum": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

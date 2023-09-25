@@ -500,7 +500,7 @@ class IpFabricParser:
             # allocation is per role
             if 'asn_base' in properties:
                 if properties['role'] == 'leaf':
-                    podoffset = sum([self.max_leaf_in_pod[i] for i in range(properties['podid'])])
+                    podoffset = sum([self.max_leaf_in_pod(i) for i in range(properties['podid'])])
                 elif properties['role'] == 'borderleaf':
                     podoffset = self.max_borderleaf_in_pod * properties['podid']
                 elif properties['role'] == 'spine':
@@ -531,10 +531,13 @@ class IpFabricParser:
             # for leafs, the max allowed /pod can be either static, or dynamic based on HW type used in spine layer
 
             offset = nodeid
-            podoffset = properties['podid'] * (self.max_spine_in_pod +
-                                               self.max_borderleaf_in_pod +
-                                               sum([self.max_leaf_in_pod[i] for i in range(properties['podid'])]))
+            podoffset = 0
             roleoffset = 0
+
+            if properties['role'] in ['spine', 'leaf', 'borderleaf']:
+                podoffset = properties['podid'] * (self.max_spine_in_pod +
+                                                   self.max_borderleaf_in_pod +
+                                                   sum([self.max_leaf_in_pod(i) for i in range(properties['podid'])]))
             # reserve for dcgw
             roleoffset += self.max_dcgw if properties['role'] in ['spine', 'leaf', 'borderleaf', 'superspine'] else 0
             # reserve for superspine
