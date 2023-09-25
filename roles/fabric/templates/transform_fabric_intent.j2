@@ -7,7 +7,9 @@ routing_policy:
           mask-length-range: "32..32"
 
 interfaces:
+  {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] %}
   irb1:
+  {% endif %}
   system0:
     admin_state: enable
   {% for iface in preprocessed_fabric[inventory_hostname].isls %}
