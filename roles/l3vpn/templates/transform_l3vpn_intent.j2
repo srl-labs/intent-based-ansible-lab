@@ -19,7 +19,9 @@
                             irb_itf:
                                 {
                                     'gw': snet.gw,
-                                    '_state': svc_spec._state|default('present')
+                                    '_state': svc_spec._state | default('present'),
+                                    'acl_v4_in': snet.acl_v4_in | default(''),
+                                    'acl_v4_out': snet.acl_v4_out | default('')
                                 }
                         }
                     }
@@ -83,6 +85,17 @@ subinterface:
     {{ itf }}:
         _state: {{ itf_spec._state }}
         ipv4_address: {{ itf_spec.gw }}
+        {% if itf_spec.acl_v4_in | length + itf_spec.acl_v4_out | length > 0 %}
+        acl:
+            {% if itf_spec.acl_v4_in | length > 0 %}
+            in: 
+                ipv4: {{ itf_spec.acl_v4_in }}
+            {% endif %}
+            {% if itf_spec.acl_v4_out | length > 0 %}
+            out:
+                ipv4: {{ itf_spec.acl_v4_out }}
+            {% endif %}
+        {% endif %}
         arp: true
         anycast_gw: true
     {% endfor %}

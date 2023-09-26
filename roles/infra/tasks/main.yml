@@ -27,11 +27,14 @@
     criteria:
       - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
     engine: ansible.utils.jsonschema
+  vars:
+    ansible_jsonschema_draft: draft7
   loop:
     - interfaces
     - subinterface
     - network_instance
     - routing_policy
+    - acl_filters
 
 - name: Generate itf descriptions
   when:

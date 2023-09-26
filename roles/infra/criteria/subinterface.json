@@ -9,6 +9,33 @@
                     "pattern": "^(([0-9]{1,3}\\.){3}[0-9]{1,3})/[0-9]{1,2}$",
                     "description": "IPv4 address with prefix"
                 },
+                "acl": {
+                    "type": "object",
+                    "properties": {
+                        "input": {
+                            "type": "object",
+                            "properties": {
+                                "ipv4": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "output": {
+                            "type": "object",
+                            "properties": {
+                                "ipv4": {
+                                    "type:": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "ipv6": {
                     "type": "object",
                     "properties": {

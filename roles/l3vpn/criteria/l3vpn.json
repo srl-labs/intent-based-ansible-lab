@@ -28,6 +28,18 @@
                             "gw": {
                                 "type": "string",
                                 "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}(?:\/\\d{1,2})?$"
+                            },
+                            "acl_v4_in": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "acl_v4_out": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
                             }
                         }
                     }
