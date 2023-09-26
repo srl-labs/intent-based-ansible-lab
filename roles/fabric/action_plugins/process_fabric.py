@@ -713,10 +713,10 @@ class IpFabricParser:
                 if not self._topo.graph['bgp_unnumbered']:
                     neighbor = edgeproperties["p2p_address"][peer]
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor] = dict()
-                    if nodeproperties[peer]["role"] in ["leaf", "borderleaf"]:
-                        self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor]["peer_as"] = nodeproperties[peer]["asn"]
-                    else:
+                    if properties["role"] in ["leaf", "borderleaf"] or nodeproperties[peer]["role"] in ['superspine', 'dcgw']:
                         self._topo.nodes[node]["bgp"]["groups"][peergroup]["peer_as"] = nodeproperties[peer]["asn"]
+                    else:
+                        self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor]["peer_as"] = nodeproperties[peer]["asn"]
                 else:
                     interface = edgeproperties[node]
                     self._topo.nodes[node]["bgp"]["groups"][peergroup]["dynamic"][interface] = dict()
