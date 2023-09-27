@@ -18,6 +18,11 @@
     name: rpc_policy
   when: intent.routing_policy is defined
 
+- name: "Generate config for /acl"
+  ansible.builtin.include_role:
+    name: rpc_acl
+  when: intent.acl_filters is defined and intent.acl_filters | length > 0
+
 - name: Initialize intent var
   ansible.builtin.set_fact:
     intent: {}

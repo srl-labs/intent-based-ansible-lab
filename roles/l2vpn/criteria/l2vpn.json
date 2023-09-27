@@ -16,6 +16,20 @@
                     "type": "string",
                     "const": "mac-vrf"
                 },
+                "acl_v4_in": {
+                    "type": "array",
+                    "description": "List of ingress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "acl_v4_out": {
+                    "type": "array",
+                    "description": "List of egress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "interface_list": {
                     "type": "object",
                     "patternProperties" : {

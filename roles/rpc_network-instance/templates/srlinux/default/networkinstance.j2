@@ -64,8 +64,8 @@
             admin-state: {{ prop.protocols.bgp.ipv4.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(1) }}
-              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(1) }}
+              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(2) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(2) }}
         {% endif %}
           - afi-safi-name: evpn
             admin-state: enable

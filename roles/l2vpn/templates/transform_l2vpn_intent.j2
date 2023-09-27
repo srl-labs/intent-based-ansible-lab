@@ -34,11 +34,19 @@ network_instance:
     {% endif %}
 {% endfor %}
 subinterface:
+{% set acls_v4_in = [] %}
+{% set acls_v4_out = [] %}
 {% for svc, svc_spec in l2vpn.items() %}
     {% if svc_spec.vlan == 'untagged' %}
         {% set subif_idx = 0 %}
     {% else %}
         {% set subif_idx = svc_spec.vlan %}
+    {% endif %}
+    {% if svc_spec.acl_v4_in is defined %}
+        {% set acls_v4_in = acls_v4_in + svc_spec.acl_v4_in %}
+    {% endif %}
+    {% if svc_spec.acl_v4_out is defined %}
+        {% set acls_v4_out = acls_v4_out + svc_spec.acl_v4_out %}
     {% endif %}
     {% if inventory_hostname in svc_spec.interface_list %}
     {% for itf in svc_spec.interface_list[inventory_hostname] %}
@@ -46,6 +54,11 @@ subinterface:
         _state: {{ svc_spec._state|default('present') }}
         type: bridged
         vlan: {{ svc_spec.vlan }}
+        acl:
+            in:
+                ipv4: {{ acls_v4_in }}
+            out:
+                ipv4: {{ acls_v4_out }}
     {% endfor %}
     {% endif %}
 {% endfor %}
