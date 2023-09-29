@@ -212,9 +212,11 @@ class IpFabricParser:
                     raise Exception("Invalid range in entry in edge_interfaces")
                 for i in range(r_start, r_end):
                     if len(hint) > 0:
+                        # When hints are given (known hostnames), try anywhere between 0-3 leading zeros to see if there ia a match
+                        # e.g. leaf[1-2] matches (leaf1, leaf2) but also (leaf001, leaf002)
                         for j in range(1, 4):
                             fmtstr = "{:0%sd}" % j
-                            outp = r_re.sub(fmtstr.format(i), inp)
+                            outp = self.lookup_ipfabric_host(r_re.sub(fmtstr.format(i), inp))  # translate fabric-builder aliases if possible
                             if outp in hint:
                                 ret.append(outp)
                                 break
@@ -247,6 +249,7 @@ class IpFabricParser:
 
         # Helper function parsing host entries from ipfabric_data
         def _parse_nodes_from_ipfabric(rolename):
+            # Node dictionary returned from this helper function uses fabricbuilder node aliases as keys. The alias is <role> + <2 digit id>.
             if rolename not in self._ipfabric_data:
                 return dict()
             nodes = dict()
@@ -268,6 +271,8 @@ class IpFabricParser:
                 for entry in self._ipfabric_data[rolename]['node_list']:
                     if hostname_fmtstr is None:
                         for i in range(1, 4):
+                            # When matching hosts with ansible inventory, try anywhere between 0-3 leading zeros to see if there ia a match
+                            # e.g. hostname generated from 'leaf' matches with host leaf1 from ansible inventory, but also with leaf01, leaf001, or leaf0001
                             hostname_fmtstr = "{}{:0%sd}" % i
                             if hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], 1) in self._fabric_nodes[rolename]:
                                 break
@@ -289,7 +294,7 @@ class IpFabricParser:
                 hostname_fmtstr = None
                 for num in range(self._ipfabric_data[rolename]['amount']):
                     if hostname_fmtstr is None:
-                        for i in range(1, 4):
+                        for i in range(1, 4):  # Same matching as above
                             hostname_fmtstr = "{}{:0%sd}" % i
                             if hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], 1) in self._fabric_nodes[rolename]:
                                 break
@@ -310,7 +315,7 @@ class IpFabricParser:
         # and link them together with attributes from ipfabric_data
         for nodetype, nodelist in self._fabric_nodes.items():
             parsed_nodes = _parse_nodes_from_ipfabric(nodetype)
-            self._ipfabric_nodes.update(parsed_nodes)
+            self._ipfabric_nodes.update(parsed_nodes)  # Store the parsed nodes by their fabricbuilder aliases for later
             if {parsed_nodes[n]["hostname"] for n in parsed_nodes} != set(nodelist):
                 # TODO: check if I need to correct for gaps, example when multiple PODs, but not yet max leaf/pod
                 raise Exception(f"Unable to match nodes from inventory with ipfabric_data for {nodetype}")
