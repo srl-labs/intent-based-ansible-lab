@@ -35,6 +35,7 @@
     - network_instance
     - routing_policy
     - acl_filters
+  when: "item in intent"
 
 - name: Generate itf descriptions
   when:
