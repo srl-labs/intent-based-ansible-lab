@@ -1,0 +1,74 @@
+---
+ipfabric:
+  leaf:
+    software_version: '23.3.3'
+    hardware: 'IXR_D3L'
+    amount: 4
+    hostname: 'clab-4l2s-l'  # ID is appended, e.g. leaf01
+    asn_base: 64601
+
+  spine:
+    software_version: '23.3.3'
+    hardware: 'IXR_D3L'
+    amount: 2
+    hostname: 'clab-4l2s-s'  # ID is appended, e.g. spine01
+    asn_base: 65177
+
+  dcgw:
+    software_version: '23.7.R1'
+    hardware: 'sr-1s'
+    amount: 2
+    hostname: 'clab-4l2s-d'  # ID is appended, e.g. spine01
+    asn_base: 65200
+
+  addressing:
+    p2p:
+      - 192.168.0.0/24
+      #- 100.64.0.0/16
+
+    #loopback: 10.0.0.0/24
+    # loopback:
+    #   - { 'role': 'spine', 'start': '10.0.0.1' }
+    #   - { 'role': 'leaf', 'start': '10.0.0.20' }
+    loopback:
+      - { 'node': 'clab-4l2s-l1', 'system': '192.168.255.1' }
+      - { 'node': 'clab-4l2s-l2', 'system': '192.168.255.2' }
+      - { 'node': 'clab-4l2s-l3', 'system': '192.168.255.3' }
+      - { 'node': 'clab-4l2s-l4', 'system': '192.168.255.4' }
+      - { 'node': 'clab-4l2s-s1', 'system': '192.168.255.101' }
+      - { 'node': 'clab-4l2s-s2', 'system': '192.168.255.102' }
+      - { 'node': 'clab-4l2s-d1', 'system': '192.168.255.201' }
+      - { 'node': 'clab-4l2s-d2', 'system': '192.168.255.202' }
+
+  fabric_cabling:
+    #- endpoints: ["clab-4l2s-s1:e1-31", "clab-4l2s-d1:eth3"]
+    #- endpoints: ["clab-4l2s-s1:e1-32", "clab-4l2s-d2:eth3"]
+    #- endpoints: ["clab-4l2s-s2:e1-31", "clab-4l2s-d1:eth2"]
+    #- endpoints: ["clab-4l2s-s2:e1-32", "clab-4l2s-d2:eth2"]
+    #- endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s1:e1-1"]
+    #- endpoints: ["clab-4l2s-l1:e1-48", "clab-4l2s-s2:e1-1"]
+    #- endpoints: ["clab-4l2s-l2:e1-49", "clab-4l2s-s1:e1-2"]
+    #- endpoints: ["clab-4l2s-l2:e1-48", "clab-4l2s-s2:e1-2"]
+    #- endpoints: ["clab-4l2s-l3:e1-49", "clab-4l2s-s1:e1-3"]
+    #- endpoints: ["clab-4l2s-l3:e1-48", "clab-4l2s-s2:e1-3"]
+    #- endpoints: ["clab-4l2s-l4:e1-49", "clab-4l2s-s1:e1-4"]
+    #- endpoints: ["clab-4l2s-l4:e1-48", "clab-4l2s-s2:e1-4"]
+    - {'local_device': 'clab-4l2s-s1', 'uplink': '1/31', 'remote_device': 'clab-4l2s-d1', 'downlink': '1/1/c3/1'}
+    - {'local_device': 'clab-4l2s-s1', 'uplink': '1/32', 'remote_device': 'clab-4l2s-d2', 'downlink': '1/1/c3/1'}
+    - {'local_device': 'clab-4l2s-s2', 'uplink': '1/31', 'remote_device': 'clab-4l2s-d1', 'downlink': '1/1/c2/1'}
+    - {'local_device': 'clab-4l2s-s2', 'uplink': '1/32', 'remote_device': 'clab-4l2s-d2', 'downlink': '1/1/c2/1'}
+    - {'local_device': 'clab-4l2s-l1', 'uplink': '1/49', 'remote_device': 'clab-4l2s-s1', 'downlink': '1/1', 'speed': '100G'}
+    - {'local_device': 'clab-4l2s-l1', 'uplink': '1/48', 'remote_device': 'clab-4l2s-s2', 'downlink': '1/1'}
+    - {'local_device': 'clab-4l2s-l2', 'uplink': '1/49', 'remote_device': 'clab-4l2s-s1', 'downlink': '1/2'}
+    - {'local_device': 'clab-4l2s-l2', 'uplink': '1/48', 'remote_device': 'clab-4l2s-s2', 'downlink': '1/2'}
+    - {'local_device': 'clab-4l2s-l3', 'uplink': '1/49', 'remote_device': 'clab-4l2s-s1', 'downlink': '1/3'}
+    - {'local_device': 'clab-4l2s-l3', 'uplink': '1/48', 'remote_device': 'clab-4l2s-s2', 'downlink': '1/3'}
+    - {'local_device': 'clab-4l2s-l4', 'uplink': '1/49', 'remote_device': 'clab-4l2s-s1', 'downlink': '1/4'}
+    - {'local_device': 'clab-4l2s-l4', 'uplink': '1/48', 'remote_device': 'clab-4l2s-s2', 'downlink': '1/4'}
+
+  rr:
+    asn_base: 65501
+    location: 'spine'
+
+edge_interfaces:
+  - { 'nodes': 'clab-4l2s-l[1-4]', 'interfaces': '1/[1-3]', 'speed':'25G', 'description': "Edge links to computes"}

@@ -4,8 +4,8 @@
   register: dirs
   loop:
     - "{{ sw_version }}"
-    - "{{ sw_version | regex_replace('(\\.\\d+$)', '') }}"
-    - "{{ sw_version | regex_replace('(\\.\\d+\\.\\d+$)', '') }}"
+    - "{{ sw_version | regex_replace('(\\.R?\\d+$)', '') }}"
+    - "{{ sw_version | regex_replace('(\\.\\d+\\.R?\\d+$)', '') }}"
     - "default"
 
 - name: Set template version

@@ -1,3 +1,7 @@
+- name: DEBUG print intent
+  ansible.builtin.debug:
+    var: intent
+
 - name: "Generate config for /system"
   ansible.builtin.include_role:
     name: rpc_system
@@ -43,6 +47,7 @@
     cacheable: true
   loop: "{{ purgeable }}"
   when:
+    - platform == 'srlinux'
     - purge
     - ansible_run_tags == ["all"] # need full intent to prune resources
     #  - intent[item] is mapping
@@ -53,12 +58,39 @@
     delete: "{{ delete + lookup('template', '{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
+  when: platform == 'srlinux'
 
-- name: "Deploy conflguration to device"
+- name: DEBUG print update
+  ansible.builtin.debug:
+    var: update
+
+- name: DEBUG print replace
+  ansible.builtin.debug:
+    var: replace
+
+- name: DEBUG print delete
+  ansible.builtin.debug:
+    var: delete
+
+- name: Build XML
+  build_sros_netconf_editconfig_xml:
+    update: "{{ update }}"
+    replace: "{{ replace }}"
+    delete: "{{ delete }}"
+  register: output
+  when: platform == 'sros'
+
+- name: Deploy configuration to device
   nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"
+  when: platform == 'srlinux'
+
+- name: Deploy configuration to device
+  ansible.netcommon.netconf_config: 
+    content: "{{ output.xmlstring }}"
+  when: platform == 'sros'
 
 - name: Show playbook stats
   ansible.builtin.set_stats:

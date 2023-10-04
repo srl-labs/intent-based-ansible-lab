@@ -10,7 +10,7 @@
     env: "{{ lookup('env', 'ENV') | default('') }}"
   failed_when: env == ''
 
-- name: Get data from device
+- name: Get data from SRlinux device
   nokia.srlinux.get:
     paths:
       - path: /
@@ -20,15 +20,40 @@
       - path: /system/lldp/interface[name=*]/neighbor
         datastore: state
   register: res
+  when: platform == 'srlinux'
+
+- name: Get data from SROS device
+  ansible.netcommon.netconf_get:
+    filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"><system><platform/><version/><lldp/></system></state>
+    display: json
+  register: sros_res
+  when: platform == 'sros'
+
+- name: Get data from SROS device
+  ansible.netcommon.netconf_get:
+    source: running
+    filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
+    display: json
+  register: sros_res2
+  when: platform == 'sros'
 
 - name: Set facts for device
   ansible.builtin.set_fact:
     running_config: "{{ res['result'][0] }}"
     sw_version: "{{ res['result'][1].split('-')[0] }}"
     lldp_nbrs: "{{ res.result[2].interface | items2dict(key_name='name', value_name='neighbor') }}"
+  when: platform == 'srlinux'
+
+- name: Set facts for device
+  ansible.builtin.set_fact:
+    running_config: "{{ sros_res2.output.data.configure }}"
+    sw_version: "{{ sros_res.output.data.state.system.version['version-number'] }}"
+    lldp_nbrs: {}
+  when: platform == 'sros'
 
 - name: Check SR Linux version
   ansible.builtin.assert:
     that:
       - sw_version | regex_search('^v(\\d+)', '\\1') | map('int') | first  >= 23
     fail_msg: "Minimal SR Linux version is 23.3.1. Please upgrade your switches first"
+  when: platform == 'srlinux'

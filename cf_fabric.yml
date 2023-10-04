@@ -5,6 +5,7 @@
     - spine
     - borderleaf
     - superspine
+    - dcgw
   roles:
     ## INIT -m Set device facts
     - role: initialize

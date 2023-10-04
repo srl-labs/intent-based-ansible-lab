@@ -10,7 +10,23 @@ topology:
       image: ghcr.io/nokia/srlinux:23.3.3
     linux:
       image: ghcr.io/hellt/network-multitool
+    vr-sros:
+      image: registry.srlinux.dev/pub/vr-sros:23.7.R1
+      type: sr-1s
+      license: license.txt
   nodes:
+    d1:
+      kind: vr-sros
+      mgmt-ipv4: 172.20.21.21
+      labels:
+        role: dcgw
+        fabric: yes
+    d2:
+      kind: vr-sros
+      mgmt-ipv4: 172.20.21.22
+      labels:
+        role: dcgw
+        fabric: yes
     l1:
       kind: srl
       type: ixrd2
@@ -112,6 +128,10 @@ topology:
         - ip link set eth1.301 up
         - ip route add 10.1.0.0/16 via 10.1.2.254
   links:
+    - endpoints: ["s1:e1-31", "d1:eth3"]
+    - endpoints: ["s1:e1-32", "d2:eth3"]
+    - endpoints: ["s2:e1-31", "d1:eth2"]
+    - endpoints: ["s2:e1-32", "d2:eth2"]
     - endpoints: ["l1:e1-49", "s1:e1-1"]
     - endpoints: ["l1:e1-48", "s2:e1-1"]
     - endpoints: ["l2:e1-49", "s1:e1-2"]

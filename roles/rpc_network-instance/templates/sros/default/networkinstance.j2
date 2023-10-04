@@ -1,0 +1,60 @@
+#jinja2: lstrip_blocks: "True"
+{% set ROUTER = namespace(found = false) %}
+{% for ni, prop in network_instance.items() %}
+  {% if prop._state|default('present') != 'deleted' %}
+    {% if ni == "default" %}
+      {% set ROUTER.found = true %}
+- path: /router[router-name=Base]
+  value:
+    router-id: {{ prop['router-id'] }} 
+    autonomous-system: "{{ prop['autonomous-system'] | string }}"
+      {% if prop.interfaces is defined and prop.interfaces is not none %}
+    interface:
+        {% for itf in prop.interfaces %} 
+          {% set PORT = itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+          {% if itf is ansible.builtin.regex('^system0') %}
+      - interface-name: system
+          {% else %}
+      - interface-name: I{{ PORT }}
+        port: {{ PORT }}:0
+          {% endif %}
+        admin-state: enable
+        ipv4:
+          primary:
+            address: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('address') | string }}
+            prefix-length: "{{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}"
+        {% endfor %}
+      {% endif %}
+      {% if prop.protocols is defined and prop.protocols is not none %}
+        {% if prop.protocols.bgp is defined %}
+    bgp:
+      group:
+          {% for group, group_spec in prop.protocols.bgp.group.items() %}
+      - group-name: {{ group }}
+        description: {{ group_spec.description|default('no description') }}
+            {% if group_spec.peer_as is defined %}
+        peer-as: "{{ group_spec.peer_as }}"
+            {% endif %}
+            {% if group_spec.local_as is defined %}
+        local-as:
+          as-number: "{{ group_spec.local_as }}"
+            {% endif %}
+          {% endfor %}
+      neighbor:
+          {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
+        - ip-address: {{ nbr }}
+          group: {{ nbr_spec.peer_group }}
+            {% if nbr_spec.peer_as is defined %}
+          peer-as: "{{ nbr_spec.peer_as }}"
+            {% endif %}
+          {% else %}
+          []
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if not ROUTER.found %}
+[]
+{% endif %}

@@ -29,17 +29,17 @@
     delegate_to: localhost
     run_once: true
 
-  #- name: DEBUG fabric pre-processing
-  #  ansible.builtin.debug:
-  #    var: preprocessed_fabric
+  - name: DEBUG fabric pre-processing
+    ansible.builtin.debug:
+      var: preprocessed_fabric
 
   - name: Generate low-level intent for FABRIC
     ansible.builtin.set_fact:
       my_intent: "{{ lookup('template', 'transform_fabric_intent.j2') | from_yaml }}"
 
-  #- name: DEBUG fabric pre-processing
-  #  ansible.builtin.debug:
-  #    var: my_intent
+  - name: DEBUG fabric pre-processing
+    ansible.builtin.debug:
+      var: my_intent
 
   - name: Load fabric intent
     ansible.builtin.set_fact:
