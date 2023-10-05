@@ -746,6 +746,8 @@ class IpFabricParser:
                     if len(self._topo.graph["pods"]) > 1:
                         for podid in self._topo.graph["pods"]:
                             neighborlist.extend(self._topo.graph["pods"][podid]["spine"])
+                    # Also peer with DCGWs
+                    neighborlist.extend(self.dcgws)
 
                 # (Border-)leafs peer with all spines in pod (unless in single tier, they peer with the other leaf)
                 elif properties['role'] in ['leaf', 'borderleaf']:
@@ -754,10 +756,14 @@ class IpFabricParser:
                     else:
                         neighborlist = self._topo.graph["pods"][properties["podid"]]["spine"]
 
+                # DCGW peer with all spines
+                elif properties['role'] == 'dcgw':
+                    neighborlist = [x for podid in self._topo.graph["pods"] for x in self._topo.graph["pods"][podid]["spine"]]
+
                 neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
 
             elif self._ipfabric_data["rr"]["location"] == 'external':
-                if properties['role'] in ['leaf', 'borderleaf']:
+                if properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
                     neighbor_addresses = self._ipfabric_data["rr"]["neighbor_list"]
 
             elif self._ipfabric_data["rr"]["location"] == 'borderleaf':
@@ -769,10 +775,16 @@ class IpFabricParser:
                     if len(self._topo.graph["pods"]) > 1:
                         for podid in self._topo.graph["pods"]:
                             neighborlist.extend(self._topo.graph["pods"][podid]["borderleaf"])
+                    # Also peer with DCGWs
+                    neighborlist.extend(self.dcgws)
 
                 # Leafs peer with all borderleafs in pod
                 elif properties['role'] == 'leaf':
                     neighborlist = self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+
+                # DCGW peer with all borderleafs
+                elif properties['role'] == 'dcgw':
+                    neighborlist = [x for podid in self._topo.graph["pods"] for x in self._topo.graph["pods"][podid]["borderleaf"]]
 
                 neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
 
