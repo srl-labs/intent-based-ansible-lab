@@ -16,7 +16,7 @@
   vars:
     template_file: "{{ tpl_base.path + '/networkinstance.j2' }}"
 
-- name: Generate data for 'router "Base"'
+- name: Generate data for '/router[router-name=Base]' and '/service'
   ansible.builtin.set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true

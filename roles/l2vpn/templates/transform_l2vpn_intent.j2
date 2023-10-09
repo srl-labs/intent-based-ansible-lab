@@ -1,14 +1,14 @@
 #jinja2: lstrip_blocks: "True"
 {% set go = namespace(found=false) %}
 {% for svc, svc_spec in l2vpn.items() %}
-{% if inventory_hostname in svc_spec.interface_list %}
+{% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
 {% set go.found = true %}
 {% endif %}
 {% endfor %}
 {% if go.found %} 
 network_instance: 
 {% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
+    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
     {% if svc_spec.vlan == 'untagged' %}
         {% set subif_idx = 0 %}
     {% else %}
@@ -16,14 +16,18 @@ network_instance:
     {% endif %}
     {{ svc }}:
         _state: {{ svc_spec._state|default('present') }}
+        {% if 'dcgw' not in group_names %}
         interfaces:
         {% for itf in svc_spec.interface_list[inventory_hostname] %}
         - {{ itf }}.{{ subif_idx }}
         {% endfor %}
+        {% endif %}
         description: {{ svc_spec.description | default("no description") }}
         type: {{ svc_spec.type | default('mac-vrf') }}
+        {% if 'dcgw' not in group_names %}
         vxlan_interface:
             - vxlan1.{{svc_spec.id}}
+        {% endif %}
         protocols:
             bgp_evpn:
                 vxlan_interface: vxlan1.{{ svc_spec.id }}
@@ -31,8 +35,12 @@ network_instance:
             bgp_vpn:
                 export_rt: {{svc_spec.export_rt | default('100:%s'|format(svc_spec.id)) }}
                 import_rt: {{svc_spec.import_rt | default('100:%s'|format(svc_spec.id)) }}
+        {% if 'dcgw' in group_names %}
+        id: {{ svc_spec.id }}
+        {% endif %}
     {% endif %}
 {% endfor %}
+{% if 'dcgw' not in group_names %}
 subinterface:
 {% set acls_v4_in = [] %}
 {% set acls_v4_out = [] %}
@@ -72,10 +80,11 @@ interfaces:
     {% endfor %}
     {% endif %}
 {% endfor %}
+{% endif %}
 tunnel_interface:
     vxlan1:
 {% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
+    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
         {{svc_spec.id}}:
             _state: {{ svc_spec._state|default('present') }}
             type: bridged

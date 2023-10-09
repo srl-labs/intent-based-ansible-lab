@@ -70,5 +70,5 @@ ipfabric:
     asn_base: 65501
     location: 'spine'
 
-edge_interfaces:
-  - { 'nodes': 'clab-4l2s-l[1-4]', 'interfaces': '1/[1-3]', 'speed':'25G', 'description': "Edge links to computes"}
+#edge_interfaces:
+#  - { 'nodes': 'clab-4l2s-l[1-4]', 'interfaces': '1/[1-3]', 'speed':'25G', 'description': "Edge links to computes"}

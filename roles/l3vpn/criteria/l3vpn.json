@@ -12,6 +12,9 @@
                     "type": "string",
                     "enum": ["deleted", "present"]
                 },
+                "expose": {
+                    "type": "boolean"
+                },
                 "type": {
                     "type": "string",
                     "const": "ip-vrf"
