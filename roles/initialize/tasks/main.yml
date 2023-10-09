@@ -25,7 +25,7 @@
 - name: Get data from SROS device
   ansible.netcommon.netconf_get:
     filter: <state xmlns="urn:nokia.com:sros:ns:yang:sr:state"><system><platform/><version/><lldp/></system></state>
-    display: json
+    display: native
   register: sros_res
   when: platform == 'sros'
 
@@ -33,9 +33,19 @@
   ansible.netcommon.netconf_get:
     source: running
     filter: <configure xmlns="urn:nokia.com:sros:ns:yang:sr:conf"/>
-    display: json
+    display: native
   register: sros_res2
   when: platform == 'sros'
+
+#- name: DEBUG print current config
+#  ansible.builtin.debug:
+#    var: res['result'][0]
+#  when: platform == 'srlinux'
+
+#- name: DEBUG print current config
+#  ansible.builtin.debug:
+#    var: sros_res2.output.data.configure
+#  when: platform == 'sros'
 
 - name: Set facts for device
   ansible.builtin.set_fact:

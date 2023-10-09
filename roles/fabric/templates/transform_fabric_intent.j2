@@ -99,8 +99,10 @@ network_instance:
             description: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["description"] }}
             {% endif %}
             {% if preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "overlay" %}
+            {% if preprocessed_fabric[inventory_hostname]["role"] != 'dcgw' %}
             export_policy: pass-evpn
             import_policy: pass-evpn
+            {% endif %}
             ipv4:
               admin_state: disable
             evpn:
@@ -108,10 +110,13 @@ network_instance:
             {% elif preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "underlay" %}
             {% if preprocessed_fabric[inventory_hostname]["role"] in ["leaf", "borderleaf"] %}
             export_policy: lo-and-servers
+            import_policy: pass-all
+            {% elif preprocessed_fabric[inventory_hostname]["role"] == 'dcgw' %}
+            export_policy: export-to-underlay
             {% else %}
             export_policy: pass-all
-            {% endif %} 
             import_policy: pass-all
+            {% endif %}
             ipv4:
               admin_state: enable
             evpn:

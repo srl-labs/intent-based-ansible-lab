@@ -12,6 +12,14 @@
   ansible.builtin.set_fact:
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
-  when: intent.network_instance is defined and intent.network_instance is mapping
+  when: platform == 'srlinux' and intent.network_instance is defined and intent.network_instance is mapping
+  vars:
+    template_file: "{{ tpl_base.path + '/networkinstance.j2' }}"
+
+- name: Generate data for 'router "Base"'
+  ansible.builtin.set_fact:
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    cacheable: true
+  when: platform == 'sros' and intent.network_instance is defined and intent.network_instance is mapping and 'default' in intent.network_instance
   vars:
     template_file: "{{ tpl_base.path + '/networkinstance.j2' }}"

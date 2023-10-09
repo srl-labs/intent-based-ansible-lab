@@ -1,6 +1,6 @@
-- name: DEBUG print intent
-  ansible.builtin.debug:
-    var: intent
+#- name: DEBUG print intent
+#  ansible.builtin.debug:
+#    var: intent
 
 - name: "Generate config for /system"
   ansible.builtin.include_role:
@@ -60,17 +60,17 @@
   loop: "{{ purgeable }}"
   when: platform == 'srlinux'
 
-- name: DEBUG print update
-  ansible.builtin.debug:
-    var: update
+#- name: DEBUG print update
+#  ansible.builtin.debug:
+#    var: update
 
-- name: DEBUG print replace
-  ansible.builtin.debug:
-    var: replace
+#- name: DEBUG print replace
+#  ansible.builtin.debug:
+#    var: replace
 
-- name: DEBUG print delete
-  ansible.builtin.debug:
-    var: delete
+#- name: DEBUG print delete
+#  ansible.builtin.debug:
+#    var: delete
 
 - name: Build XML
   build_sros_netconf_editconfig_xml:
@@ -79,6 +79,11 @@
     delete: "{{ delete }}"
   register: output
   when: platform == 'sros'
+
+#- name: DEBUG print XML
+#  ansible.builtin.debug:
+#    var: output.xmlstring
+#  when: platform == 'sros'
 
 - name: Deploy configuration to device
   nokia.srlinux.config:
