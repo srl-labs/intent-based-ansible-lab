@@ -128,10 +128,10 @@ topology:
         - ip link set eth1.301 up
         - ip route add 10.1.0.0/16 via 10.1.2.254
   links:
-    - endpoints: ["s1:e1-31", "d1:eth3"]
-    - endpoints: ["s1:e1-32", "d2:eth3"]
-    - endpoints: ["s2:e1-31", "d1:eth2"]
-    - endpoints: ["s2:e1-32", "d2:eth2"]
+    - endpoints: ["s1:e1-57", "d1:eth3"]
+    - endpoints: ["s1:e1-121", "d2:eth3"]
+    - endpoints: ["s2:e1-57", "d1:eth2"]
+    - endpoints: ["s2:e1-121", "d2:eth2"]
     - endpoints: ["l1:e1-49", "s1:e1-1"]
     - endpoints: ["l1:e1-48", "s2:e1-1"]
     - endpoints: ["l2:e1-49", "s1:e1-2"]
