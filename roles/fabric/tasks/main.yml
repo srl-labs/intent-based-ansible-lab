@@ -17,8 +17,6 @@
       engine: ansible.utils.jsonschema
     loop:
       - fabric
-      - ipfabric
-      - edge_interfaces
       - advanced_opts
     when: "item in fabric_intent"
 

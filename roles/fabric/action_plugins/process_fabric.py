@@ -4,7 +4,6 @@ import traceback
 import re
 import itertools
 from copy import deepcopy
-from collections.abc import MutableMapping
 
 NX_IMP_ERR = None
 try:
@@ -54,195 +53,6 @@ def expand_range(inp, hint=None):
     return ret
 
 
-class FabricBuilderProxy(MutableMapping):
-    def __init__(self, fabric_nodes, ipfabric_data, edge_interfaces_data=None):
-        if edge_interfaces_data is None:
-            edge_interfaces_data = list()
-        if not isinstance(fabric_nodes, dict):
-            raise AttributeError("Wrong type for fabric_nodes")
-        for key in fabric_nodes.keys():
-            if key not in ['spine', 'leaf', 'superspine', 'dcgw', 'borderleaf']:
-                raise AttributeError("Wrong key in fabric_nodes")
-        if not isinstance(ipfabric_data, dict):
-            raise AttributeError("Wrong type for ipfabric_data")
-        if not isinstance(edge_interfaces_data, list):
-            raise AttributeError("Wrong type for edge_interfaces_data")
-        self._keys = {'asn', 'fabric_cabling', 'hardware', 'loopback', 'overlay_asn', 'overrides', 'p2p', 'rr', 'edge_interfaces'}
-        self._ipfabric_data = ipfabric_data
-        self._edge_interfaces_data = edge_interfaces_data
-        self._fabric_nodes = fabric_nodes  # from ansible inventory
-        self._ipfabric_nodes = dict()  # parsed from ipfabric_data, stored indexed by the fabricbuilder alias
-        self._hardware = dict()
-        self._edge_interfaces = dict()
-        self._overrides = dict()
-        self._fabric_cabling = list()
-
-        # Helper function parsing host entries from ipfabric_data
-        def _parse_nodes_from_ipfabric(rolename):
-            # Node dictionary returned from this helper function uses fabricbuilder node aliases as keys. The alias is <role> + <2 digit id>.
-            if rolename not in self._ipfabric_data:
-                return dict()
-            nodes = dict()
-            if "nodes" in self._ipfabric_data[rolename]:
-                # method 2
-                for entry in self._ipfabric_data[rolename]['nodes']:
-                    nodes["{}{:02d}".format(rolename, int(entry['id']))] = {
-                        "asn": entry['asn'],
-                        "hardware": entry['hardware'],
-                        "software_version": self._ipfabric_data[rolename]['software_version'],
-                        "role": rolename,
-                        "id": int(entry['id']),
-                        "hostname": entry['hostname'],
-                    }
-            elif "node_list" in self._ipfabric_data[rolename]:
-                # method 1.2
-                amount = 0
-                hostname_fmtstr = None
-                for entry in self._ipfabric_data[rolename]['node_list']:
-                    if hostname_fmtstr is None:
-                        for i in range(1, 4):
-                            # When matching hosts with ansible inventory, try anywhere between 0-3 leading zeros to see if there ia a match
-                            # e.g. hostname generated from 'leaf' matches with host leaf1 from ansible inventory, but also with leaf01, leaf001, or leaf0001
-                            hostname_fmtstr = "{}{:0%sd}" % i
-                            if hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], 1) in self._fabric_nodes[rolename]:
-                                break
-                        else:
-                            # Not found, assume default 2
-                            hostname_fmtstr = "{}{:02d}"
-                    for num in range(entry['amount']):
-                        nodes["{}{:02d}".format(rolename, amount + num + 1)] = {
-                            "asn_base": self._ipfabric_data[rolename]['asn_base'],
-                            "hardware": entry['hardware'],
-                            "software_version": self._ipfabric_data[rolename]['software_version'],
-                            "role": rolename,
-                            "id": amount + num + 1,
-                            "hostname": hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], amount + num + 1),
-                        }
-                    amount += entry['amount']
-            else:
-                # method 1.1
-                hostname_fmtstr = None
-                for num in range(self._ipfabric_data[rolename]['amount']):
-                    if hostname_fmtstr is None:
-                        for i in range(1, 4):  # Same matching as above
-                            hostname_fmtstr = "{}{:0%sd}" % i
-                            if hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], 1) in self._fabric_nodes[rolename]:
-                                break
-                        else:
-                            # Not found, assume default 2
-                            hostname_fmtstr = "{}{:02d}"
-                    nodes["{}{:02d}".format(rolename, num + 1)] = {
-                        "asn_base": self._ipfabric_data[rolename]['asn_base'],
-                        "hardware": self._ipfabric_data[rolename]['hardware'],
-                        "software_version": self._ipfabric_data[rolename]['software_version'],
-                        "role": rolename,
-                        "id": num + 1,
-                        "hostname": hostname_fmtstr.format(self._ipfabric_data[rolename]['hostname'], num + 1),
-                    }
-            return nodes
-
-        fb_loopback = self._ipfabric_data['addressing']['loopback']
-        loopback_per_node = isinstance(fb_loopback, list) and all([isinstance(entry, dict) and 'node' in entry for entry in fb_loopback])
-        loopback_per_role = isinstance(fb_loopback, list) and all([isinstance(entry, dict) and 'role' in entry for entry in fb_loopback])
-        if loopback_per_node:
-            fb_loopback = {entry['node']: netaddr.IPAddress(entry['system']) for entry in self._ipfabric_data['addressing']['loopback']}
-        elif loopback_per_role:
-            fb_loopback = {entry['role']: netaddr.IPAddress(entry['start']) for entry in self._ipfabric_data['addressing']['loopback']}
-
-        for nodetype, nodelist in self._fabric_nodes.items():
-            parsed_nodes = _parse_nodes_from_ipfabric(nodetype)
-            self._ipfabric_nodes.update(parsed_nodes)  # Store the parsed nodes by their fabricbuilder aliases for later
-            if {parsed_nodes[n]["hostname"] for n in parsed_nodes} != set(nodelist):
-                raise Exception(f"Unable to match nodes from inventory with ipfabric_data for {nodetype}")
-            for parsed_node, properties in parsed_nodes.items():
-                hostname = properties['hostname']  # parsed_node is the FB alias <role>XX e.g. leaf04 or borderleaf01, not the hostname!
-                self._hardware[hostname] = properties["hardware"]
-                self._overrides[hostname] = dict()
-                offset_multiplier = 1 if nodetype in ['leaf', 'borderleaf', 'dcgw'] else 0
-                self._overrides[hostname]['id'] = int(properties['id'])
-                if 'asn' in properties:
-                    self._overrides[hostname]['asn'] = int(properties['asn'])
-                else:
-                    self._overrides[hostname]['asn'] = int(properties['asn_base']) + (offset_multiplier * int(properties['id']))
-                if loopback_per_node:
-                    self._overrides[hostname]['loopback'] = str(fb_loopback[parsed_node])
-                elif loopback_per_role:
-                    self._overrides[hostname]['loopback'] = str(fb_loopback[nodetype] + (properties['id'] - 1))
-
-        for entry in self._ipfabric_data['fabric_cabling']:
-            newentry = dict()
-            localhostname = self._ipfabric_nodes[entry['local_device']]['hostname']
-            remotehostname = self._ipfabric_nodes[entry['remote_device']]['hostname']
-            newentry["endpoints"] = [f"{localhostname}:{entry['uplink']}", f"{remotehostname}:{entry['downlink']}"]
-            newentry.update({k: v for k, v in entry.items() if k not in ['local_device', 'uplink', 'remote_device', 'downlink']})
-            self._fabric_cabling.append(newentry)
-
-        shortport_re = re.compile(r"^e?([\d]+)[-/]([\d]+)$")
-        for entry in self._edge_interfaces_data:
-            if not isinstance(entry, dict):
-                raise AttributeError("Wrong datatype for entry in edge_interfaces")
-            if not set.issubset({'nodes', 'interfaces'}, entry.keys()):
-                raise AttributeError("Wrong data for entry in edge_interfaces")
-            for node in expand_range(entry["nodes"], hint=list(self._ipfabric_nodes.keys())):
-                hostname = self._ipfabric_nodes[node]["hostname"]
-                if hostname not in self._edge_interfaces:
-                    self._edge_interfaces[hostname] = dict()
-                for iface in expand_range(entry["interfaces"]):
-                    interface = shortport_re.sub(r"ethernet-\g<1>/\g<2>", iface)
-                    self._edge_interfaces[hostname][interface] = {k: v for k, v in entry.items() if k not in {"nodes", "interfaces"}}
-
-        if 'rr' not in self._ipfabric_data:
-            self._keys.discard('rr')
-        if 'p2p' not in self._ipfabric_data['addressing']:
-            self._keys.discard('p2p')
-        if len(self._edge_interfaces_data) == 0:
-            self._keys.discard('edge_interfaces')
-
-    def __getitem__(self, index):
-        if index not in self._keys:
-            raise KeyError(index)
-        if index == 'asn':
-            return []  # asn via overrides!
-        elif index == 'edge_interfaces':
-            return deepcopy(self._edge_interfaces)
-        elif index == 'fabric_cabling':
-            return deepcopy(self._fabric_cabling)
-        elif index == 'hardware':
-            return deepcopy(self._hardware)
-        elif index == 'loopback':
-            fb_loopback = self._ipfabric_data['addressing']['loopback']
-            if isinstance(fb_loopback, str):
-                return fb_loopback
-            else:
-                return None  # dummy! via overrides!
-        elif index == 'overlay_asn':
-            return int(self._ipfabric_data['rr']['asn_base'])
-        elif index == 'overrides':
-            return deepcopy(self._overrides)
-        elif index == 'p2p':
-            return self._ipfabric_data['addressing']['p2p']
-        elif index == 'rr':
-            return {k: v for k, v in self._ipfabric_data.get('rr', {}).items() if k in ['location', 'neighbor_list']}
-
-    def __setitem__(self, index):
-        raise RuntimeError(f"{type(self).__name__} is a read-only object!")
-
-    def __delitem__(self, index):
-        raise RuntimeError(f"{type(self).__name__} is a read-only object!")
-
-    def __iter__(self):
-        return iter(self._keys)
-
-    def __len__(self):
-        return len(self._keys)
-
-    def __str__(self):
-        return f"{dict(self)}"
-
-    def __repr__(self):
-        return f"{dict(self)}"
-
-
 class IpFabricParser:
     def __init__(self, fabric_nodes, fabric_data, advanced_opts=None):
         if not isinstance(fabric_nodes, dict):
@@ -250,7 +60,7 @@ class IpFabricParser:
         for key in fabric_nodes.keys():
             if key not in ['spine', 'leaf', 'superspine', 'dcgw', 'borderleaf']:
                 raise AttributeError("Wrong key in fabric_nodes")
-        if not isinstance(fabric_data, (dict, FabricBuilderProxy)):
+        if not isinstance(fabric_data, dict):
             raise AttributeError("Wrong type for fabric_data")
         if advanced_opts is None:
             advanced_opts = {}
@@ -293,8 +103,6 @@ class IpFabricParser:
 
     @property
     def max_pod(self):
-        if isinstance(self._fabric_data, FabricBuilderProxy):
-            return min(self._advanced_opts['max_pod'], 1)
         return self._advanced_opts['max_pod']
 
     @property
@@ -929,32 +737,15 @@ class ActionModule(ActionBase):
 
         groups = task_vars.get("groups", {})
         fabric_intent = self._task.args.get("fabric_intent", {})
-        ipfabric_data = fabric_intent.get("ipfabric", None)
         fabric_data = fabric_intent.get("fabric", None)
-        edge_interfaces_data = fabric_intent.get("edge_interfaces", None)
         advanced_opts = fabric_intent.get("advanced_opts", {})
 
-        using_fabric_data = fabric_data is not None
-        using_fabric_builder_data = ipfabric_data is not None or edge_interfaces_data is not None
-
-        if not (using_fabric_data ^ using_fabric_builder_data):
+        if fabric_data is None:
             result["failed"] = True
-            result["msg"] = "Either provide 'fabric_data' or 'ipfabric_data'/'edge_interfaces_data'..."
-            return result
-
-        if using_fabric_builder_data and ipfabric_data is None:
-            result["failed"] = True
-            result["msg"] = "'ipfabric_data' is mandatory when using FabricBuilder input..."
+            result["msg"] = "No fabric_data found."
             return result
 
         fabric_nodes = {group: nodelist for group, nodelist in groups.items() if group in ['spine', 'leaf', 'superspine', 'dcgw', 'borderleaf']}
-
-        if using_fabric_builder_data:
-            fabric_data = FabricBuilderProxy(
-                fabric_nodes=fabric_nodes,
-                ipfabric_data=ipfabric_data,
-                edge_interfaces_data=edge_interfaces_data,
-            )
 
         ipfabric = IpFabricParser(
             fabric_nodes=fabric_nodes,
