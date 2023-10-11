@@ -80,9 +80,16 @@
   register: output
   when: platform == 'sros'
 
+#- name: Pretty format
+#  community.general.xml:
+#    xmlstring: "{{ output.xmlstring }}"
+#    pretty_print: yes
+#  register: pretty
+#  when: platform == 'sros'
+
 #- name: DEBUG print XML
 #  ansible.builtin.debug:
-#    var: output.xmlstring
+#    msg: "{{ pretty.xmlstring.split('\n') }}"
 #  when: platform == 'sros'
 
 - name: Deploy configuration to device

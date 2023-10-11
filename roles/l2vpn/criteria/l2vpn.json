@@ -12,7 +12,7 @@
                     "type": "string",
                     "enum": ["deleted", "present"]
                 },
-                "expose": {
+                "external": {
                     "type": "boolean"
                 },
                 "type": {

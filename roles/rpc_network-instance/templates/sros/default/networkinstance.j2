@@ -15,21 +15,22 @@
         {% for itf in prop.interfaces %} 
           {% set PORT = itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
           {% if itf is ansible.builtin.regex('^system0') %}
-            {% if hostvars[inventory_hostname]['dcgw_claim_system'] | default(False) %}
       - interface-name: system
-            {% else %}
-      - interface-name: to_dc_fabric
-        loopback: ""
-            {% endif %}
           {% else %}
       - interface-name: I{{ PORT }}
         port: {{ PORT }}:0
           {% endif %}
         admin-state: enable
+          {% if subinterface[itf].ipv4_address is defined %}
         ipv4:
           primary:
             address: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('address') | string }}
             prefix-length: "{{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}"
+          {% endif %}
+          {% if subinterface[itf].ipv6 is defined %}
+        ipv6:
+          forward-ipv4-packets: "true"
+          {% endif %}
         {% endfor %}
       {% endif %}
       {% if prop.protocols is defined and prop.protocols is not none %}
@@ -75,6 +76,30 @@
             {% if group_spec.evpn is defined %}
               {% if group_spec.evpn.admin_state | default('disable') == 'enable' %}
           evpn: "true"
+              {% endif %}
+            {% endif %}
+            {% if prop.protocols.bgp.dynamic is defined %}
+              {% set DYNAMIC = namespace(found=false) %}
+              {% for nbr_itf, nbr_prop in prop.protocols.bgp.dynamic.interfaces.items() %}
+                {% if nbr_prop["peer-group"] == group %}
+                  {% set DYNAMIC.found = true %}
+                {% endif %}
+              {% endfor %}
+              {% if DYNAMIC.found %}
+        dynamic-neighbor:
+          interface:
+                {% for nbr_itf, nbr_prop in prop.protocols.bgp.dynamic.interfaces.items() %}
+                  {% if nbr_prop["peer-group"] == group %}
+                    {% set PORT = nbr_itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+            - interface-name: I{{ PORT }}
+              allowed-peer-as:
+                    {% for as in nbr_prop['allow-as'] %}
+                - "{{as}}"
+                    {% else %}
+                []
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
               {% endif %}
             {% endif %}
           {% endfor %}

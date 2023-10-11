@@ -43,7 +43,7 @@
                       }
                  ) %}
                 {% endif %}
-            {% elif 'dcgw' in group_names and (svc_spec.expose | default(False)) %}
+            {% elif 'dcgw' in group_names and (svc_spec.external | default(False)) %}
                 {% set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
                     {
                         svc_spec.id:
@@ -59,7 +59,7 @@
 
 network_instance:
 {% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
-    {% if ipvrf_spec | length > 0 or ('dcgw' in group_names and (l3vpn[ipvrf].expose | default(False))) %}
+    {% if ipvrf_spec | length > 0 or ('dcgw' in group_names and (l3vpn[ipvrf].external | default(False))) %}
     {{ ipvrf }}:
         {% if l3vpn[ipvrf]._state|default('present') == 'deleted' %}
         _state: deleted

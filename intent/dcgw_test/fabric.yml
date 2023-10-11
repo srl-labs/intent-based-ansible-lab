@@ -5,7 +5,7 @@ fabric:
   #p2p:
   #  - 100.64.0.0/17
   #  - 100.64.128.0/24
-  p2p: 100.64.0.0/16
+  #p2p: 100.64.0.0/16
 
   #asn:
   #  - 64601-64605
@@ -40,18 +40,18 @@ fabric:
   overrides:
     clab-4l2s-d1:
       asn: 65201
-      loopback: 10.10.10.1
+      loopback: 192.168.255.201
+      #loopback: 10.10.10.1
     clab-4l2s-d2:
       asn: 65202
-      loopback: 10.10.10.2
+      loopback: 192.168.255.202
+      #loopback: 10.10.10.2
     clab-4l2s-s1:
       asn: 65100
       loopback: 192.168.255.101
-      #loopback: 10.10.10.1
     clab-4l2s-s2:
       asn: 65100
       loopback: 192.168.255.102
-      #loopback: 10.10.10.2
     clab-4l2s-l1:
       asn: 65001
       loopback: 192.168.255.1

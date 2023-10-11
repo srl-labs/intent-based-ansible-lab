@@ -7,7 +7,5 @@ ansible_host_key_checking: False
 #ansible_command_timeout: 180
 platform: sros
 #
-#dcgw_claim_system: false
-dcgw_claim_system: true
 #dcgw_serviceid_offset: 0
 #dcgw_bhvpls_offset: 10000

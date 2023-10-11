@@ -1,14 +1,14 @@
 #jinja2: lstrip_blocks: "True"
 {% set go = namespace(found=false) %}
 {% for svc, svc_spec in l2vpn.items() %}
-{% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
+{% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.external | default(False))) %}
 {% set go.found = true %}
 {% endif %}
 {% endfor %}
 {% if go.found %} 
 network_instance: 
 {% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
+    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.external | default(False))) %}
     {% if svc_spec.vlan == 'untagged' %}
         {% set subif_idx = 0 %}
     {% else %}
@@ -84,7 +84,7 @@ interfaces:
 tunnel_interface:
     vxlan1:
 {% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.expose | default(False))) %}
+    {% if inventory_hostname in svc_spec.interface_list or ('dcgw' in group_names and (svc_spec.external | default(False))) %}
         {{svc_spec.id}}:
             _state: {{ svc_spec._state|default('present') }}
             type: bridged

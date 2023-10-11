@@ -1,7 +1,7 @@
 ipvrf-2001:
 #  _state: deleted
   id: 2001
-  expose: true
+  external: true
   type: ip-vrf
   description: IPVRF1
   snet_list:
