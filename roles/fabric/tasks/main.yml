@@ -16,6 +16,7 @@
         - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
       engine: ansible.utils.jsonschema
     loop:
+      - fabric
       - ipfabric
       - edge_interfaces
       - advanced_opts
@@ -27,10 +28,7 @@
 
   - name: Fabric pre-processing
     process_fabric:
-      ipfabric_data: "{{ fabric_intent.ipfabric | default({}) }}"
-      edge_interfaces_data: "{{ fabric_intent.edge_interfaces | default([]) }}"
-      advanced_opts: "{{ fabric_intent.advanced_opts | default({}) }}"
-
+      fabric_intent: "{{ fabric_intent }}"
     register: preprocessed_fabric
     delegate_to: localhost
     run_once: true

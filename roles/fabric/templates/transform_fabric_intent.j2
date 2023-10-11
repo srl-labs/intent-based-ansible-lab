@@ -3,8 +3,12 @@ routing_policy:
   prefix_set:
     loopbacks:
       prefix:
-        - ip-prefix: {{ preprocessed_fabric.fabric.loopback }}
+      {% for prefix in preprocessed_fabric.fabric.loopback %}
+        - ip-prefix: {{ prefix }}
           mask-length-range: "32..32"
+      {% else %}
+        []
+      {% endfor %}
 
 interfaces:
   {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] %}

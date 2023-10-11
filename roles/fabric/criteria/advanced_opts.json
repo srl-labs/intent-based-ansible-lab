@@ -28,7 +28,7 @@
         "dynamic_max_leaf_in_pod": {
             "type": "bool"
         },
-        "spine_hardware": {
+        "hardware": {
             "type": "object",
             "patternProperties": {
                 "^.*" : {
