@@ -11,14 +11,12 @@
 
   - name: Validate fabric intent
     ansible.utils.validate:
-      data: "{{ fabric_intent[item] }}"
+      data: "{{ fabric_intent }}"
       criteria:
-        - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
+        - "{{ lookup('file', 'criteria/fabric_intent.json') | from_json }}"
       engine: ansible.utils.jsonschema
-    loop:
-      - fabric
-      - advanced_opts
-    when: "item in fabric_intent"
+    delegate_to: localhost
+    run_once: true
 
   - name: Reset var 'my_intent'
     ansible.builtin.set_fact:

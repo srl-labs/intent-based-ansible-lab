@@ -21,11 +21,6 @@ interfaces:
     admin_state: enable
     _tag: isl
   {% endfor %}
-  {% for iface in preprocessed_fabric[inventory_hostname].edge_interfaces %}
-  {{iface}}:
-    admin_state: enable
-    vlan_tagging: yes
-  {% endfor %}
 
 subinterface:
   system0.0:

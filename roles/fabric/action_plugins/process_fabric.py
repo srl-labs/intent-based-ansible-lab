@@ -23,103 +23,126 @@ except ImportError:
 
 
 # helper function expanding ranges
-def expand_range(inp, hint=None):
+def expand_range(inp, hint=None, max_digits=4):
+    """
+    This function expands strings with embedded ranges into a list of strings.
+    The ranges are specified by <start><delimiter><stop> enclosed in square brackets.
+    <delimiter> can be a minus sign (-) or 2 dots (..).
+    <start> and <stop> must be integers with <start> less or equal to <stop>.
+
+    When `hint` (a list of strings) is given, also the following applies:
+    - only strings that expand to a string present in `hint` will be returned
+    - each range, when expanded, will be tested with leading zeros up to `max_digits`
+
+    example:
+      expand_range('leaf[1-1]', hint=['leaf1', 'leaf001', 'leaf00001'], max_digits=4)
+    will be expanded to:
+      ['leaf1', 'leaf001']
+
+    '[1-1]' wil be expanded to '1', '01', '001' and '0001', but only '1' and '001'
+    produces a match in `hint`, '00001' is not a candidate because `max_digits` was 4
+
+    example:
+      expand_range('ethernet-[1-2]/[1-3]')
+    will be expanded to:
+      ['ethernet-1/1', 'ethernet-1/2', 'ethernet-1/3', 'ethernet-2/1', 'ethernet-2/2', 'ethernet-2/3']
+    """
     ret = list()
     if hint is None:
         hint = list()
     r_re = re.compile(r"\[(?P<start>\d+)(-|\.\.)(?P<stop>\d+)\]")
-    r_match = r_re.search(inp)
-    if r_match is None:
-        ret.append(inp)
-    else:
+
+    # This list will store for each range we encounter a list of possible substitution candidates
+    rangematch_candidates = list()
+    for r_match in r_re.finditer(inp):
+        # Iterate over all the ranges found in the input string
         r_start = int(r_match["start"])
         r_end = int(r_match["stop"]) + 1
         if r_end <= r_start:
-            raise Exception("Invalid range in entry in edge_interfaces")
+            raise Exception(f"Invalid range {r_match[0]}")
+        candidates = list()
         for i in range(r_start, r_end):
+            # Generate all candidate replacement strings for the range
             if len(hint) > 0:
-                # When hints are given (known hostnames), try anywhere between 0-3 leading zeros to see if there ia a match
-                # e.g. leaf[1-2] matches (leaf1, leaf2) but also (leaf001, leaf002)
-                for j in range(1, 4):
+                # If hints are given, for each integer in the range, generate all candidates with leading 0s up to max_digit
+                for j in range(1, max_digits + 1):
                     fmtstr = "{:0%sd}" % j
-                    outp = r_re.sub(fmtstr.format(i), inp)
-                    if outp in hint:
-                        ret.append(outp)
-                        break
-                else:
-                    ret.append(r_re.sub(str(i), inp))
+                    formatted_candidate = fmtstr.format(i)
+                    if formatted_candidate not in candidates:
+                        candidates.append(formatted_candidate)
             else:
-                ret.append(r_re.sub(str(i), inp))
+                # No hints, so the only candidate is the string version of the number in the range
+                candidates.append(str(i))
+        # Done processing the current range, store the list of substitution candidates for this range
+        rangematch_candidates.append(candidates)
+    # All ranges processed. Now make all possible combinations by carthesian product.
+    range_combo = itertools.product(*rangematch_candidates)
+    for combo in range_combo:
+        # Combo is a tuple that contains 1 possible substitution candidate for each range encountered
+        # Even if there were no ranges to expand at all, itertools.product(*[]) produces [()] so we are covered.
+        res = inp
+        for substitution_candidate in combo:
+            # One by one, the range gets substituted by it's substitution candidate
+            res = r_re.sub(substitution_candidate, res, 1)
+        if len(hint) > 0:
+            # If hints are given, only expansions that have a match in hint are kept.
+            if res in hint:
+                ret.append(res)
+        else:
+            ret.append(res)
     return ret
 
 
 class IpFabricParser:
-    def __init__(self, fabric_nodes, fabric_data, advanced_opts=None):
+    def __init__(self, fabric_nodes, fabric_intent):
         if not isinstance(fabric_nodes, dict):
             raise AttributeError("Wrong type for fabric_nodes")
         for key in fabric_nodes.keys():
             if key not in ['spine', 'leaf', 'superspine', 'dcgw', 'borderleaf']:
                 raise AttributeError("Wrong key in fabric_nodes")
-        if not isinstance(fabric_data, dict):
-            raise AttributeError("Wrong type for fabric_data")
-        if advanced_opts is None:
-            advanced_opts = {}
-
-        default_options = {
-            "max_pod": 1,
-            "max_dcgw": 2,
-            "max_superspine": 0,
-            "max_spine_in_pod": 2,
-            "max_borderleaf_in_pod": 2,
-            "max_leaf_in_pod": 12,
-            "dynamic_max_leaf_in_pod": False,
-            "hardware": {
-                "IXR_D3": {
-                    "isl_ports": list([f"ethernet-1/{x+3}" for x in range(32)]),
-                    "max_leaf": 12
-                },
-                "IXR_D3L": {
-                    "isl_ports": list([f"ethernet-1/{x+1}" for x in range(32)]),
-                    "max_leaf": 12
-                },
-                "IXR_H2": {
-                    "isl_ports": list([f"ethernet-1/{x+1}" for x in itertools.chain(range(24), range(56, 88), range(120, 128))]),
-                    "max_leaf": 12
-                },
-            },
-        }
+        if not isinstance(fabric_intent, dict):
+            raise AttributeError(f"Wrong type for fabric_intent; expected <dict>, got <{type(fabric_intent).__name__}>.")
+        if set(fabric_intent.keys()) != {'fabric', 'sizing'}:
+            raise AttributeError(f"Wrong data in fabric_intent; expected keys {{fabric, sizing}}, got {{{', '.join(fabric_intent.keys())}}}.")
 
         self._fabric_nodes = fabric_nodes
-        self._fabric_data = fabric_data
-        self._advanced_opts = dict(default_options)
-        self._advanced_opts.update(advanced_opts)
-        self._hardware = dict()
-        self._edge_interfaces = dict()
+        self._fabric_data = deepcopy(fabric_intent['fabric'])
+        self._sizing = deepcopy(fabric_intent['sizing'])
+        self._spine_islports = dict()
+        self._overrides = dict()
         self._parse_topo()
 
     @property
-    def options(self):
-        return deepcopy(self._advanced_opts)
-
-    @property
     def max_pod(self):
-        return self._advanced_opts['max_pod']
+        return self._sizing['max_pod']
 
     @property
     def max_dcgw(self):
-        return self._advanced_opts['max_dcgw']
+        return self._sizing['max_dcgw']
 
     @property
     def max_superspine(self):
-        return self._advanced_opts['max_superspine']
+        return self._sizing['max_superspine']
 
     @property
     def max_spine_in_pod(self):
-        return self._advanced_opts['max_spine_in_pod']
+        return self._sizing['max_spine_in_pod']
 
     @property
     def max_borderleaf_in_pod(self):
-        return self._advanced_opts['max_borderleaf_in_pod']
+        return self._sizing['max_borderleaf_in_pod']
+
+    @property
+    def max_leaf_in_pod(self):
+        return self._sizing['max_leaf_in_pod']
+
+    @property
+    def max_isl_per_spine(self):
+        return self._sizing['max_isl_per_spine']
+
+    @property
+    def max_isl_per_dcgw(self):
+        return self._sizing['max_isl_per_dcgw']
 
     @property
     def fabric_data(self):
@@ -128,14 +151,6 @@ class IpFabricParser:
     @property
     def fabric_nodes(self):
         return deepcopy(self._fabric_nodes)
-
-    @property
-    def ipfabric_nodes(self):
-        return deepcopy(self._ipfabric_nodes)
-
-    @property
-    def edge_interfaces(self):
-        return deepcopy(self._edge_interfaces)
 
     @property
     def topo(self):
@@ -192,7 +207,6 @@ class IpFabricParser:
         for node in self.nodes:
             ret[node] = dict()
             ret[node].update(nodeproperties[node])
-            ret[node]["edge_interfaces"] = deepcopy(self._edge_interfaces[node]) if node in self._edge_interfaces else dict()
             ret[node]["isls"] = dict()
             for n1, n2, key, properties in self._topo.edges([node], data=True, keys=True):
                 peer = n2 if node == n1 else n2
@@ -205,22 +219,12 @@ class IpFabricParser:
         ret["fabric"] = deepcopy(self._topo.graph)
         return ret
 
-    def max_leaf_in_pod(self, pod=0):
-        if "single-tier" in self._topo.graph and self._topo.graph["single-tier"]:
-            return min(self._advanced_opts['max_leaf_in_pod'], 2)
-        if not self._advanced_opts['dynamic_max_leaf_in_pod']:
-            return self._advanced_opts['max_leaf_in_pod']
-        else:
-            if pod >= min(len(self._topo.graph["pods"]), self.max_pod):
-                return 0
-            max_leaf_in_pod = self._advanced_opts['hardware'][self._topo.graph["pods"][pod]["spine_hardware"]]['max_leaf']
-            return min(self._advanced_opts['max_leaf_in_pod'], max_leaf_in_pod)
-
     def _parse_topo(self):
         shortport_re = re.compile(r"^e?([\d]+)[-/]([\d]+)$")
 
         self._topo = nx.MultiGraph()
         self._topo.graph["overlay_asn"] = int(self._fabric_data["overlay_asn"])
+        self._topo.graph["bgp_unnumbered"] = "bgp-unnumbered" in self._fabric_data and self._fabric_data["bgp-unnumbered"]
         self._topo.graph["pods"] = dict()
 
         # Populate network-graph with nodes fabric_nodes (from ansible inventory)
@@ -228,11 +232,39 @@ class IpFabricParser:
             self._topo.add_nodes_from([(node, {"role": nodetype},) for node in nodelist])
         self._topo.graph["single-tier"] = len(self.leafs) == 2 and len(self.nodes) == 2
 
-        # Parse HW info
-        for entry in self._fabric_data['hardware']:
-            for node in expand_range(entry, self.nodes):
-                if node in self.nodes:
-                    self._hardware[node] = self._fabric_data['hardware'][entry]
+        # Parse overrides
+        if 'overrides' in self._fabric_data:
+            for entry in self._fabric_data['overrides']:
+                for node in expand_range(entry, self.nodes):
+                    if node not in self._overrides:
+                        self._overrides[node] = dict()
+                    for k, v in self._fabric_data['overrides'][entry].items():
+                        if k in self._overrides[node]:
+                            raise Exception(f"An override for {node}[{k}] was already provided elsewhere!")
+                        else:
+                            self._overrides[node][k] = v
+
+        # Parse spine ISL port info
+        if 'spine' in self._fabric_data:
+            for entry in self._fabric_data['spine']:
+                for node in expand_range(entry, self.spines):
+                    isl_ports = self._fabric_data['spine'][entry]['isl-ports']
+                    isl_port_list = list()
+                    if isinstance(isl_ports, list):
+                        for isl_port_entry in isl_ports:
+                            isl_port_list.extend(expand_range(isl_port_entry))
+                    else:
+                        isl_port_list = expand_range(isl_ports)
+
+                    # Validate for duplicates
+                    if len(isl_port_list) != len(set(isl_port_list)):
+                        raise Exception(f"Isl-port information for spine {node} contains duplicates!")
+
+                    # Validate for duplicates
+                    if len(isl_port_list) > self.max_isl_per_spine:
+                        raise Exception(f"Isl-port information for spine {node} contains more ISL ports than max_isl_per_spine!")
+
+                    self._spine_islports[node] = isl_port_list
 
         # Populate network-graph with links from ipfabric_data
         for entry in self._fabric_data["fabric_cabling"]:
@@ -252,18 +284,17 @@ class IpFabricParser:
         # First pass through the network-graph nodes to add properties
         for node, properties in self._topo.nodes(True):
             # Add id property
-            if 'overrides' in self._fabric_data and node in self._fabric_data['overrides'] and 'id' in self._fabric_data['overrides'][node]:
-                nodeid = self._fabric_data['overrides'][node]['id']
+            if node in self._overrides and 'id' in self._overrides[node]:
+                nodeid = self._overrides[node]['id']
             else:
                 nodeid = int(re.search(r"\d+$", node)[0])
             self._topo.nodes[node]["id"] = nodeid
 
-            # Add hardware property
-            if node in self._hardware:
-                self._topo.nodes[node]["hardware"] = self._hardware[node]
-            else:
-                if properties['role'] == 'spine':
-                    raise Exception(f"Not able to determine hardware for spine {node}")
+            # Add other properties
+            if node in self._overrides:
+                for k, v in self._overrides[node].items():
+                    if k not in {'id', 'asn', 'loopback'}:  # These are handeled separately
+                        self._topo.nodes[node][k] = v
 
         # Second pass through the network-graph nodes to group spines and (border-)leafs into pods
         podid_allocation = 0
@@ -292,14 +323,11 @@ class IpFabricParser:
             if podid not in self._topo.graph["pods"]:
                 self._topo.graph["pods"][podid] = dict()
                 if not self._topo.graph["single-tier"]:
-                    self._topo.graph["pods"][podid]["spine_hardware"] = self._topo.nodes[spines_in_pod[0]]["hardware"]
                     self._topo.graph["pods"][podid]["spine"] = spines_in_pod
-                    self._topo.graph["pods"][podid]["leaf"] = list()
                 else:
-                    self._topo.graph["pods"][podid]["spine_hardware"] = None
                     self._topo.graph["pods"][podid]["spine"] = list()
-                    self._topo.graph["pods"][podid]["leaf"] = list()
                 self._topo.graph["pods"][podid]["borderleaf"] = list()
+                self._topo.graph["pods"][podid]["leaf"] = list()
 
             if not self._topo.graph["single-tier"]:
                 # From that spine, list all adjacent leafs => leafs of the pod.
@@ -322,8 +350,6 @@ class IpFabricParser:
                     if self.superspine_count > 0:
                         if len([neighbor for neighbor in self._topo[spine] if self._topo.nodes(data='role')[neighbor] == "superspine"]) == 0:
                             raise Exception(f"spine {node} has no connection to superspine layer")
-                    if self._topo.nodes[spine]["hardware"] != self._topo.graph["pods"][podid]["spine_hardware"]:
-                        raise Exception(f"Not all spines in pod {podid} have same HW type!")
 
             # Sanity check leaf layer and set podid
             leafids = [nodeid for node, nodeid in self._topo.nodes(data="id") if node in leafs_in_pod]
@@ -371,11 +397,23 @@ class IpFabricParser:
                 # Verify max spines in pod
                 if nodeid >= self.max_spine_in_pod:
                     raise Exception(f"Spine {node} exceeds maximum # spines in pod!")
+
+                # When not using BGP unnumbered, validate that ISL ports are defined for spine
+                if not self._topo.graph["bgp_unnumbered"] and node not in self._spine_islports:
+                    raise Exception(f"No isl-port information found for spine {node}")
             elif properties['role'] == 'leaf':
+                # Verify all leafs have been assigned a podid
+                if 'podid' not in properties:
+                    raise Exception(f"Not able to determine podid for {node}")
+
                 # Verify max leafs in pod
-                if nodeid >= self.max_leaf_in_pod(properties['podid']):
+                if nodeid >= self.max_leaf_in_pod:
                     raise Exception(f"Leaf {node} exceeds maximum # leafs in pod!")
             elif properties['role'] == 'borderleaf':
+                # Verify all borderleafs have been assigned a podid
+                if 'podid' not in properties:
+                    raise Exception(f"Not able to determine podid for {node}")
+
                 # Verify max borderleafs in pod
                 if nodeid >= self.max_borderleaf_in_pod:
                     raise Exception(f"Borderleaf {node} exceeds maximum # borderleafs in pod!")
@@ -387,6 +425,10 @@ class IpFabricParser:
                 # Verify max dcgws
                 if nodeid >= self.max_dcgw:
                     raise Exception(f"DCGW {node} exceeds maximum # DCGWs!")
+
+                # Verify not using bgp-unnumbered as this is not supported due to SROS problem
+                if self._topo.graph["bgp_unnumbered"]:
+                    raise Exception("Using BGP-unnumbered is not supported in combination with DCGW integration.")
 
             # Validate podid
             if 'podid' in properties:
@@ -401,14 +443,13 @@ class IpFabricParser:
             # | X asns | 1 asn       | 1 asn  | X asns      | X asns | 1 asn  | X asns      | X asns | ...
             #
             # where applicable, all spaces are reserved till max allowed /role /pod
-            # for leafs, the max allowed /pod can be either static, or dynamic based on HW type used in spine layer
 
             offset = nodeid if properties['role'] in ['dcgw', 'leaf', 'borderleaf'] else 0
             podoffset = 0
             roleoffset = 0
 
             if properties['role'] in ['spine', 'leaf', 'borderleaf']:
-                podoffset = sum([1 + self.max_borderleaf_in_pod + self.max_leaf_in_pod(i) for i in range(properties['podid'])])
+                podoffset = properties['podid'] * (1 + self.max_borderleaf_in_pod + self.max_leaf_in_pod)
 
             # reserve for dcgw
             roleoffset += self.max_dcgw if properties['role'] in ['spine', 'leaf', 'borderleaf', 'superspine'] else 0
@@ -423,8 +464,8 @@ class IpFabricParser:
 
             # Allocate ASN
             if 'asn' not in properties:
-                if 'overrides' in self._fabric_data and node in self._fabric_data['overrides'] and 'asn' in self._fabric_data['overrides'][node]:
-                    allocated_asn = self._fabric_data['overrides'][node]['asn']
+                if node in self._overrides and 'asn' in self._overrides[node]:
+                    allocated_asn = self._overrides[node]['asn']
                 else:
                     # Grow asnpool with new items from generator if needed
                     while asn_offset >= len(asnpool):
@@ -453,14 +494,13 @@ class IpFabricParser:
             # |       |             | spines | borderleafs | leafs | spines | borderleafs | leafs | ...
             #
             # all spaces are reserved till max allowed /role /pod
-            # for leafs, the max allowed /pod can be either static, or dynamic based on HW type used in spine layer
 
             offset = nodeid
             podoffset = 0
             roleoffset = 0
 
             if properties['role'] in ['spine', 'leaf', 'borderleaf']:
-                podoffset = sum([self.max_spine_in_pod + self.max_borderleaf_in_pod + self.max_leaf_in_pod(i) for i in range(properties['podid'])])
+                podoffset = properties['podid'] * (self.max_spine_in_pod + self.max_borderleaf_in_pod + self.max_leaf_in_pod)
 
             # reserve for dcgw
             roleoffset += self.max_dcgw if properties['role'] in ['spine', 'leaf', 'borderleaf', 'superspine'] else 0
@@ -475,8 +515,8 @@ class IpFabricParser:
 
             # Allocate loopback
             if 'loopback' not in properties:
-                if 'overrides' in self._fabric_data and node in self._fabric_data['overrides'] and 'loopback' in self._fabric_data['overrides'][node]:
-                    allocated_loopback = str(netaddr.IPAddress(self._fabric_data['overrides'][node]['loopback']))
+                if node in self._overrides and 'loopback' in self._overrides[node]:
+                    allocated_loopback = str(netaddr.IPAddress(self._overrides[node]['loopback']))
                     overwrite_loopbacks.append(allocated_loopback)
                 else:
                     allocated_loopback = str(loopback_pool[loopback_offset])
@@ -504,7 +544,6 @@ class IpFabricParser:
                 self._topo.graph['loopback'].append(str(loopback))
 
         # Iterate over the network-graph edges for ISL-address assignment
-        self._topo.graph['bgp_unnumbered'] = 'p2p' not in self._fabric_data or len(self._fabric_data['p2p']) == 0
         if not self._topo.graph['bgp_unnumbered']:
             roleorder = ["spine", "dcgw", "superspine", "borderleaf", "leaf"]  # used to allocate address within /31 p2p subnet to nodes.
             if isinstance(self._fabric_data['p2p'], list):
@@ -520,10 +559,13 @@ class IpFabricParser:
             # allocation scheme:
             # | reserved range for | ------------- pod 1 ------------ | ------------- pod 2 ------------ | ...
             # | DCGW connected to  | spine1 | ... | max_spine_per_pod | spine1 | ... | max_spine_per_pod |
-            # | superspine or      |          \                       |          \                       |
-            # | borderleaf         | max isl-   \                     | max isl-   \                     |
-            # | (not involving the | capable port \                   | capable port \                   |
-            # | spine-layer)       | for hardware   \                 | for hardware   \                 |
+            # | superspine or      |                                  |                                  |
+            # | borderleaf         |                                  |                                  |
+            # | (not involving the |                                  |                                  |
+            # | spine-layer)       |                                  |                                  |
+            # |                    |                                  |                                  |
+            # | max_isl_per_dcgw * |      max_spine_per_pod *         |      max_spine_per_pod *         |
+            # |   max_dcgw         |           max_isl_per_spine      |           max_isl_per_spine      |
 
             for endpoint1, endpoint2, key, properties in self._topo.edges(data=True, keys=True):
                 ep1_properties = self._topo.nodes[endpoint1]
@@ -575,13 +617,12 @@ class IpFabricParser:
                 nodeid = self._topo.nodes[spineendpoint]['id'] - 1  # make 0 based!
                 podid = self._topo.nodes[spineendpoint]['podid']
 
-                reserved_offset = 4 * self.max_dcgw  # max 4 links per dcgw (e.g. 4x 100G)
-                podoffset = sum([self.max_spine_in_pod * len(self._advanced_opts['hardware'][self._topo.graph["pods"][x]["spine_hardware"]]['isl_ports'])
-                                 for x in range(podid)])
-                nodeoffset = nodeid * len(self._advanced_opts['hardware'][self._topo.graph["pods"][podid]["spine_hardware"]]['isl_ports'])
+                reserved_offset = self.max_isl_per_dcgw * self.max_dcgw
+                podoffset = podid * self.max_spine_in_pod * self.max_isl_per_spine
+                nodeoffset = nodeid * self.max_isl_per_spine
+
                 try:
-                    spinehw = self._topo.graph["pods"][podid]["spine_hardware"]
-                    portoffset = self._advanced_opts['hardware'][spinehw]['isl_ports'].index(properties[spineendpoint])
+                    portoffset = self._spine_islports[spineendpoint].index(properties[spineendpoint])
                 except ValueError:
                     raise Exception(f"Used an invalid port {properties[spineendpoint]} as ISL on spine {spineendpoint}")
 
@@ -642,7 +683,7 @@ class IpFabricParser:
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
 
-            if "rr" not in self._fabric_data or "location" not in self._fabric_data["rr"] or self._fabric_data["rr"]["location"] == 'spine':
+            if self._fabric_data["rr"]["location"] == 'spine':
                 neighborlist = list()
                 # Spines peer with all (border-)leafs in pod
                 if properties['role'] == 'spine':
@@ -667,12 +708,11 @@ class IpFabricParser:
 
                 neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
 
-            elif "rr" in self._fabric_data and "location" in self._fabric_data["rr"] and \
-                    self._fabric_data["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["rr"]:
+            elif self._fabric_data["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["rr"]:
                 if properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
                     neighbor_addresses = self._fabric_data["rr"]["neighbor_list"]
 
-            elif "rr" in self._fabric_data and "location" in self._fabric_data["rr"] and self._fabric_data["rr"]["location"] == 'borderleaf':
+            elif self._fabric_data["rr"]["location"] == 'borderleaf':
                 neighborlist = list()
                 # Borderleafs peer with all leafs in pod
                 if properties['role'] == 'borderleaf':
@@ -698,22 +738,6 @@ class IpFabricParser:
 
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighbor_addresses, itertools.repeat(dict(), len(neighbor_addresses))))
 
-        # Parse edge_interfaces
-        edgenodes = self.leafs + self.borderleafs
-        if 'edge_interfaces' in self._fabric_data and isinstance(self._fabric_data['edge_interfaces'], list):
-            for entry in self._fabric_data['edge_interfaces']:
-                if not isinstance(entry, dict):
-                    raise AttributeError("Wrong datatype for entry in edge_interfaces")
-                if not set.issubset({'nodes', 'interfaces'}, entry.keys()):
-                    raise AttributeError("Wrong data for entry in edge_interfaces")
-                for node in expand_range(entry["nodes"], hint=edgenodes):
-                    if node not in self._edge_interfaces:
-                        self._edge_interfaces[node] = dict()
-                    for iface in expand_range(entry["interfaces"]):
-                        interface = shortport_re.sub(r"ethernet-\g<1>/\g<2>", iface)
-                        # TODO: breakout
-                        self._edge_interfaces[node][interface] = {k: v for k, v in entry.items() if k not in {"nodes", "interfaces"}}
-
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
@@ -736,21 +760,13 @@ class ActionModule(ActionBase):
             return result
 
         groups = task_vars.get("groups", {})
-        fabric_intent = self._task.args.get("fabric_intent", {})
-        fabric_data = fabric_intent.get("fabric", None)
-        advanced_opts = fabric_intent.get("advanced_opts", {})
-
-        if fabric_data is None:
-            result["failed"] = True
-            result["msg"] = "No fabric_data found."
-            return result
-
+        fabric_intent = self._task.args.get("fabric_intent", None)
         fabric_nodes = {group: nodelist for group, nodelist in groups.items() if group in ['spine', 'leaf', 'superspine', 'dcgw', 'borderleaf']}
 
         ipfabric = IpFabricParser(
             fabric_nodes=fabric_nodes,
-            fabric_data=fabric_data,
-            advanced_opts=advanced_opts)
+            fabric_intent=fabric_intent,
+            )
         result.update(ipfabric.processed_fabric)
 
         return result
