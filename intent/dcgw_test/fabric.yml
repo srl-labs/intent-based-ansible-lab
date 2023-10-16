@@ -5,7 +5,8 @@ fabric:
   #p2p:
   #  - 100.64.0.0/17
   #  - 100.64.128.0/24
-  #p2p: 100.64.0.0/16
+  p2p: 100.64.0.0/16
+  #bgp-unnumbered: false
 
   #asn:
   #  - 64601-64605
@@ -13,8 +14,9 @@ fabric:
   asn: 64601-65500
 
   overlay_asn: 65501
-  #rr:
-    #location: 'spine' 
+
+  rr:
+    location: 'spine'
     #neighbor_list:
     #  - 1.1.1.1
     #  - 2.2.2.2
@@ -33,9 +35,9 @@ fabric:
     - endpoints: ["clab-4l2s-l4:e1-49", "clab-4l2s-s1:e1-4"]
     - endpoints: ["clab-4l2s-l4:e1-48", "clab-4l2s-s2:e1-4"]
 
-  hardware:
-    #clab-4l2s-l[1-4]: 'IXR_D2'
-    clab-4l2s-s[1-2]: 'IXR_H2'
+  spine:
+    clab-4l2s-s[1-2]:
+      isl-ports: ethernet-1/[1-128]
 
   overrides:
     clab-4l2s-d1:
@@ -65,5 +67,12 @@ fabric:
       asn: 65004
       loopback: 192.168.255.4
 
-  #edge_interfaces:
-  #  - {'nodes': 'clab-4l2s-l[1-4]', 'interfaces': '1/[1-3]'}
+sizing:
+  max_pod: 2
+  max_dcgw: 2
+  max_superspine: 2
+  max_spine_in_pod: 4
+  max_borderleaf_in_pod: 2
+  max_leaf_in_pod: 12
+  max_isl_per_spine: 128
+  max_isl_per_dcgw: 4
