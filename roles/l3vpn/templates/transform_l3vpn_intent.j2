@@ -59,9 +59,9 @@
 
 network_instance:
 {% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
-    {% if ipvrf_spec | length > 0 or ('dcgw' in group_names and (l3vpn[ipvrf].external | default(False))) %}
+    {% if ipvrf_spec | length > 0 or 'dcgw' in group_names %}
     {{ ipvrf }}:
-        {% if l3vpn[ipvrf]._state|default('present') == 'deleted' %}
+        {% if l3vpn[ipvrf]._state|default('present') == 'deleted' or ('dcgw' in group_names and not (l3vpn[ipvrf].external | default(False))) %}
         _state: deleted
         {% else %}
             {% if ipvrf_spec | length > 0 %}
