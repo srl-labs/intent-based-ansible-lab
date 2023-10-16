@@ -54,7 +54,6 @@ macvrf-301:
   vlan: 301
 macvrf-302:
   id: 302
-  external: true
   type: mac-vrf
   description: MACVRF310
   interface_list:

@@ -161,38 +161,6 @@
         admin-state: enable
         vxlan-instance: "{{ vxlan_instance }}"
         {% endif %}
-      {% elif prop.type == 'mac-vrf' %}
-        {% set NETWORK_INSTANCE.found = true %}
-- path: /service/vpls[service-name={{ ni }}]
-  value:
-    admin-state: enable
-    customer: "1"
-    service-id: "{{ DCGW_SERVICEID_OFFSET + prop.id }}"
-        {% if 'bgp_vpn' in prop.protocols %}
-    bgp:
-      bgp-instance: "1"
-      route-target:
-        export: "target:{{ prop.protocols.bgp_vpn.export_rt }}"
-        import: "target:{{ prop.protocols.bgp_vpn.import_rt }}"
-        {% endif %}
-        {% if 'bgp_evpn' in prop.protocols %}
-        {% set vxlan_instance = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^vxlan(\\d+)\\.\\d+$', '\\1') %}
-        {% set tunnel_instance = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^(vxlan\\d+)\\.\\d+$', '\\1') %}
-        {% set tunnel_instance_id = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^vxlan\\d+\\.(\\d+)$', '\\1') | int %}
-    vxlan:
-      instance:
-        vxlan-instance: "{{ vxlan_instance }}"
-        vni: "{{ tunnel_interface[tunnel_instance][tunnel_instance_id].ingress_vni }}"
-    bgp-evpn:
-      evi: "{{ prop.protocols.bgp_evpn.evi }}"
-      routes:
-        mac-ip:
-           advertise: "true"
-      vxlan:
-        bgp-instance: "1"
-        admin-state: enable
-        vxlan-instance: "{{ vxlan_instance }}"
-        {% endif %}
       {% endif %}
     {% endif %}
   {% endif %}

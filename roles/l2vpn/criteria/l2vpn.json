@@ -12,9 +12,6 @@
                     "type": "string",
                     "enum": ["deleted", "present"]
                 },
-                "external": {
-                    "type": "boolean"
-                },
                 "type": {
                     "type": "string",
                     "const": "mac-vrf"
