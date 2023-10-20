@@ -67,6 +67,12 @@
                                                 "peer_as": {
                                                     "type": "number"
                                                 },
+                                                "enable_bfd": {
+                                                    "type": "boolean"
+                                                },
+                                                "fast_failover": {
+                                                    "type": "boolean"
+                                                },
                                                 "local_as": {
                                                     "type": "number"
                                                 },

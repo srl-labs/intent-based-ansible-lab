@@ -79,6 +79,9 @@
           {% if group_spec.peer_as is defined %}
           peer-as: {{ group_spec.peer_as }}
           {% endif %}
+          failure-detection:
+            enable-bfd: {{ group_spec.enable_bfd | default(False) }}
+            fast-failover: {{ group_spec.fast_failover | default(False) }}
           export-policy: {{ group_spec.export_policy }}
           import-policy: {{ group_spec.import_policy }}
           afi-safi:

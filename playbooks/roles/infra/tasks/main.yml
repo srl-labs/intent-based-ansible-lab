@@ -35,7 +35,8 @@
     - network_instance
     - routing_policy
     - acl_filters
-  when: "item in intent"
+    - bfd
+  when: intent is defined and item in intent
 
 - name: Generate itf descriptions
   when:
