@@ -1,0 +1,17 @@
+- name: Reboot fabric
+  gather_facts: false
+  hosts:
+    - leaf
+    - spine
+    - borderleaf
+    - superspine
+  any_errors_fatal: true
+
+  tasks:
+    - name: "Reboot"
+      ansible.builtin.include_role:
+        name: srl-reboot
+      when: inventory_hostname in groups[item]
+      # Ansible BUG might cause this to run in different order than expected!
+      # see: https://github.com/ansible/ansible/issues/21008, bug conclusion is wrong, it's not a display issue...
+      with_items: "{{ groups | list | select('ansible.builtin.regex', '^side_') | sort }}"

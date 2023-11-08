@@ -1,0 +1,139 @@
+- name: Verify binfile filename matches expected pattern
+  ansible.builtin.assert:
+    that:
+      - binfile is ansible.builtin.regex('srlinux-(\\d+\\.\\d+\\.\\d+-\\d+)\\.bin$')
+
+- name: Get version info
+  nokia.srlinux.get:
+    paths:
+      - path: /platform/control[slot=A]/software-version
+        datastore: state
+  register: info_pre
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    pre_version: "{{ info_pre.result[0] }}"
+    binfile_version: "{{ binfile | ansible.builtin.regex_replace('.*srlinux-(\\d+\\.\\d+\\.\\d+-\\d+)\\.bin$', '\\1') }}"
+  failed_when: pre_version is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
+
+- name: Check system state before upgrade
+  nokia.srlinux.get:
+    paths:
+      - path: /platform
+        datastore: state
+      - path: /network-instance[name=default]
+        datastore: state
+  register: pre_status
+  failed_when: pre_status.result is not system_ready
+
+- name: Verify startup config is up to date
+  nokia.srlinux.cli:
+    commands:
+      - diff startup
+  register: up2datecheck
+  failed_when: "'text' in up2datecheck.result[0]"
+
+- name: Print current version
+  ansible.builtin.debug:
+    msg: "Current version: {{ pre_version }}; requested verion: {{ binfile_version }}{% if binfile_version + '-' in pre_version%}; upgrade not required!{% endif %}"
+
+- name: Upgrade
+  when: binfile_version + "-" not in pre_version
+  block:
+  - name: Test binfile url accessibility
+    vars:
+      ansible_connection: ssh
+      ansible_user: linuxadmin
+      ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
+    when: binfile is ansible.builtin.regex('^https?://')
+    ansible.builtin.uri:
+      method: HEAD
+      url: "{{ binfile }}"
+
+  - name: Transfer local binfile
+    vars:
+      ansible_connection: ssh
+      ansible_user: linuxadmin
+      ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
+    when: binfile is not ansible.builtin.regex('^https?://')
+    block:
+      - name: Test binfile existance
+        ansible.builtin.stat:
+          path: "{{ binfile }}"
+        delegate_to: localhost
+        run_once: true
+        register: localbinfile
+        failed_when: localbinfile.stat.exists is not defined or not localbinfile.stat.exists or localbinfile.stat.isreg is not defined or not localbinfile.stat.isreg
+        vars:
+          ansible_connection: local
+
+      - name: Copy binfile
+        ansible.builtin.copy:
+          src: "{{ binfile }}"
+          dest: "/tmp/{{ binfile | ansible.builtin.basename }}"
+
+      - name: Verify remote binfile
+        ansible.builtin.stat:
+          path: "/tmp/{{ binfile | ansible.builtin.basename }}"
+        register: remotebinfile
+        failed_when: remotebinfile.stat.exists is not defined or not remotebinfile.stat.exists or remotebinfile.stat.isreg is not defined or not remotebinfile.stat.isreg or localbinfile.stat.checksum != remotebinfile.stat.checksum
+
+  - name: Save startup configuration copy prior to upgrade
+    vars:
+      ansible_connection: ssh
+      ansible_user: linuxadmin
+      ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
+    ansible.builtin.copy:
+      remote_src: true
+      src: "/etc/opt/srlinux/config.json"
+      dest: "/home/{{ ansible_user }}/config.json_{{ pre_version | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}.bak"
+
+  - name: Upgrade and reboot
+    vars:
+      ansible_command_timeout: 900
+    nokia.srlinux.cli:
+      commands:
+        - "tools system deploy-image {% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
+        - "tools platform chassis reboot delay 2"
+
+  - name: Wait for reboot to be executed
+    ansible.builtin.pause:
+      seconds: 10
+
+  - name: Wait for system to become ready again
+    nokia.srlinux.get:
+      paths:
+        - path: /platform
+          datastore: state
+        - path: /network-instance[name=default]
+          datastore: state
+    register: post_status
+    delay: 10
+    retries: 100
+    until: post_status.result is system_ready(pre_status.result)
+
+  - name: Get version info
+    nokia.srlinux.get:
+      paths:
+        - path: /platform/control[slot=A]/software-version
+          datastore: state
+    register: info_post
+
+  - name: Set facts
+    ansible.builtin.set_fact:
+      post_version: "{{ info_post.result[0] }}"
+
+  - name: Print new version
+    ansible.builtin.debug:
+      msg: "Previous version: {{ pre_version }}; requested verion: {{ binfile_version }}; current version: {{ post_version }}"
+    failed_when: binfile_version + "-" not in post_version
+
+  - name: Remove remote binfile
+    vars:
+      ansible_connection: ssh
+      ansible_user: linuxadmin
+      ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
+    when: binfile is not ansible.builtin.regex('^https?://')
+    ansible.builtin.file:
+      state: absent
+      dest: "/tmp/{{ binfile | ansible.builtin.basename }}"
