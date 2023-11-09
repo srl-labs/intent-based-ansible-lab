@@ -51,7 +51,7 @@
   ansible.builtin.set_fact:
     running_config: "{{ res['result'][0] }}"
     sw_version: "{{ res['result'][1].split('-')[0] }}"
-    lldp_nbrs: "{{ res.result[2].interface | items2dict(key_name='name', value_name='neighbor') }}"
+    lldp_nbrs: "{{ (res.result[2].interface | default([])) | items2dict(key_name='name', value_name='neighbor') }}"
   when: platform == 'srlinux'
 
 - name: Set facts for device
