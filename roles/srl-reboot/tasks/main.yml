@@ -1,0 +1,59 @@
+- name: Get version info
+  nokia.srlinux.get:
+    paths:
+      - path: /platform/control[slot=A]/software-version
+        datastore: state
+  register: info_pre
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    pre_version: "{{ info_pre.result[0] }}"
+
+- name: Check system state before reboot
+  nokia.srlinux.get:
+    paths:
+      - path: /platform
+        datastore: state
+      - path: /network-instance[name=default]
+        datastore: state
+  register: pre_status
+  failed_when: pre_status.result is not system_ready
+
+- name: Verify startup config is up to date
+  nokia.srlinux.cli:
+    commands:
+      - diff startup
+  register: up2datecheck
+  failed_when: "'text' in up2datecheck.result[0]"
+
+- name: Reboot
+  nokia.srlinux.cli:
+    commands:
+      - tools platform chassis reboot delay 2
+
+- name: Wait for reboot to be executed
+  ansible.builtin.pause:
+    seconds: 10
+
+- name: Wait for system to become ready again
+  nokia.srlinux.get:
+    paths:
+      - path: /platform
+        datastore: state
+      - path: /network-instance[name=default]
+        datastore: state
+  register: post_status
+  delay: 10
+  retries: 100
+  until: post_status.result is system_ready(pre_status.result)
+
+- name: Get version info
+  nokia.srlinux.get:
+    paths:
+      - path: /platform/control[slot=A]/software-version
+        datastore: state
+  register: info_post
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    post_version: "{{ info_pre.result[0] }}"
