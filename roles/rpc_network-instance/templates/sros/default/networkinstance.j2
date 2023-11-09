@@ -36,6 +36,7 @@
       {% if prop.protocols is defined and prop.protocols is not none %}
         {% if prop.protocols.bgp is defined %}
     bgp:
+      admin-state: enable
       min-route-advertisement: "1"
       rapid-withdrawal: "true"
       peer-ip-tracking: "true"
@@ -47,6 +48,7 @@
       group:
           {% for group, group_spec in prop.protocols.bgp.group.items() %}
       - group-name: {{ group }}
+        admin-state: enable
         description: {{ group_spec.description|default('no description') }}
             {% if group_spec.peer_as is defined %}
         peer-as: "{{ group_spec.peer_as }}"
@@ -106,6 +108,7 @@
       neighbor:
           {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
         - ip-address: {{ nbr }}
+          admin-state: enable
           group: {{ nbr_spec.peer_group }}
             {% if nbr_spec.peer_as is defined %}
           peer-as: "{{ nbr_spec.peer_as }}"
@@ -126,6 +129,7 @@
     service-id: "{{ DCGW_SERVICEID_OFFSET + prop.id }}"
     interface:
       interface-name: bhvpls
+      admin-state: enable
       vpls:
         vpls-name: {{ ni }}-bhvpls
         evpn-tunnel: ""
