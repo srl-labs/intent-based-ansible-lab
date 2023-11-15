@@ -42,6 +42,7 @@
       vars:
         intent: intent        # generated low-level intent from previous roles (explicit > implicit vars)
         purge: true           # purge resources from device not in intent
+        save_startup: false    # save config to startup-config, override with --extra-vars "save_startup=true" to ansible-playbook
         purgeable:
           - interface
           - subinterface

@@ -95,6 +95,7 @@
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"
+    save_when: "{% if save_startup | default(false) %}always{% else %}never{% endif %}"
   when: platform == 'srlinux'
 
 - name: Deploy configuration to device
