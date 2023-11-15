@@ -30,12 +30,25 @@
     run_once: true
 
   #- name: DEBUG fabric pre-processing
+  #  ansible.builtin.copy:
+  #    content: "{{ preprocessed_fabric | to_yaml }}"
+  #    dest: /tmp/preprocessed_fabric.yml
+  #  delegate_to: localhost
+  #  run_once: true
+
+  #- name: DEBUG fabric pre-processing
   #  ansible.builtin.debug:
   #    var: preprocessed_fabric
 
   - name: Generate low-level intent for FABRIC
     ansible.builtin.set_fact:
       my_intent: "{{ lookup('template', 'transform_fabric_intent.j2') | from_yaml }}"
+
+  #- name: DEBUG fabric pre-processing
+  #  ansible.builtin.copy:
+  #    content: "{{ my_intent | to_yaml  }}"
+  #    dest: "/tmp/{{ inventory_hostname }}.yml"
+  #  delegate_to: localhost
 
   #- name: DEBUG fabric pre-processing
   #  ansible.builtin.debug:
