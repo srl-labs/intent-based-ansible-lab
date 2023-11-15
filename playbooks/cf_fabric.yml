@@ -43,9 +43,44 @@
         intent: intent        # generated low-level intent from previous roles (explicit > implicit vars)
         purge: true           # purge resources from device not in intent
         save_startup: false    # save config to startup-config, override with --extra-vars "save_startup=true" to ansible-playbook
+        commit_confirm_timeout: "{{ confirm_timeout | default(0) | int }}"   # confirm timeout in seconds
         purgeable:
           - interface
           - subinterface
           - network-instance
           - tunnel-interface
       tags: [always]
+- name: Commit changes when confirm_timeout is set
+  gather_facts: false
+  hosts:
+    - leaf
+    - spine
+    - borderleaf
+    - superspine
+  tasks:
+    - name: Commit changes
+      when: confirm_timeout | default(0) | int > 0
+      block:
+        - name: Pausing playbook before confirming commits
+          ansible.builtin.pause:
+            seconds: "{{ confirm_timeout | default(0) | int - 5 }}"  # 5 seconds less than confirm_timeout
+            prompt: "Abort and allow commits to revert in {{ confirm_timeout | int }} secs.\nContinue or wait to go ahead and confirm commits"
+        - name: Get commits
+          nokia.srlinux.get:
+            paths:
+              - path: /system/configuration/commit
+                datastore: state
+          register: commits
+#        - ansible.builtin.debug:
+#            var: commits
+        - name: Check for commits requiring confirmation
+          ansible.builtin.set_fact:
+            unconfirmed_commits: "{{ commits.result[0].commit | selectattr('status', 'equalto', 'unconfirmed') | list }}"
+        - ansible.builtin.debug:
+            var: unconfirmed_commits
+        - name: Confirm commits
+          nokia.srlinux.config:
+            datastore: tools
+            update:
+              - path: /system/configuration/confirmed-accept
+          when: unconfirmed_commits | length > 0

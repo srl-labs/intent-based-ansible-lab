@@ -101,6 +101,12 @@
     replace: "{{ replace }}"
     delete: "{{ delete }}"
     save_when: "{% if save_startup | default(false) %}always{% else %}never{% endif %}"
+    confirm_timeout: "{{ commit_confirm_timeout }}"
+  when: platform == 'srlinux'
+  register: config_push
+
+- ansible.builtin.set_fact:
+    config_changed: "{{ config_push.changed }}"
   when: platform == 'srlinux'
 
 - name: Deploy configuration to device (SROS)
