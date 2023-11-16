@@ -296,6 +296,10 @@ class IpFabricParser:
                     if k not in {'id', 'asn', 'loopback'}:  # These are handeled separately
                         self._topo.nodes[node][k] = v
 
+            # Validate all nodes are connected into the fabric
+            if len(self._topo[node]) == 0:
+                raise Exception(f"Node {node} not connected into the fabric!")
+
         # Second pass through the network-graph nodes to group spines and (border-)leafs into pods
         podid_allocation = 0
         for node, properties in self._topo.nodes(True):

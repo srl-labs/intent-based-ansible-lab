@@ -101,6 +101,7 @@
 - name: Deploy configuration to device
   ansible.netcommon.netconf_config: 
     content: "{{ output.xmlstring }}"
+    save: "{% if save_startup | default(false) %}true{% else %}false{% endif %}"
   when: platform == 'sros'
 
 - name: Show playbook stats
