@@ -656,26 +656,36 @@ class IpFabricParser:
             self._topo.nodes[node]["bgp"]["groups"] = dict()
 
             # Underlay peer via ISLs
+            underlay_peergroups = dict()
             for n1, n2, key, edgeproperties in self._topo.edges([node], data=True, keys=True):
                 peer = n2 if node == n1 else n2
-                peergroup = nodeproperties[peer]["role"] + "s"
-                if peergroup not in self._topo.nodes[node]["bgp"]["groups"]:
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["dynamic"] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["type"] = "underlay"
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["description"] = f"Peer-group for {nodeproperties[peer]['role']} neighbors"
+                peergroup = nodeproperties[peer]["role"]
+                if peergroup not in underlay_peergroups:
+                    underlay_peergroups[peergroup] = list()
                 if not self._topo.graph['bgp_unnumbered']:
-                    neighbor = edgeproperties["p2p_address"][peer]
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor] = dict()
-                    if nodeproperties[peer]["role"] in ['superspine', 'spine']:
-                        self._topo.nodes[node]["bgp"]["groups"][peergroup]["peer_as"] = nodeproperties[peer]["asn"]
-                    else:
-                        self._topo.nodes[node]["bgp"]["groups"][peergroup]["neighbors"][neighbor]["peer_as"] = nodeproperties[peer]["asn"]
+                    underlay_peergroups[peergroup].append((edgeproperties["p2p_address"][peer], nodeproperties[peer]["asn"],))
                 else:
-                    interface = edgeproperties[node]
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["dynamic"][interface] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][peergroup]["dynamic"][interface]["allow-as"] = [nodeproperties[peer]["asn"]]
+                    underlay_peergroups[peergroup].append((edgeproperties[node], nodeproperties[peer]["asn"],))
+
+            for peergroup, peers in underlay_peergroups.items():
+                if peergroup not in self._topo.nodes[node]["bgp"]["groups"]:
+                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"] = dict()
+                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"] = dict()
+                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"] = dict()
+                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["type"] = "underlay"
+                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["description"] = f"Peer-group for {peergroup} neighbors"
+                if not self._topo.graph['bgp_unnumbered']:
+                    peer_asns = list({asn for _, asn in peers})
+                    for neighbor, asn in peers:
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor] = dict()
+                        if len(peer_asns) > 1:
+                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor]["peer_as"] = asn
+                    if len(peer_asns) == 1:
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["peer_as"] = peer_asns[0]
+                else:
+                    for interface, asn in peers:
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface] = dict()
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
 
             # Overlay
             self._topo.nodes[node]["bgp"]["groups"]["overlay"] = dict()
