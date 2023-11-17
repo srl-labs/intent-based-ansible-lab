@@ -697,56 +697,81 @@ class IpFabricParser:
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
             self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
 
+            neighbor_addresses = list()
+            # RR on spine:
             if self._fabric_data["rr"]["location"] == 'spine':
-                neighborlist = list()
-                # Spines peer with all (border-)leafs in pod
+                neighborset = set()
                 if properties['role'] == 'spine':
-                    neighborlist = self._topo.graph["pods"][properties["podid"]]["leaf"] + self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+                    # Spines peer with all (border-)leafs in pod
+                    neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
+                    neighborset.update(self._topo.graph["pods"][properties["podid"]]["borderleaf"])
+                    # Also peer with DCGWs
+                    neighborset.update(self.dcgws)
                     # If there is more then 1 pod, also full interconnect all spines
                     if len(self._topo.graph["pods"]) > 1:
-                        for podid in self._topo.graph["pods"]:
-                            neighborlist.extend(self._topo.graph["pods"][podid]["spine"])
-                    # Also peer with DCGWs
-                    neighborlist.extend(self.dcgws)
+                        neighborset.update(self.spines)
 
                 # (Border-)leafs peer with all spines in pod (unless in single tier, they peer with the other leaf)
                 elif properties['role'] in ['leaf', 'borderleaf']:
                     if self._topo.graph["single-tier"]:
-                        neighborlist = list(set(self._topo.graph["pods"][properties["podid"]]["leaf"]).difference({node}))
+                        neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
                     else:
-                        neighborlist = self._topo.graph["pods"][properties["podid"]]["spine"]
+                        neighborset.update(self._topo.graph["pods"][properties["podid"]]["spine"])
 
                 # DCGW peer with all spines
                 elif properties['role'] == 'dcgw':
-                    neighborlist = [x for podid in self._topo.graph["pods"] for x in self._topo.graph["pods"][podid]["spine"]]
+                    neighborset.update(self.spines)
 
-                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
+                # Never ever peer with yourself
+                neighborset.discard(node)
 
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
+
+            # External RR:
             elif self._fabric_data["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["rr"]:
                 if properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
                     neighbor_addresses = self._fabric_data["rr"]["neighbor_list"]
 
+            # RR on borderleaf:
             elif self._fabric_data["rr"]["location"] == 'borderleaf':
-                neighborlist = list()
-                # Borderleafs peer with all leafs in pod
+                neighborset = set()
                 if properties['role'] == 'borderleaf':
-                    neighborlist = self._topo.graph["pods"][properties["podid"]]["leaf"]
+                    # Borderleafs peer with all leafs in pod
+                    neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
+                    # Also peer with DCGWs
+                    neighborset.update(self.dcgws)
                     # If there is more then 1 pod, also full interconnect all borderleafs
                     if len(self._topo.graph["pods"]) > 1:
-                        for podid in self._topo.graph["pods"]:
-                            neighborlist.extend(self._topo.graph["pods"][podid]["borderleaf"])
-                    # Also peer with DCGWs
-                    neighborlist.extend(self.dcgws)
+                        neighborset.update(self.borderleafs)
 
                 # Leafs peer with all borderleafs in pod
                 elif properties['role'] == 'leaf':
-                    neighborlist = self._topo.graph["pods"][properties["podid"]]["borderleaf"]
+                    neighborset.update(self._topo.graph["pods"][properties["podid"]]["borderleaf"])
 
                 # DCGW peer with all borderleafs
                 elif properties['role'] == 'dcgw':
-                    neighborlist = [x for podid in self._topo.graph["pods"] for x in self._topo.graph["pods"][podid]["borderleaf"]]
+                    neighborset.update(self.borderleafs)
 
-                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborlist]
+                # Never ever peer with yourself
+                neighborset.discard(node)
+
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
+
+            # RR on superspine:
+            elif self._fabric_data["rr"]["location"] == 'superspine':
+                neighborset = set()
+                if properties['role'] == 'superspine':
+                    # Superspines peer with all (border-)leafs and dcgws
+                    neighborset.update(self.leafs)
+                    neighborset.update(self.borderleafs)
+                    neighborset.update(self.dcgws)
+
+                # (Border-)leafs and DCGWs peer with all superspines
+                elif properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
+                    neighborset.update(self.superspines)
+
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
+
             else:
                 raise Exception('Unable to determine overlay route reflection!')
 
