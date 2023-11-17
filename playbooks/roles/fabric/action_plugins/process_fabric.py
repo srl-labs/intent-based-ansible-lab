@@ -688,20 +688,14 @@ class IpFabricParser:
                         self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
 
             # Overlay
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"] = dict()
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["dynamic"] = dict()
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict()
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["type"] = "overlay"
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_as"] = self._topo.graph["overlay_asn"]
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["peer_as"] = self._topo.graph["overlay_asn"]
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
-
             neighbor_addresses = list()
+            is_rr = False
             # RR on spine:
             if self._fabric_data["rr"]["location"] == 'spine':
                 neighborset = set()
                 if properties['role'] == 'spine':
+                    # Set RR
+                    is_rr = True
                     # Spines peer with all (border-)leafs in pod
                     neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
                     neighborset.update(self._topo.graph["pods"][properties["podid"]]["borderleaf"])
@@ -736,6 +730,8 @@ class IpFabricParser:
             elif self._fabric_data["rr"]["location"] == 'borderleaf':
                 neighborset = set()
                 if properties['role'] == 'borderleaf':
+                    # Set RR
+                    is_rr = True
                     # Borderleafs peer with all leafs in pod
                     neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
                     # Also peer with DCGWs
@@ -761,6 +757,8 @@ class IpFabricParser:
             elif self._fabric_data["rr"]["location"] == 'superspine':
                 neighborset = set()
                 if properties['role'] == 'superspine':
+                    # Set RR
+                    is_rr = True
                     # Superspines peer with all (border-)leafs and dcgws
                     neighborset.update(self.leafs)
                     neighborset.update(self.borderleafs)
@@ -775,7 +773,17 @@ class IpFabricParser:
             else:
                 raise Exception('Unable to determine overlay route reflection!')
 
-            self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighbor_addresses, itertools.repeat(dict(), len(neighbor_addresses))))
+            if len(neighbor_addresses) > 0:
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"] = dict()
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["dynamic"] = dict()
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["neighbors"] = dict(zip(neighbor_addresses,
+                                                                                           itertools.repeat(dict(), len(neighbor_addresses))))
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["type"] = "overlay"
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_as"] = self._topo.graph["overlay_asn"]
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["peer_as"] = self._topo.graph["overlay_asn"]
+                self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
+                if is_rr:
+                    self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
 
 
 class ActionModule(ActionBase):
