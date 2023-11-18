@@ -22,6 +22,12 @@ network_instance:
         {% endfor %}
         description: {{ svc_spec.description | default("no description") }}
         type: {{ svc_spec.type | default('mac-vrf') }}
+        {% if svc_spec.proxy_arp | default(false) %}
+        mac_limit: {{ svc_spec.mac_limit | default(250) }}
+        proxy_arp:
+            admin_state: enable
+            age_time: {{ svc_spec.proxy_arp_age_time | default(300) }}
+        {% endif %}
         vxlan_interface:
             - vxlan1.{{svc_spec.id}}
         protocols:

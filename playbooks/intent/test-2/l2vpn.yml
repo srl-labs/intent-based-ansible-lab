@@ -3,6 +3,7 @@ subnet-1:
   id: 101
   type: mac-vrf
   description: subnet-1
+  proxy_arp: true
   interface_list:
     clab-4l2s-l1:
     - lag1
@@ -15,6 +16,9 @@ subnet-2:
   id: 102
   type: mac-vrf
   description: Subnet-2
+  proxy_arp: yes
+  proxy_arp_age_time: 290
+  mac_limit: 50
   interface_list:
     clab-4l2s-l1:
     - lag2
@@ -22,8 +26,8 @@ subnet-2:
     - lag2
     clab-4l2s-l3:
     - lag1
-#    clab-4l2s-l4:
-#    - lag1
+    clab-4l2s-l4:
+    - lag1
   export_rt: 100:102
   import_rt: 100:102
   vlan: 200

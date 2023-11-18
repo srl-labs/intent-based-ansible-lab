@@ -5,6 +5,65 @@
             "type": "object",
             "required": ["interfaces"],
             "properties": {
+                "mac_learning": {
+                    "type": "object",
+                    "properties": {
+                        "admin_state": {
+                            "type": "string",
+                            "enum": ["enable", "disable"]
+                        },
+                        "age_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "mac_limit": {
+                    "type": "number"
+                },
+                "proxy_arp": {
+                    "type": "object",
+                    "properties": {
+                        "admin_state": {
+                            "type": "string",
+                            "enum": ["enable", "disable"]
+                        },
+                        "age_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "ip_duplication": {
+                    "type": "object",
+                    "properties": {
+                        "mon_window": {
+                            "type": "number"
+                        },
+                        "num_moves": {
+                            "type": "number"
+                        },
+                        "hold_down_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "mac_duplication": {
+                    "type": "object",
+                    "properties": {
+                        "mon_window": {
+                            "type": "number"
+                        },
+                        "num_moves": {
+                            "type": "number"
+                        },
+                        "hold_down_time": {
+                            "type": "number"
+                        },
+                        "action": {
+                            "type": "string",
+                            "enum": ["blackhole", "oper-down", "stop-learning"]
+                        }
+                    }
+                },
                 "interfaces": {
                     "type": "array",
                     "items": {

@@ -24,6 +24,32 @@
       - name: {{ vxlan_itf }}
       {% endfor %}
     {% endif %}
+    {% if prop.type | default('default') == 'mac-vrf' %}
+    bridge-table:
+      mac-learning:
+        admin-state: {{ prop["mac-learning"]["admin_state"] | default("enable") }}
+        aging:
+          age-time: {{ prop["mac-learning"]["age_time"] | default((300)) }}
+      mac-limit:
+        maximum-entries: {{ prop["mac_limit"] | default(250) }}
+      mac-duplication:
+        action: {{ prop["mac_duplication"]["action"] | default("stop-learning") }}
+        hold-down-time: {{ prop["mac_duplication"]["hold_down_time"] | default((9)) }}
+        monitoring-window: {{ prop["mac_duplication"]["mon_window"] | default((3)) }}
+        num-moves: {{ prop["mac_duplication"]["num_moves"] | default((5)) }}
+      {% set irb_itfs = prop.interfaces | select('match', 'irb') %}
+      {% if not irb_itfs %}
+      proxy-arp:
+        admin-state: {{ prop["proxy_arp"]["admin_state"] | default("disable") }}
+        dynamic-learning: 
+          admin-state: {{ prop["proxy_arp"]["admin_state"] | default("disable") }}
+          age-time: {{ prop["proxy_arp"]["age_time"] | default('never') }}
+        ip-duplication:
+          hold-down-time: {{ prop["ip_duplication"]["hold_down_time"] | default((9)) }}
+          monitoring-window: {{ prop["ip_duplication"]["mon_window"] | default((3)) }}
+          num-moves: {{ prop["ip_duplication"]["num_moves"] | default((5)) }}
+      {% endif %}
+    {% endif %}    
     {% if prop.protocols is defined and prop.protocols is not none %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}

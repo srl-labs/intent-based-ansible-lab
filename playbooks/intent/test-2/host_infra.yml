@@ -33,7 +33,25 @@ clab-4l2s-l2:
               peer_group: spines
             192.168.1.2:
               peer_group: spines
-#
+#    subnet-2:
+#      type: mac-vrf
+#      mac_learning: 
+#        admin_state: enable
+#        age_time: 60 # never, range 60..86400: default: 300
+#      mac_limit: 200 # default 250
+#      proxy_arp: 
+#        admin_state: enable
+#        age_time: 60 # never, range 60..86400: default: never
+#      ip_duplication:
+#        mon_window: 10 # 1..15, default: 3
+#        num_moves: 2 # 1..10, default: 5
+#        hold_down_time: 15
+#      mac_duplication:
+#        mon_window: 10 # 1..15, default: 3
+#        num_moves: 2 # 1..10, default: 5
+#        hold_down_time: 15
+#        action: blackhole 
+##
 clab-4l2s-l3:
   subinterface:
     ethernet-1/48.0:

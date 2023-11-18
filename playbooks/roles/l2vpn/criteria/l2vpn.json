@@ -23,6 +23,15 @@
                         "type": "string"
                     }
                 },
+                "proxy_arp": {
+                    "type": "boolean"
+                },
+                "proxy_arp_age_time": {
+                    "type": "number"
+                },
+                "mac_limit": {
+                    "type": "number"
+                },
                 "acl_v4_out": {
                     "type": "array",
                     "description": "List of egress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",
