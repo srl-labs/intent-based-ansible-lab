@@ -33,11 +33,11 @@ clab-4l2s-l2:
               peer_group: spines
             192.168.1.2:
               peer_group: spines
-#    subnet-2:
-#      type: mac-vrf
-#      mac_learning: 
-#        admin_state: enable
-#        age_time: 60 # never, range 60..86400: default: 300
+    subnet-2:
+      type: mac-vrf
+      mac_learning: 
+        admin_state: enable
+        age_time: 60 # never, range 60..86400: default: 300
 #      mac_limit: 200 # default 250
 #      proxy_arp: 
 #        admin_state: enable

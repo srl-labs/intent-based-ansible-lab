@@ -27,9 +27,9 @@
     {% if prop.type | default('default') == 'mac-vrf' %}
     bridge-table:
       mac-learning:
-        admin-state: {{ prop["mac-learning"]["admin_state"] | default("enable") }}
+        admin-state: {{ prop["mac_learning"]["admin_state"] | default("enable") }}
         aging:
-          age-time: {{ prop["mac-learning"]["age_time"] | default((300)) }}
+          age-time: {{ prop["mac_learning"]["age_time"] | default((300)) }}
       mac-limit:
         maximum-entries: {{ prop["mac_limit"] | default(250) }}
       mac-duplication:

@@ -3,7 +3,6 @@
     "patternProperties": {
         "^.*" : {
             "type": "object",
-            "required": ["interfaces"],
             "properties": {
                 "mac_learning": {
                     "type": "object",
