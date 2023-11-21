@@ -28,7 +28,7 @@
         primary: []
       {% endif %}
     {% endif %}
-    {% if prop.arp is defined %}
+    {% if prop.arp | default(false) %}
       arp:
         learn-unsolicited: true
         host-route:
@@ -37,6 +37,7 @@
         evpn:
           advertise:
           - route-type: dynamic
+        timeout: {{ prop.arp_timeout | default(14400) }}
     {% endif %}
     {% if prop.acl is defined and prop.acl | length > 0 %}
     acl:
