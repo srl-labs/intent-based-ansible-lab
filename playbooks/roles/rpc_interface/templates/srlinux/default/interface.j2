@@ -7,9 +7,15 @@
     description: {{ prop.description|default('no description')}}
     {% if prop.vlan_tagging is defined %}
     vlan-tagging: true
-    {% elif prop.lag_id is defined %}
+    {% endif %}
+    {% if prop.lag_id is defined or prop.stby_signaling is defined %}
     ethernet:
+      {% if prop.lag_id is defined %}
       aggregate-id: {{ prop.lag_id }}
+      {% endif %}
+      {% if prop.stby_signaling is defined %}
+      standby-signaling: {{ prop.stby_signaling }}
+      {% endif %}
     {% endif %}
     {% if itf.startswith("lag") %}
     lag:

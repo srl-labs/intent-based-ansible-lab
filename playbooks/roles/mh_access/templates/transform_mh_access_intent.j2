@@ -20,6 +20,9 @@ interfaces:
             system_priority: {{ mh_spec.system_priority | default(32768) }}
             {% set def_sysid = "00:1a:60:00:00:%02d" | format(mh_spec.lag_id.split('lag')[1] | int ) %}
             system_id: {{ mh_spec.system_id | default(def_sysid) }}
+        {% if mh_spec.mh_mode | default('all-active') == 'single-active'%}
+        stby_signaling: {{ mh_spec.stby_signaling | default('lacp') }}
+        {% endif %}
         {% for itf in mh_spec.interface_list[inventory_hostname] %}
     {{ itf}}:
         _state: {{ mh_spec._state|default('present') }}
@@ -37,10 +40,10 @@ system:
         {% set sfx_2 = "%02d" | format(mh_id.split('-')[1]|int )%}
         ES-{{ sfx_2 }}:
             admin_state: enable
-            esi: {{ "00:11:22:33:44:55:66:00:" + sfx_1 + ":" + sfx_2 }}
+            esi: {{ "00:" + sfx_1 + ":" + sfx_2 + ":00:00:00:66:00:" + sfx_1 + ":" + sfx_2 }}
             interface: {{ mh_spec.lag_id }}
             _state: {{ mh_spec._state|default('present') }}
-            mh_mode: all-active
+            mh_mode: {{mh_spec.mh_mode | default('all-active') }}
     {% endif %}
 {% endfor %}
 {% endif %}

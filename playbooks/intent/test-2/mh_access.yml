@@ -1,5 +1,6 @@
 mh-1: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id farbic wide 
   lag_id: lag1
+  mh_mode: all-active # all-active or single-active
   # _state: deleted 
   description: mh-1:LAG1
   interface_list:
@@ -12,6 +13,7 @@ mh-1: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id far
   min_links: 1
 mh-2: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id farbic wide 
   lag_id: lag2
+  mh_mode: all-active
   # _state: deleted 
   description: mh-2:LAG2
   interface_list:
@@ -24,7 +26,8 @@ mh-2: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id far
   min_links: 1
 mh-3: 
   lag_id: lag1
-  # _state: deleted 
+  stby_signaling: lacp
+  mh_mode: single-active
   description: mh-3:LAG1
   interface_list:
     clab-4l2s-l3:
@@ -36,6 +39,7 @@ mh-3:
   min_links: 1
 mh-4: 
   lag_id: lag2
+  mh_mode: all-active
   # _state: deleted 
   description: mh-4:LAG2
   interface_list:

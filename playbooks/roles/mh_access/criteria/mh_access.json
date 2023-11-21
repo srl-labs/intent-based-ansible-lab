@@ -3,7 +3,7 @@
     "patternProperties": {
         "^\\w+\\-\\d+" : {
             "type": "object",
-            "required": ["lag_id", "interface_list"],
+            "required": ["lag_id", "mh_mode", "interface_list"],
             "properties": {
                 "lag_id": {
                     "type": "string",
@@ -15,6 +15,14 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "mh_mode": {
+                    "type": "string",
+                    "enum": ["all-active", "single-active"]
+                },
+                "stby_signaling": {
+                    "type": "string",
+                    "enum": ["lacp", "power-off"]
                 },
                 "interface_list": {
                     "type": "object",
