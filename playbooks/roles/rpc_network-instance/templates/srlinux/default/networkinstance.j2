@@ -71,7 +71,7 @@
             admin-state: enable
             multipath:
               max-paths-level-1: 2
-              max-paths-level-1: 2
+              max-paths-level-2: 2
         group:
         {% for group, group_spec in prop.protocols.bgp.group.items() %}
         - group-name: {{ group }}
