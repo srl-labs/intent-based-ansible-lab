@@ -76,7 +76,7 @@ fabric:
     clab-4l2s-l2:
       asn: 65002
       loopback: 192.168.255.2
-    lab-4l2s-l3:
+    clab-4l2s-l3:
       asn: 65003
       loopback: 192.168.255.3
     clab-4l2s-l4:
