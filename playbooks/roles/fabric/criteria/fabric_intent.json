@@ -20,7 +20,7 @@
                     "properties": {
                         "location": {
                             "type": "string",
-                            "enum": ["spine", "borderleaf", "external"]
+                            "enum": ["superspine", "spine", "borderleaf", "external"]
                         },
                         "neighbor_list": {
                             "type": "array",

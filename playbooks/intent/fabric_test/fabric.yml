@@ -26,7 +26,7 @@ fabric:
 
   # Configuration for Route Reflectors (RR)
   rr:
-    # Location for RRs could be 'spine', 'external', 'borderleaf'
+    # Location for RRs could be 'spine', 'external', 'borderleaf', 'superspine'
     location: 'spine'
     # List of neighbor IPs for Route Reflectors in case of 'external'
     # neighbor_list:
