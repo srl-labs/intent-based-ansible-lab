@@ -11,9 +11,9 @@
     - name: "Upgrade"
       ansible.builtin.include_role:
         name: srl-upgrade
-      vars:
-        binfile: /home/user/srlinux-23.3.3-11.bin
-        #binfile: http://192.0.2.1/srlinux-23.3.3-11.bin
+      #vars:
+      #  binfile: /home/user/srlinux-23.3.3-11.bin
+      #  binfile: http://192.0.2.1/srlinux-23.3.3-11.bin
       when: inventory_hostname in groups[item]
       # Ansible BUG might cause this to run in different order than expected!
       # see: https://github.com/ansible/ansible/issues/21008, bug conclusion is wrong, it's not a display issue...
