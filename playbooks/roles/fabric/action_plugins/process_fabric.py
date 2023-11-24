@@ -689,10 +689,15 @@ class IpFabricParser:
 
             # Overlay
             neighbor_addresses = list()
+            neighborset = set()
             is_rr = False
+
+            # Special case: single-tier
+            if self._topo.graph["single-tier"]:
+                neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
+
             # RR on spine:
-            if self._fabric_data["rr"]["location"] == 'spine':
-                neighborset = set()
+            elif self._fabric_data["rr"]["location"] == 'spine':
                 if properties['role'] == 'spine':
                     # Set RR
                     is_rr = True
@@ -705,21 +710,13 @@ class IpFabricParser:
                     if len(self._topo.graph["pods"]) > 1:
                         neighborset.update(self.spines)
 
-                # (Border-)leafs peer with all spines in pod (unless in single tier, they peer with the other leaf)
+                # (Border-)leafs peer with all spines in pod
                 elif properties['role'] in ['leaf', 'borderleaf']:
-                    if self._topo.graph["single-tier"]:
-                        neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
-                    else:
-                        neighborset.update(self._topo.graph["pods"][properties["podid"]]["spine"])
+                    neighborset.update(self._topo.graph["pods"][properties["podid"]]["spine"])
 
                 # DCGW peer with all spines
                 elif properties['role'] == 'dcgw':
                     neighborset.update(self.spines)
-
-                # Never ever peer with yourself
-                neighborset.discard(node)
-
-                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
 
             # External RR:
             elif self._fabric_data["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["rr"]:
@@ -748,14 +745,8 @@ class IpFabricParser:
                 elif properties['role'] == 'dcgw':
                     neighborset.update(self.borderleafs)
 
-                # Never ever peer with yourself
-                neighborset.discard(node)
-
-                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
-
             # RR on superspine:
             elif self._fabric_data["rr"]["location"] == 'superspine':
-                neighborset = set()
                 if properties['role'] == 'superspine':
                     # Set RR
                     is_rr = True
@@ -768,10 +759,13 @@ class IpFabricParser:
                 elif properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
                     neighborset.update(self.superspines)
 
-                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
-
             else:
                 raise Exception('Unable to determine overlay route reflection!')
+
+            if len(neighbor_addresses) == 0 and len(neighborset) > 0:
+                # Never ever peer with yourself
+                neighborset.discard(node)
+                neighbor_addresses = [nodeproperties[n]["loopback"] for n in neighborset]
 
             if len(neighbor_addresses) > 0:
                 self._topo.nodes[node]["bgp"]["groups"]["overlay"] = dict()
@@ -784,6 +778,9 @@ class IpFabricParser:
                 self._topo.nodes[node]["bgp"]["groups"]["overlay"]["local_address"] = properties["loopback"]
                 if is_rr:
                     self._topo.nodes[node]["bgp"]["groups"]["overlay"]["cluster_id"] = properties["loopback"]
+            else:
+                if properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
+                    raise Exception(f"Unable to determine overlay BGP peers for {properties['role']} node {node}!")
 
 
 class ActionModule(ActionBase):
