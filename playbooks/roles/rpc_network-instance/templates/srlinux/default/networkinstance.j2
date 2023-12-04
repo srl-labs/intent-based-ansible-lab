@@ -49,6 +49,8 @@
         autonomous-system: {{ prop["autonomous-system"] }}
         router-id: {{ prop["router-id"] }}
         {% endif %}
+        route-advertisement:
+          rapid-withdrawal: {{ prop.protocols.bgp["route-advertisement"]["rapid-withdrawal"] | default (true) }}
         {% if prop.protocols.bgp.dynamic is defined %}
         dynamic-neighbors:
           interface:
@@ -72,6 +74,8 @@
             multipath:
               max-paths-level-1: 2
               max-paths-level-2: 2
+            evpn:
+              rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
         group:
         {% for group, group_spec in prop.protocols.bgp.group.items() %}
         - group-name: {{ group }}
@@ -99,6 +103,11 @@
             client: true
             cluster-id: {{ group_spec.cluster_id }}
           {% endif %}
+          timers:
+            connect-retry: {{ group_spec.timers["connect-retry"] | default(10) }}
+            hold-time: {{ group_spec.timers["hold-time"] | default(3) }}
+            keepalive-interval: {{ group_spec.timers["keepalive-interval"] | default(1) }}
+            minimum-advertisement-interval: {{ group_spec.timers["minimum-advertisement-interval"] | default(1) }}
         {% endfor %}
         neighbor:
         {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}

@@ -58,6 +58,22 @@
                                         }
                                     }
                                 },
+                                "evpn": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rapid-update": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
+                                "route-advertisement": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rapid-withdrawal": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
                                 "group": {
                                     "type": "object",
                                     "patternProperties": {
@@ -103,8 +119,34 @@
                                                             "enum": ["disable", "enable"]
                                                         }
                                                     }
+                                                },
+                                                "timers": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "connect-retry": {
+                                                            "type": "number",
+                                                            "minimum": 1,
+                                                            "maximum": 65535
+                                                        },
+                                                        "hold-time": {
+                                                            "oneOf": [
+                                                                {"const": 0},
+                                                                {"minimum": 3, "maximum": 65535}
+                                                            ],
+                                                            "type": "number"
+                                                        },
+                                                        "keepalive-interval": {
+                                                            "type": "number",
+                                                            "minimum": 0,
+                                                            "maximum": 21845
+                                                        },
+                                                        "minimum-advertisement-interval": {
+                                                            "type": "number",
+                                                            "minimum": 1,
+                                                            "maximum": 255
+                                                        }
+                                                    }
                                                 }
-
                                             }
                                         }
                                     }
