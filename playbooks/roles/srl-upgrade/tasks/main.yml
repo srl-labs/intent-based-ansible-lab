@@ -40,15 +40,22 @@
 - name: Upgrade
   when: binfile_version + "-" not in pre_version
   block:
-  - name: Test binfile url accessibility
+  - name: Prepare HTTP transfer
     vars:
       ansible_connection: ssh
       ansible_user: linuxadmin
       ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
     when: binfile is ansible.builtin.regex('^https?://')
-    ansible.builtin.uri:
-      method: HEAD
-      url: "{{ binfile }}"
+    block:
+      - name: Test binfile url accessibility
+        ansible.builtin.uri:
+          method: HEAD
+          url: "{{ binfile }}"
+
+      - name: Remove remote binfile
+        ansible.builtin.file:
+          state: absent
+          dest: "/tmp/{{ binfile | ansible.builtin.basename }}"
 
   - name: Transfer local binfile
     vars:
