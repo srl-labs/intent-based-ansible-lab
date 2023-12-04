@@ -12,12 +12,12 @@
                 "default-l2-mtu": {
                     "type": "number",
                     "minimum": 1500,
-                    "maximum": 9232
+                    "maximum": 9500
                 },
                 "default-port-mtu": {
                     "type": "number",
                     "minimum": 1500,
-                    "maximum": 9232
+                    "maximum": 9500
                 }
             }
         },

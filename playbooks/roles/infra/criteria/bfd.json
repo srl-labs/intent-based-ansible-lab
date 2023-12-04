@@ -1,0 +1,32 @@
+{
+    "type": "object",
+    "required": ["interfaces"],
+    "properties": {
+        "interfaces": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.*": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["admin_state", "desired_min_tx_interval", "detection_multiplier", "required_min_rx_interval"],
+                    "properties": {
+                        "admin_state": {
+                            "type": "string",
+                            "enum": ["enable", "disable"]
+                        },
+                        "desired_min_tx_interval": {
+                            "type": "number"
+                        },
+                        "detection_multiplier": {
+                            "type": "number"
+                        },
+                        "required_min_rx_interval": {
+                            "type": "number"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
