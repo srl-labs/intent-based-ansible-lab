@@ -32,6 +32,11 @@
                 "mac_limit": {
                     "type": "number"
                 },
+                "mac_age_time": {
+                    "type": "number",
+                    "minimum": 60,
+                    "maximum": 86400
+                },
                 "acl_v4_out": {
                     "type": "array",
                     "description": "List of egress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",

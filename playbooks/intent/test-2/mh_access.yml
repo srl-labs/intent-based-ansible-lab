@@ -50,3 +50,22 @@ mh-4:
   lacp: true
   vlan_tagging: true
   min_links: 1
+mh-5:
+  lag_id: lag5
+  mh_mode: all-active
+  description: mh-5:LAG5
+  interface_list:
+    clab-4l2s-l1:
+    - ethernet-1/30
+    clab-4l2s-l2:
+    - ethernet-1/30
+mh-6:
+  lag_id: lag6
+  mh_mode: all-active
+  description: mh-6:LAG6
+  interface_list:
+    clab-4l2s-l1:
+    - ethernet-1/31
+    clab-4l2s-l2:
+    - ethernet-1/31
+

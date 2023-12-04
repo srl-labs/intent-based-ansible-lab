@@ -23,6 +23,9 @@ network_instance:
         description: {{ svc_spec.description | default("no description") }}
         type: {{ svc_spec.type | default('mac-vrf') }}
         {% if svc_spec.proxy_arp | default(false) %}
+        mac_learning:
+            admin_state: enable
+            age_time: {{ svc_spec.mac_age_time | default(300) }}
         mac_limit: {{ svc_spec.mac_limit | default(250) }}
         proxy_arp:
             admin_state: enable
