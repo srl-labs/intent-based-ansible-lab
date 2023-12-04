@@ -10,6 +10,11 @@
   value:
     bgp-instance:
       - id: 1
+- path: /system/mtu
+  value:
+    default-ip-mtu: {{ system.mtu["default-ip-mtu"] | default(9394) }}
+    default-l2-mtu: {{ system.mtu["default-l2-mtu"] | default(9412) }}
+    default-port-mtu: {{ system.mtu["default-port-mtu"] | default(9412) }}
 {% set ES = namespace(found = false) %}
 {% if system.ethernet_segments is defined and system.ethernet_segments is not none %}
   {% for es, es_prop in system.ethernet_segments.items() %}

@@ -3,12 +3,14 @@
     name: host_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
     files_matching: "host_infra"
+    ignore_unknown_extensions: true
 
 - name: "Load group vars for ENV:{{ env }}"
   ansible.builtin.include_vars:
     name: group_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
     files_matching: "group_infra"
+    ignore_unknown_extensions: true
 
 - name: Load group intent
   ansible.builtin.set_fact:
@@ -35,6 +37,7 @@
     - network_instance
     - routing_policy
     - acl_filters
+    - system
   when: "item in intent"
 
 - name: Generate itf descriptions
