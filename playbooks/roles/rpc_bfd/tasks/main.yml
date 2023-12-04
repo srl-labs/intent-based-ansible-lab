@@ -1,0 +1,16 @@
+- name: Get role path
+  ansible.builtin.set_fact:
+    my_dir: "{{ role_path }}"
+
+- name: Get template version
+  vars:
+    calling_path: "{{ my_dir }}" # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_role:
+    name: utils_tpl_version
+
+- name: Generate JSON-RPC data for /bfd
+  ansible.builtin.set_fact:
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
+    cacheable: true
+  vars:
+    template_file: "{{ tpl_base.path + '/bfd.j2' }}"
