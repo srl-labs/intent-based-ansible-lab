@@ -12,22 +12,11 @@
       - id: 1
 - path: /system/mtu
   value:
-{% set MTU = namespace(found = false) %}
-{% if system.mtu is defined and "default-ip-mtu" in system.mtu %}
-    default-ip-mtu: {{ system.mtu["default-ip-mtu"] }}
-  {% set MTU.found = true %}
-{% endif %}
+    default-ip-mtu: {{ system.mtu["default-ip-mtu"] | default(9214) }}
 {% if system.mtu is defined and "default-l2-mtu" in system.mtu %}
     default-l2-mtu: {{ system.mtu["default-l2-mtu"] }}
-  {% set MTU.found = true %}
 {% endif %}
-{% if system.mtu is defined and "default-port-mtu" in system.mtu %}
-    default-port-mtu: {{ system.mtu["default-port-mtu"] }}
-  {% set MTU.found = true %}
-{% endif %}
-{% if not MTU.found %}
-    {}
-{% endif %}
+    default-port-mtu: {{ system.mtu["default-port-mtu"] | default(9232) }}
 {% set ES = namespace(found = false) %}
 {% if system.ethernet_segments is defined and system.ethernet_segments is not none %}
   {% for es, es_prop in system.ethernet_segments.items() %}
