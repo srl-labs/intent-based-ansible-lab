@@ -13,9 +13,7 @@
 - path: /system/mtu
   value:
     default-ip-mtu: {{ system.mtu["default-ip-mtu"] | default(9394) }}
-{% if system.mtu is defined and "default-l2-mtu" in system.mtu %}
     default-l2-mtu: {{ system.mtu["default-l2-mtu"] | default(9412) }}
-{% endif %}
     default-port-mtu: {{ system.mtu["default-port-mtu"] | default(9412) }}
 {% set ES = namespace(found = false) %}
 {% if system.ethernet_segments is defined and system.ethernet_segments is not none %}
