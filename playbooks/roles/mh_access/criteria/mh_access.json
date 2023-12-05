@@ -24,6 +24,15 @@
                     "type": "string",
                     "enum": ["lacp", "power-off"]
                 },
+                "reload_delay": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 86400
+                },
+                "lacp_interval": {
+                    "type": "string",
+                    "enum": ["FAST", "SLOW"]
+                },
                 "interface_list": {
                     "type": "object",
                     "patternProperties" : {

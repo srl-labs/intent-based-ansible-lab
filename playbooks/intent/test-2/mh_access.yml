@@ -3,6 +3,7 @@ mh-1: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id far
   mh_mode: all-active # all-active or single-active
   # _state: deleted 
   description: mh-1:LAG1
+  lacp_interval: FAST
   interface_list:
     clab-4l2s-l1:
     - ethernet-1/20
