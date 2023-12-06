@@ -106,6 +106,7 @@
   - name: Wait for reboot to be executed
     ansible.builtin.pause:
       seconds: 10
+    delegate_to: localhost
 
   - name: Wait for system to become ready again
     nokia.srlinux.get:
@@ -119,12 +120,32 @@
     retries: 100
     until: post_status.result is system_ready(pre_status.result)
 
+  - name: Wait for network to stabilize again
+    ansible.builtin.pause:
+      seconds: "{{ stabilization_period | default(60) }}"
+    when: stabilization_period | default(60) > 0
+    delegate_to: localhost
+
   - name: Get version info
     nokia.srlinux.get:
       paths:
         - path: /platform/control[slot=A]/software-version
           datastore: state
     register: info_post
+
+  #- name: Verify save of startup config is required
+  #  nokia.srlinux.cli:
+  #    commands:
+  #      - diff startup
+  #  register: requiresave
+  #  when: "save_startup | default(false)"
+
+  #- name: Save startup config if requested and required
+  #  nokia.srlinux.cli:
+  #    commands:
+  #      - save startup
+  #  register: requiresave
+  #  when: "save_startup | default(false) and 'text' in requiresave"
 
   - name: Set facts
     ansible.builtin.set_fact:
