@@ -122,8 +122,8 @@
 
   - name: Wait for network to stabilize again
     ansible.builtin.pause:
-      seconds: "{{ stabilization_period | default(60) }}"
-    when: stabilization_period | default(60) > 0
+      seconds: "{{ stabilization_period | default(60) | int }}"
+    when: stabilization_period | default(60) | int > 0
     delegate_to: localhost
 
   - name: Get version info
