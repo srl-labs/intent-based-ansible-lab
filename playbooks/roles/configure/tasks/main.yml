@@ -22,6 +22,11 @@
     name: rpc_policy
   when: intent.routing_policy is defined
 
+- name: "Generate config for /bfd"
+  ansible.builtin.include_role:
+    name: rpc_bfd
+  when: intent.bfd is defined
+
 - name: "Generate config for /acl"
   ansible.builtin.include_role:
     name: rpc_acl
@@ -47,7 +52,7 @@
     cacheable: true
   loop: "{{ purgeable }}"
   when:
-    - purge
+    - purge | default(true) | bool
     - ansible_run_tags == ["all"] # need full intent to prune resources
     #  - intent[item] is mapping
 
@@ -90,18 +95,24 @@
 #    msg: "{{ pretty.xmlstring.split('\n') }}"
 #  when: platform == 'sros'
 
-- name: Deploy configuration to device
+- name: Deploy configuration to device (SRLinux)
   nokia.srlinux.config:
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"
-    save_when: "{% if save_startup | default(false) %}always{% else %}never{% endif %}"
+    save_when: "{% if save_startup | default(false) | bool %}always{% else %}never{% endif %}"
+    confirm_timeout: "{{ commit_confirm_timeout }}"
+  when: platform == 'srlinux'
+  register: config_push
+
+- ansible.builtin.set_fact:
+    config_changed: "{{ config_push.changed }}"
   when: platform == 'srlinux'
 
-- name: Deploy configuration to device
+- name: Deploy configuration to device (SROS)
   ansible.netcommon.netconf_config: 
     content: "{{ output.xmlstring }}"
-    save: "{% if save_startup | default(false) %}true{% else %}false{% endif %}"
+    save: "{% if save_startup | default(false) | bool %}true{% else %}false{% endif %}"
   when: platform == 'sros'
 
 - name: Show playbook stats

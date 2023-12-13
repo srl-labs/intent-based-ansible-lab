@@ -24,6 +24,32 @@
       - name: {{ vxlan_itf }}
       {% endfor %}
     {% endif %}
+    {% if prop.type | default('default') == 'mac-vrf' %}
+    bridge-table:
+      mac-learning:
+        admin-state: {{ prop["mac_learning"]["admin_state"] | default("enable") }}
+        aging:
+          age-time: {{ prop["mac_learning"]["age_time"] | default((300)) }}
+      mac-limit:
+        maximum-entries: {{ prop["mac_limit"] | default(250) }}
+      mac-duplication:
+        action: {{ prop["mac_duplication"]["action"] | default("stop-learning") }}
+        hold-down-time: {{ prop["mac_duplication"]["hold_down_time"] | default((9)) }}
+        monitoring-window: {{ prop["mac_duplication"]["mon_window"] | default((3)) }}
+        num-moves: {{ prop["mac_duplication"]["num_moves"] | default((5)) }}
+      {% set irb_itfs = prop.interfaces | select('match', 'irb') %}
+      {% if not irb_itfs %}
+      proxy-arp:
+        admin-state: {{ prop["proxy_arp"]["admin_state"] | default("disable") }}
+        dynamic-learning: 
+          admin-state: {{ prop["proxy_arp"]["admin_state"] | default("disable") }}
+          age-time: {{ prop["proxy_arp"]["age_time"] | default('never') }}
+        ip-duplication:
+          hold-down-time: {{ prop["ip_duplication"]["hold_down_time"] | default((9)) }}
+          monitoring-window: {{ prop["ip_duplication"]["mon_window"] | default((3)) }}
+          num-moves: {{ prop["ip_duplication"]["num_moves"] | default((5)) }}
+      {% endif %}
+    {% endif %}    
     {% if prop.protocols is defined and prop.protocols is not none %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}
@@ -49,6 +75,8 @@
         autonomous-system: {{ prop["autonomous-system"] }}
         router-id: {{ prop["router-id"] }}
         {% endif %}
+        route-advertisement:
+          rapid-withdrawal: {{ prop.protocols.bgp["route-advertisement"]["rapid-withdrawal"] | default (true) }}
         {% if prop.protocols.bgp.dynamic is defined %}
         dynamic-neighbors:
           interface:
@@ -72,6 +100,8 @@
             multipath:
               max-paths-level-1: 2
               max-paths-level-2: 2
+            evpn:
+              rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
         group:
         {% for group, group_spec in prop.protocols.bgp.group.items() %}
         - group-name: {{ group }}
@@ -79,6 +109,9 @@
           {% if group_spec.peer_as is defined %}
           peer-as: {{ group_spec.peer_as }}
           {% endif %}
+          failure-detection:
+            enable-bfd: {{ group_spec.enable_bfd | default(False) }}
+            fast-failover: {{ group_spec.fast_failover | default(False) }}
           export-policy: {{ group_spec.export_policy }}
           import-policy: {{ group_spec.import_policy }}
           afi-safi:
@@ -99,6 +132,11 @@
             client: true
             cluster-id: {{ group_spec.cluster_id }}
           {% endif %}
+          timers:
+            connect-retry: {{ group_spec.timers["connect-retry"] | default(10) }}
+            hold-time: {{ group_spec.timers["hold-time"] | default(3) }}
+            keepalive-interval: {{ group_spec.timers["keepalive-interval"] | default(1) }}
+            minimum-advertisement-interval: {{ group_spec.timers["minimum-advertisement-interval"] | default(1) }}
         {% endfor %}
         neighbor:
         {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}

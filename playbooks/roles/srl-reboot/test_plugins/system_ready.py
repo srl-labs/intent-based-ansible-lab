@@ -30,13 +30,14 @@ def verify_state_arg(state):
         raise AttributeError(f"Wrong type, expected <list> instead of <{type(state).__name__}>\n{msg}")
     if not len(state) == 2:
         raise AttributeError(f"Wrong number of elements in state: {len(state)} instead of 2.\n{msg}")
+    expectedstate0keys = {'linecard', 'control', 'chassis'}
     state0keys = {config_strip_modules(x) for x in state[0].keys()}
-    if state0keys != {'linecard', 'resource-management', 'resource-monitoring', 'power-supply', 'fan-tray', 'control', 'chassis'}:
+    if not expectedstate0keys.issubset(state0keys):
         raise AttributeError(f"First element of state does not look like '/platform' state info.\n{msg}")
     if len(state[1]) != 0:
+        expectedstate1keys = {'admin-state', 'oper-state', 'protocols', 'type'}
         state1keys = {config_strip_modules(x) for x in state[1].keys()}
-        if state1keys != {'tcp', 'icmp', 'tunnel-table', 'admin-state', 'system-ipv6-address', 'ip-forwarding', 'bgp-rib', 'interface', 'udp',
-                          'route-table', 'mpls-forwarding', 'oper-state', 'system-ipv4-address', 'description', 'icmp6', 'protocols', 'type'}:
+        if not expectedstate1keys.issubset(state1keys):
             raise AttributeError(f"Second element of state does not look like '/network-instance[name=default]' info.\n{msg}")
         if strip_yang_module.sub("", state[1]["type"]) != "default":
             raise AttributeError(f"Second element of state does not look like '/network-instance[name=default]' info.\n{msg}")

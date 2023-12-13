@@ -24,6 +24,23 @@ leaf:
     irb1:
     system0:
       admin_state: enable
+  bfd:
+    interfaces:
+      system0.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/48.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/49.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
   network_instance:
     default:
       interfaces:
@@ -44,6 +61,7 @@ leaf:
           group:
             overlay:
               peer_as: "{{ overlay_asn }}"
+              enable_bfd: true
               export_policy: pass-evpn
               import_policy: pass-evpn
               ipv4:
@@ -55,6 +73,8 @@ leaf:
             spines:
               description: "Peer-group for spine neighbors"
               export_policy: lo-and-servers
+              enable_bfd: true
+              fast_failover: true
               import_policy: pass-all
               peer_as: 65100
               ipv4:
@@ -78,6 +98,33 @@ spine:
       _tag: isl
     system0:
       admin_state: enable
+  bfd:
+    interfaces:
+      system0.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/1.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/2.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/3.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/4.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
   network_instance:
     default:
       interfaces:
@@ -103,6 +150,8 @@ spine:
               peer_group: overlay
           group:
             overlay:
+              enable_bfd: true
+              fast_failover: true
               peer_as: "{{ overlay_asn }}"
               export_policy: pass-evpn
               import_policy: pass-evpn
@@ -115,6 +164,7 @@ spine:
               cluster_id: "{{ router_id }}"
             leafs:
               description: "Peer-group for leaf neighbors"
+              enable_bfd: true
               export_policy: pass-all
               import_policy: pass-all
               ipv4:

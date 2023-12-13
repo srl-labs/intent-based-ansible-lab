@@ -10,7 +10,7 @@
 
 - name: Generate JSON-RPC data for /interface
   ansible.builtin.set_fact:
-    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   when: intent.interfaces is defined and intent.interfaces is not none
   vars:

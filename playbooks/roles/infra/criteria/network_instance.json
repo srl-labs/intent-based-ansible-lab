@@ -3,8 +3,66 @@
     "patternProperties": {
         "^.*" : {
             "type": "object",
-            "required": ["interfaces"],
             "properties": {
+                "mac_learning": {
+                    "type": "object",
+                    "properties": {
+                        "admin_state": {
+                            "type": "string",
+                            "enum": ["enable", "disable"]
+                        },
+                        "age_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "mac_limit": {
+                    "type": "number"
+                },
+                "proxy_arp": {
+                    "type": "object",
+                    "properties": {
+                        "admin_state": {
+                            "type": "string",
+                            "enum": ["enable", "disable"]
+                        },
+                        "age_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "ip_duplication": {
+                    "type": "object",
+                    "properties": {
+                        "mon_window": {
+                            "type": "number"
+                        },
+                        "num_moves": {
+                            "type": "number"
+                        },
+                        "hold_down_time": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "mac_duplication": {
+                    "type": "object",
+                    "properties": {
+                        "mon_window": {
+                            "type": "number"
+                        },
+                        "num_moves": {
+                            "type": "number"
+                        },
+                        "hold_down_time": {
+                            "type": "number"
+                        },
+                        "action": {
+                            "type": "string",
+                            "enum": ["blackhole", "oper-down", "stop-learning"]
+                        }
+                    }
+                },
                 "interfaces": {
                     "type": "array",
                     "items": {
@@ -58,6 +116,22 @@
                                         }
                                     }
                                 },
+                                "evpn": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rapid-update": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
+                                "route-advertisement": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rapid-withdrawal": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
                                 "group": {
                                     "type": "object",
                                     "patternProperties": {
@@ -66,6 +140,12 @@
                                             "properties": {
                                                 "peer_as": {
                                                     "type": "number"
+                                                },
+                                                "enable_bfd": {
+                                                    "type": "boolean"
+                                                },
+                                                "fast_failover": {
+                                                    "type": "boolean"
                                                 },
                                                 "local_as": {
                                                     "type": "number"
@@ -103,8 +183,34 @@
                                                             "enum": ["disable", "enable"]
                                                         }
                                                     }
+                                                },
+                                                "timers": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "connect-retry": {
+                                                            "type": "number",
+                                                            "minimum": 1,
+                                                            "maximum": 65535
+                                                        },
+                                                        "hold-time": {
+                                                            "oneOf": [
+                                                                {"const": 0},
+                                                                {"minimum": 3, "maximum": 65535}
+                                                            ],
+                                                            "type": "number"
+                                                        },
+                                                        "keepalive-interval": {
+                                                            "type": "number",
+                                                            "minimum": 0,
+                                                            "maximum": 21845
+                                                        },
+                                                        "minimum-advertisement-interval": {
+                                                            "type": "number",
+                                                            "minimum": 1,
+                                                            "maximum": 255
+                                                        }
+                                                    }
                                                 }
-
                                             }
                                         }
                                     }

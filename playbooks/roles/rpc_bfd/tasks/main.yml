@@ -8,9 +8,9 @@
   ansible.builtin.include_role:
     name: utils_tpl_version
 
-- name: Generate JSON-RPC data for /acl
+- name: Generate JSON-RPC data for /bfd
   ansible.builtin.set_fact:
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   vars:
-    template_file: "{{ tpl_base.path + '/acl.j2' }}"
+    template_file: "{{ tpl_base.path + '/bfd.j2' }}"

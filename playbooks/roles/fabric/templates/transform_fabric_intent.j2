@@ -10,6 +10,20 @@ routing_policy:
         []
       {% endfor %}
 
+bfd:
+  interfaces:
+    system0.0:
+      admin_state: enable
+      desired_min_tx_interval: 100000
+      detection_multiplier: 3
+      required_min_rx_interval: 100000
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+    {{ iface }}.0:
+      admin_state: enable
+      desired_min_tx_interval: 100000
+      detection_multiplier: 3
+      required_min_rx_interval: 100000
+  {% endfor %}
 interfaces:
   {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] %}
   irb1:
@@ -83,6 +97,8 @@ network_instance:
         group:
           {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
           {{ group }}:
+            enable_bfd: true
+            fast_failover: true
             {% if "local_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
             local_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_as"] }}
             {% endif %}

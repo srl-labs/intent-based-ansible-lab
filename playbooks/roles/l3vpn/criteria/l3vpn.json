@@ -19,6 +19,9 @@
                     "type": "string",
                     "const": "ip-vrf"
                 },
+                "arp_timeout": {
+                    "type": "number"
+                },
                 "snet_list": {
                     "type": "array",
                     "items" : {

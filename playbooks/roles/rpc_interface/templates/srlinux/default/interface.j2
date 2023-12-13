@@ -7,9 +7,18 @@
     description: {{ prop.description|default('no description')}}
     {% if prop.vlan_tagging is defined %}
     vlan-tagging: true
-    {% elif prop.lag_id is defined %}
+    {% endif %}
+    {% if prop.lag_id is defined or prop.stby_signaling is defined %}
     ethernet:
+      {% if prop.lag_id is defined %}
       aggregate-id: {{ prop.lag_id }}
+      {% endif %}
+      {% if prop.stby_signaling is defined %}
+      standby-signaling: {{ prop.stby_signaling }}
+      {% endif %}
+      {% if prop.reload_delay is defined %}
+      reload-delay: {{ prop.reload_delay }}
+      {% endif %}
     {% endif %}
     {% if itf.startswith("lag") %}
     lag:
@@ -17,10 +26,11 @@
       min-links: {{ prop.min_links | default(1) }}
       lacp:
         {% set lagid = itf.split('lag')[1] | int %}
-        admin-key: {{ lag_spec.admin_key | default(lagid) }}
+        admin-key: {{ prop.lacp.admin_key | default(lagid) }}
+        interval: {{ prop.lacp.interval | default('SLOW') }}
         {% set sfx = "%02d" | format(lagid) %}
-        system-id-mac: {{ lag_spec.system_id | default('00:ba:db:ee:f0:' + sfx) }}
-        system-priority: {{ lag_spec.system_priority | default(1) }}
+        system-id-mac: {{ prop.lacp.system_id | default('00:ba:db:ee:f0:' + sfx) }}
+        system-priority: {{ prop.lacp.system_priority | default(1) }}
     {% endif %}
   {% endif %}
 {% endfor %}

@@ -40,15 +40,22 @@
 - name: Upgrade
   when: binfile_version + "-" not in pre_version
   block:
-  - name: Test binfile url accessibility
+  - name: Prepare HTTP transfer
     vars:
       ansible_connection: ssh
       ansible_user: linuxadmin
       ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
     when: binfile is ansible.builtin.regex('^https?://')
-    ansible.builtin.uri:
-      method: HEAD
-      url: "{{ binfile }}"
+    block:
+      - name: Test binfile url accessibility
+        ansible.builtin.uri:
+          method: HEAD
+          url: "{{ binfile }}"
+
+      - name: Remove remote binfile
+        ansible.builtin.file:
+          state: absent
+          dest: "/tmp/{{ binfile | ansible.builtin.basename }}"
 
   - name: Transfer local binfile
     vars:
@@ -99,6 +106,7 @@
   - name: Wait for reboot to be executed
     ansible.builtin.pause:
       seconds: 10
+    delegate_to: localhost
 
   - name: Wait for system to become ready again
     nokia.srlinux.get:
@@ -112,12 +120,32 @@
     retries: 100
     until: post_status.result is system_ready(pre_status.result)
 
+  - name: Wait for network to stabilize again
+    ansible.builtin.pause:
+      seconds: "{{ stabilization_period | default(60) | int }}"
+    when: stabilization_period | default(60) | int > 0
+    delegate_to: localhost
+
   - name: Get version info
     nokia.srlinux.get:
       paths:
         - path: /platform/control[slot=A]/software-version
           datastore: state
     register: info_post
+
+  #- name: Verify save of startup config is required
+  #  nokia.srlinux.cli:
+  #    commands:
+  #      - diff startup
+  #  register: requiresave
+  #  when: "save_startup | default(false)"
+
+  #- name: Save startup config if requested and required
+  #  nokia.srlinux.cli:
+  #    commands:
+  #      - save startup
+  #  register: requiresave
+  #  when: "save_startup | default(false) and 'text' in requiresave"
 
   - name: Set facts
     ansible.builtin.set_fact:

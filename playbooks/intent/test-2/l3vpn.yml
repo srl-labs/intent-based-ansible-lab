@@ -10,6 +10,7 @@ ipvrf-low:
 ipvrf-med:
   id: 2002
   type: ip-vrf
+  arp_timeout: 280
   description: ipvrf-MED
   snet_list:
     - macvrf: subnet-2

@@ -114,6 +114,9 @@ subinterface:
             {% endif %}
         {% endif %}
         arp: true
+        {% if l3vpn[ipvrf].arp_timeout is defined %}
+        arp_timeout: {{ l3vpn[ipvrf].arp_timeout }}
+        {% endif %}
         anycast_gw: true
     {% endfor %}
 {% endfor %}
