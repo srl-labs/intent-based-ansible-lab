@@ -10,7 +10,7 @@
 
 - name: Generate JSON-RPC data for /acl
   ansible.builtin.set_fact:
-    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   vars:
     template_file: "{{ tpl_base.path + '/acl.j2' }}"

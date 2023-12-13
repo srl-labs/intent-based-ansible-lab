@@ -52,7 +52,7 @@
     cacheable: true
   loop: "{{ purgeable }}"
   when:
-    - purge
+    - purge | default(true) | bool
     - ansible_run_tags == ["all"] # need full intent to prune resources
     #  - intent[item] is mapping
 
@@ -100,7 +100,7 @@
     update: "{{ update }}"
     replace: "{{ replace }}"
     delete: "{{ delete }}"
-    save_when: "{% if save_startup | default(false) %}always{% else %}never{% endif %}"
+    save_when: "{% if save_startup | default(false) | bool %}always{% else %}never{% endif %}"
     confirm_timeout: "{{ commit_confirm_timeout }}"
   when: platform == 'srlinux'
   register: config_push
@@ -112,7 +112,7 @@
 - name: Deploy configuration to device (SROS)
   ansible.netcommon.netconf_config: 
     content: "{{ output.xmlstring }}"
-    save: "{% if save_startup | default(false) %}true{% else %}false{% endif %}"
+    save: "{% if save_startup | default(false) | bool %}true{% else %}false{% endif %}"
   when: platform == 'sros'
 
 - name: Show playbook stats

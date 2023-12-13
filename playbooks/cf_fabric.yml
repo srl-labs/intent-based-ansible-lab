@@ -40,9 +40,8 @@
     ## CONFIG PUSH - Generate low-level JSON-RPC data from low-level intent and set device config
     - role: configure
       vars:
-        intent: intent        # generated low-level intent from previous roles (explicit > implicit vars)
-        purge: true           # purge resources from device not in intent
-        save_startup: false    # save config to startup-config, override with --extra-vars "save_startup=true" to ansible-playbook
+        purge: true           # purge resources from device not in intent, set with --extra-vars "purge=false"
+        save_startup: false   # save config to startup-config, override with --extra-vars "save_startup=true" to ansible-playbook
         commit_confirm_timeout: "{{ confirm_timeout | default(0) | int }}"   # confirm timeout in seconds
         purgeable:
           - interface
