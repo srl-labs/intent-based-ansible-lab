@@ -2,6 +2,7 @@
 {% for ni, prop in network_instance.items() %}
 {% if prop._state|default('present') != 'deleted' %}
 - path: /network-instance[name={{ni}}]
+  operation: replace
   value:
     admin-state: enable
     description: {{prop.description|default('no description')}}

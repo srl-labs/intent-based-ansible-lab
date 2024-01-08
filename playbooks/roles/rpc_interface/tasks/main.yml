@@ -10,7 +10,8 @@
 
 - name: Generate JSON-RPC data for /interface
   ansible.builtin.set_fact:
-    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   when: intent.interfaces is defined and intent.interfaces is not none
   vars:
@@ -18,7 +19,8 @@
 
 - name: Generate JSON-RPC data for /interface/subinterface
   ansible.builtin.set_fact:
-    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   when: intent.subinterface is defined and intent.subinterface is not none
   vars:
@@ -26,7 +28,8 @@
 
 - name: Generate JSON-RPC data for /tunnel-interface
   ansible.builtin.set_fact:
-    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   when: intent.tunnel_interface is defined and intent.tunnel_interface is not none
   vars:

@@ -1,6 +1,7 @@
 #jinja2: lstrip_blocks: "True"
 {% for itf, itf_spec in bfd.interfaces.items() %}
 - path: /bfd/subinterface[id={{ itf }}]
+  operation: replace
   value:
     admin-state: {{ itf_spec.admin_state | default('disable') }}
   {% if itf_spec.desired_min_tx_interval is defined %}

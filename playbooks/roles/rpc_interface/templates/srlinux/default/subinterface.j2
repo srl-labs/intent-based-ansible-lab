@@ -3,6 +3,7 @@
 {% if prop._state|default('present') != 'deleted' %}
 {% set l = subif.split('.') %}
 - path: /interface[name={{l[0]}}]/subinterface[index={{l[1]}}]
+  operation: replace
   value:
     admin-state: {{ prop.admin_state | default("enable") }}
     {% if prop.type is defined %}

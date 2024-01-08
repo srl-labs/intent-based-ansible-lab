@@ -7,6 +7,7 @@
     {% if ni == "default" %}
       {% set NETWORK_INSTANCE.found = true %}
 - path: /router[router-name=Base]
+  operation: update
   value:
     router-id: {{ prop['router-id'] }} 
       {% if prop['autonomous-system'] is defined %}
@@ -157,6 +158,7 @@
       {% if prop.type == 'ip-vrf' %}
         {% set NETWORK_INSTANCE.found = true %}
 - path: /service/vprn[service-name={{ ni }}]
+  operation: replace
   value:
     admin-state: enable
     customer: "1"
@@ -169,6 +171,7 @@
         vpls-name: {{ ni }}-bhvpls
         evpn-tunnel: ""
 - path: /service/vpls[service-name={{ ni }}-bhvpls]
+  operation: replace
   value:
     admin-state: enable
     customer: "1"

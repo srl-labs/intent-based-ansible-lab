@@ -10,7 +10,8 @@
 
 - name: Generate JSON-RPC data for 'network-instance'
   ansible.builtin.set_fact:
-    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   when: platform == 'srlinux' and intent.network_instance is defined and intent.network_instance is mapping
   vars:
@@ -18,7 +19,8 @@
 
 - name: Generate data for '/router[router-name=Base]' and '/service'
   ansible.builtin.set_fact:
-    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   when: platform == 'sros' and intent.network_instance is defined and intent.network_instance is mapping and 'default' in intent.network_instance
   vars:

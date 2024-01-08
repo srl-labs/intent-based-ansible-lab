@@ -1,6 +1,7 @@
 #jinja2: lstrip_blocks: "True"
 {% for pfx_set, pfx_spec in routing_policy.prefix_set.items() %}
 - path: /policy-options/prefix-list[name={{pfx_set}}]
+  operation: replace
   value:
     prefix:
     {% for pfx_entry in pfx_spec.prefix %}
@@ -18,6 +19,7 @@
 {% endfor %}
 {% for r_pol, pol_spec in routing_policy.policy.items() %}
 - path: /policy-options/policy-statement[name={{r_pol}}]
+  operation: replace
   value:
     entry:
     {% for stmt in pol_spec.statement %}

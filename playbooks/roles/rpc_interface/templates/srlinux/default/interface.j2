@@ -2,6 +2,7 @@
 {%- for itf, prop in interfaces.items() %}
   {% if prop._state | default('present') == 'present' %}
 - path: /interface[name={{ itf }}]
+  operation: update
   value:
     admin-state: {{ prop.admin_state | default('enable') }}
     description: {{ prop.description|default('no description')}}

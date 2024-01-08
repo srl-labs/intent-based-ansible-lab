@@ -6,12 +6,14 @@
       {% set IFACE.found = true %}
       {% if itf is regex('^\\d+/\\d+/c\\d+/\\d+$') %}
 - path: /port[port-id={{ itf | regex_replace('^(\\d+/\\d+/c\\d+)/\\d+$', '\\1') }}]
+  operation: replace
   value:
     admin-state: enable
     connector:
       breakout: c1-100g
       {% endif %}
 - path: /port[port-id={{ itf }}]
+  operation: replace
   value:
     admin-state: enable
     ethernet:
