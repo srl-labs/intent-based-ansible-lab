@@ -96,7 +96,7 @@ def navigate_path(path, root, create=False):
     return node
 
 
-def set_value(value, node):
+def set_value(value, node, tag=None, tag_node=False):
     """
     Function to create XMLElements as children of the given `node` XMLElement
     with values from `value`.
@@ -106,16 +106,18 @@ def set_value(value, node):
     `value` of type str become Text on the given XMLElement
     """
     if isinstance(value, dict):
+        if tag is not None and isinstance(tag, str) and tag_node:
+            node.set("{urn:nokia.com:sros:ns:yang:sr:attributes}comment", tag)
         for key, val in value.items():
             if isinstance(val, list):
                 if len(try_xpath(node, "./%s" % key)) > 0:
                     raise Exception("Can't merge new nodes with existing!")
                 for v in val:
                     n = etree.SubElement(node, key)
-                    set_value(v, n)
+                    set_value(v, n, tag=tag, tag_node=True)
             else:
                 n = navigate_path("./%s" % key, node, create=True)
-                set_value(val, n)
+                set_value(val, n, tag=tag, tag_node=True)
     elif isinstance(value, str):
         node.text = value
     else:
@@ -140,7 +142,7 @@ class ActionModule(ActionBase):
         # argument = self._task.args.get("update", [])
 
         doc = etree.Element("{urn:ietf:params:xml:ns:netconf:base:1.0}config", nsmap={"nc": "urn:ietf:params:xml:ns:netconf:base:1.0"})
-        configure = etree.SubElement(doc, "{urn:nokia.com:sros:ns:yang:sr:conf}configure", nsmap={"nokia-conf": "urn:nokia.com:sros:ns:yang:sr:conf"})
+        configure = etree.SubElement(doc, "{urn:nokia.com:sros:ns:yang:sr:conf}configure", nsmap={"nokia-conf": "urn:nokia.com:sros:ns:yang:sr:conf", "nokia-attr": "urn:nokia.com:sros:ns:yang:sr:attributes"})
 
         nc_operation = {
             "update": "merge",
@@ -159,7 +161,7 @@ class ActionModule(ActionBase):
                             node.remove(c)
                     node.text = ""
                 if operation in ["update", "replace"]:
-                    set_value(entry["value"], node)
+                    set_value(entry["value"], node, tag="Ansible managed", tag_node=(operation=="replace"))
 
         result["xmlstring"] = etree.tostring(doc)
         return result

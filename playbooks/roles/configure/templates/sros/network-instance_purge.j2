@@ -1,1 +1,27 @@
 #jinja2: lstrip_blocks: "True"
+{% if network_instance is defined %}
+{% set VPRN = namespace(instances=[]) %}
+{% if running_config['service']['vprn'] | type_debug == "list" %}
+{% set VPRN.instances = running_config['service']['vprn'] %}
+{% elif running_config['service']['vprn'] is mapping %}
+{% set VPRN.instances = [running_config['service']['vprn']] %}
+{% endif %}
+{% for vprn in VPRN.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set service_name = vprn['service-name'] %}
+{% if service_name not in network_instance %}
+- path: /service/vprn[service-name={{ service_name }}]
+{% endif %}
+{% endfor %}
+{% set VPLS = namespace(instances=[]) %}
+{% if running_config['service']['vpls'] | type_debug == "list" %}
+{% set VPLS.instances = running_config['service']['vpls'] %}
+{% elif running_config['service']['vpls'] is mapping %}
+{% set VPLS.instances = [running_config['service']['vpls']] %}
+{% endif %}
+{% for vpls in VPLS.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set service_name = vpls['service-name'] | ansible.builtin.regex_replace('-bhvpls$', '') %}
+{% if service_name not in network_instance %}
+- path: /service/vpls[service-name={{ vpls['service-name'] }}]
+{% endif %}
+{% endfor %}
+{% endif %}
