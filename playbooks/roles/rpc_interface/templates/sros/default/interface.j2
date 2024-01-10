@@ -8,6 +8,7 @@
 - path: /port[port-id={{ itf | regex_replace('^(\\d+/\\d+/c\\d+)/\\d+$', '\\1') }}]
   operation: replace
   value:
+    _tag: true
     admin-state: enable
     connector:
       breakout: c1-100g
@@ -15,6 +16,7 @@
 - path: /port[port-id={{ itf }}]
   operation: replace
   value:
+    _tag: true
     admin-state: enable
     ethernet:
       mode: hybrid

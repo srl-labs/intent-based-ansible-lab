@@ -21,6 +21,7 @@
       - interface-name: system
           {% else %}
       - interface-name: I{{ PORT }}
+        _tag: true
         port: {{ PORT }}:0
           {% endif %}
         admin-state: enable
@@ -51,6 +52,7 @@
       group:
           {% for group, group_spec in prop.protocols.bgp.group.items() %}
       - group-name: {{ group }}
+        _tag: true
         admin-state: enable
         description: {{ group_spec.description|default('no description') }}
             {% if group_spec.peer_as is defined %}
@@ -97,6 +99,7 @@
                   {% if nbr_prop["peer-group"] == group %}
                     {% set PORT = nbr_itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
             - interface-name: I{{ PORT }}
+              _tag: true
               allowed-peer-as:
                     {% for as in nbr_prop['allow-as'] %}
                 - "{{as}}"
@@ -111,6 +114,7 @@
       neighbor:
           {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
         - ip-address: {{ nbr }}
+          _tag: true
           admin-state: enable
           group: {{ nbr_spec.peer_group }}
             {% if nbr_spec.peer_as is defined %}
@@ -160,6 +164,7 @@
 - path: /service/vprn[service-name={{ ni }}]
   operation: replace
   value:
+    _tag: true
     admin-state: enable
     customer: "1"
     description: "{{ DCGW_SERVICEID_OFFSET }}"
@@ -173,6 +178,7 @@
 - path: /service/vpls[service-name={{ ni }}-bhvpls]
   operation: replace
   value:
+    _tag: true
     admin-state: enable
     customer: "1"
     service-id: "{{ DCGW_BHVPLS_OFFSET + DCGW_SERVICEID_OFFSET + prop.id }}"

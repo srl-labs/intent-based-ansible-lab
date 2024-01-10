@@ -1,5 +1,45 @@
 #jinja2: lstrip_blocks: "True"
-{% if network_instance is defined %}
+{% set ROUTERBASE = running_config['router'] %}
+
+{% set IFACE = namespace(instances=[]) %}
+{% if ROUTERBASE['interface'] | type_debug == "list" %}
+{% set IFACE.instances = ROUTERBASE['interface'] %}
+{% elif ROUTERBASE['interface'] is mapping %}
+{% set IFACE.instances = [ROUTERBASE['interface']] %}
+{% endif %}
+{% for iface in IFACE.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set iface_name = iface['interface-name'] %}
+{% if (iface_name not in (network_instance['default']['interfaces'] | default({}) | list | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', 'I\\1'))) %}
+- path: /router[router-name=Base]/interface[interface-name={{ iface_name }}]
+{% endif %}
+{% endfor %}
+
+{% set BGP_N = namespace(instances=[]) %}
+{% if ROUTERBASE['bgp']['neighbor'] | type_debug == "list" %}
+{% set BGP_N.instances = ROUTERBASE['bgp']['neighbor'] %}
+{% elif ROUTERBASE['bgp']['neighbor'] is mapping %}
+{% set BGP_N.instances = [ROUTERBASE['bgp']['neighbor']] %}
+{% endif %}
+{% for nbor in BGP_N.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set ip_addr = nbor['ip-address'] %}
+{% if (ip_addr not in (network_instance['default'].protocols.bgp.neighbor | default({}) | list)) %}
+- path: /router[router-name=Base]/bgp/neighbor[ip-address={{ ip_addr }}]
+{% endif %}
+{% endfor %}
+
+{% set BGP_G = namespace(instances=[]) %}
+{% if ROUTERBASE['bgp']['neighbor'] | type_debug == "list" %}
+{% set BGP_G.instances = ROUTERBASE['bgp']['group'] %}
+{% elif ROUTERBASE['bgp']['neighbor'] is mapping %}
+{% set BGP_G.instances = [ROUTERBASE['bgp']['group']] %}
+{% endif %}
+{% for grp in BGP_G.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set grp_name = grp['group-name'] %}
+{% if (grp_name not in (network_instance['default'].protocols.bgp.group | default({}) | list)) %}
+- path: /router[router-name=Base]/bgp/group[group-name={{ grp_name }}]
+{% endif %}
+{% endfor %}
+
 {% set VPRN = namespace(instances=[]) %}
 {% if running_config['service']['vprn'] | type_debug == "list" %}
 {% set VPRN.instances = running_config['service']['vprn'] %}
@@ -8,10 +48,11 @@
 {% endif %}
 {% for vprn in VPRN.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
 {% set service_name = vprn['service-name'] %}
-{% if service_name not in network_instance %}
+{% if service_name not in (network_instance | default({})) %}
 - path: /service/vprn[service-name={{ service_name }}]
 {% endif %}
 {% endfor %}
+
 {% set VPLS = namespace(instances=[]) %}
 {% if running_config['service']['vpls'] | type_debug == "list" %}
 {% set VPLS.instances = running_config['service']['vpls'] %}
@@ -20,8 +61,7 @@
 {% endif %}
 {% for vpls in VPLS.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
 {% set service_name = vpls['service-name'] | ansible.builtin.regex_replace('-bhvpls$', '') %}
-{% if service_name not in network_instance %}
+{% if service_name not in (network_instance | default({})) %}
 - path: /service/vpls[service-name={{ vpls['service-name'] }}]
 {% endif %}
 {% endfor %}
-{% endif %}
