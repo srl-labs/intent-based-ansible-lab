@@ -12,9 +12,18 @@
 
 - name: Set facts
   ansible.builtin.set_fact:
-    pre_version: "{{ info_pre.result[0] }}"
+    pre_version: "{{ info_pre.result[0] | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}"
     binfile_version: "{{ binfile | ansible.builtin.regex_replace('.*srlinux-(\\d+\\.\\d+\\.\\d+-\\d+)\\.bin$', '\\1') }}"
-  failed_when: pre_version is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
+  failed_when: info_pre.result[0] is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    is_upgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '<') }}"
+    is_downgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '>') }}"
+
+- name: Print current version
+  ansible.builtin.debug:
+    msg: "{% if is_upgrade %}Upgrade from version {% elif is_downgrade %}Downgrade from version {% else %}No upgrade required. Current version {% endif %}{{ pre_version }} {% if is_upgrade or is_downgrade %}to version {% else %}is the same as requested version {% endif %}{{ binfile_version }}."
 
 - name: Check system state before upgrade
   nokia.srlinux.get:
@@ -33,12 +42,8 @@
   register: up2datecheck
   failed_when: "'text' in up2datecheck.result[0]"
 
-- name: Print current version
-  ansible.builtin.debug:
-    msg: "Current version: {{ pre_version }}; requested verion: {{ binfile_version }}{% if binfile_version + '-' in pre_version%}; upgrade not required!{% endif %}"
-
 - name: Upgrade
-  when: binfile_version + "-" not in pre_version
+  when: is_upgrade or is_downgrade
   block:
   - name: Prepare HTTP transfer
     vars:
@@ -149,12 +154,13 @@
 
   - name: Set facts
     ansible.builtin.set_fact:
-      post_version: "{{ info_post.result[0] }}"
+      post_version: "{{ info_post.result[0] | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}"
+    failed_when: info_post.result[0] is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
 
   - name: Print new version
     ansible.builtin.debug:
-      msg: "Previous version: {{ pre_version }}; requested verion: {{ binfile_version }}; current version: {{ post_version }}"
-    failed_when: binfile_version + "-" not in post_version
+      msg: "{% if is_upgrade %}Upgrade {% elif is_downgrade %}Downgrade {% endif %}from version {{ pre_version }} to version {{ post_version }} completed."
+    failed_when: binfile_version != post_version
 
   - name: Remove remote binfile
     vars:
