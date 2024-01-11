@@ -64,6 +64,13 @@
 - name: Check SR Linux version
   ansible.builtin.assert:
     that:
-      - sw_version | regex_search('^v(\\d+)', '\\1') | map('int') | first  >= 23
+      - sw_version | ansible.builtin.regex_search('^v(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('23.3', '>=')
     fail_msg: "Minimal SR Linux version is 23.3.1. Please upgrade your switches first"
   when: platform == 'srlinux'
+
+- name: Check SROS version
+  ansible.builtin.assert:
+    that:
+      - sw_version | ansible.builtin.regex_search('^[A-Z]-(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('21.10', '>=')
+    fail_msg: "Minimal SROS version is 21.10.R1. Please upgrade your switches first"
+  when: platform == 'sros'
