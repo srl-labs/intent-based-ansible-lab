@@ -149,6 +149,34 @@
           []
         {% endfor %}
       {% endif %}
+      {% if prop.protocols.ospf is defined %}
+      ospf:
+        instance:
+        {% for instance, instance_spec in prop.protocols.ospf.items() %}
+        - name: {{ instance }}
+          admin-state: enable
+          router-id: {{ prop["router-id"] }}
+          version: {{ instance_spec.version }}
+          export-policy: {{ instance_spec.export_policy }}
+          area:
+          {% for area, area_spec in instance_spec.area.items() %}
+          - area-id: {{ area }}
+            interface:
+            {% for iface, iface_spec in area_spec.interfaces.items() %}
+            - interface-name: {{ iface }}
+              {% for key, value in iface_spec.items() %}
+              {{ key }}: {{ value }}
+              {% endfor %}
+            {% else %}
+            []
+            {% endfor %}
+          {% else %}
+          []
+          {% endfor %}
+        {% else %}
+        []
+        {% endfor %}
+      {% endif %}
   {% endif %}
 
 {% endif %}
