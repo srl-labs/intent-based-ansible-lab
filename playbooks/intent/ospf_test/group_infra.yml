@@ -226,6 +226,31 @@ spine:
 #              epvn:
 #                admin_state: disable
 dcgw:
+  routing_policy:
+    prefix_set:
+      loopbacks:
+        prefix:
+          - ip-prefix: 192.168.255.0/24
+            mask-length-range: "32..32"
+      default:
+        prefix:
+          - ip-prefix: 0.0.0.0/0
+    policy:
+      export-to-underlay:
+        default-action:
+          policy-result: reject
+        statement:
+          - name: "10"
+            match:
+              prefix-set: default
+            action:
+              policy-result: reject
+          - name: "20"
+            match:
+              prefix-set: loopbacks
+              protocol: direct
+            action:
+              policy-result: accept
   interfaces:
     1/1/c2/1:
       _tag: isl
@@ -271,14 +296,26 @@ dcgw:
               enable_bfd: true
               fast_failover: true
               peer_as: "{{ overlay_asn }}"
-              export_policy: pass-evpn
-              import_policy: pass-evpn
+              export_policy: export-to-underlay
               ipv4:
                 admin_state: disable
               evpn:
                 admin_state: enable
               local_as: "{{ overlay_asn }}"
               local_address: "{{ router_id }}"
+        ospf:
+          default:
+            version: ospf-v2
+            export_policy: export-to-underlay
+            area:
+              0.0.0.1:
+                interfaces:
+                  1/1/c2/1.0:
+                    interface-type: point-to-point
+                  1/1/c3/1.0:
+                    interface-type: point-to-point
+                  system0.0:
+                    passive: true
 srl:
   _features:
     auto_itf_desc: no # generate itf-desription from LLDP state
@@ -288,43 +325,6 @@ srl:
     information:
       location: "Somewhere"
       contact: "John Doe"
-#  acl_filters:
-#    ipv4-filter1:
-#      description: "ACL for loopbacks"
-#      type: ipv4 # [ipv4|ipv6|mac]
-#      acl-entries:
-#        10: # sequence number
-#          action: accept # [accept|drop]
-#          match:
-#            destination-ip:
-#              prefix: 10.0.0.0/8
-#            source-ip:
-#              prefix: 0.0.0.0/0
-#            source-port:
-#              range: 1024..65000 # nr + '..' nr
-#            destination-port:
-#              range: 1024..65000 # nr + '..' nr
-#            protocol: tcp # nr or string
-#            icmp:
-#              code: 0 # nr
-#              type: echo " str"
-#        9999:
-#          action: drop
-#    mac-filter1:
-#      description: "mac filter"
-#      type: mac
-#      acl-entries:
-#        10:
-#          action: accept
-#          match:
-#            destination-mac:
-#              address: 00:00:00:00:00:00
-#              mask: 00:00:00:00:00:00
-#            ethertype: ipv4
-#            source-mac:
-#              address: 00:00:00:00:00:00
-#              mask: 00:00:00:00:00:00
-all:
   routing_policy:
     prefix_set:
       loopbacks:
@@ -377,3 +377,39 @@ all:
               protocol: bgp-evpn
             action:
               policy-result: accept
+#  acl_filters:
+#    ipv4-filter1:
+#      description: "ACL for loopbacks"
+#      type: ipv4 # [ipv4|ipv6|mac]
+#      acl-entries:
+#        10: # sequence number
+#          action: accept # [accept|drop]
+#          match:
+#            destination-ip:
+#              prefix: 10.0.0.0/8
+#            source-ip:
+#              prefix: 0.0.0.0/0
+#            source-port:
+#              range: 1024..65000 # nr + '..' nr
+#            destination-port:
+#              range: 1024..65000 # nr + '..' nr
+#            protocol: tcp # nr or string
+#            icmp:
+#              code: 0 # nr
+#              type: echo " str"
+#        9999:
+#          action: drop
+#    mac-filter1:
+#      description: "mac filter"
+#      type: mac
+#      acl-entries:
+#        10:
+#          action: accept
+#          match:
+#            destination-mac:
+#              address: 00:00:00:00:00:00
+#              mask: 00:00:00:00:00:00
+#            ethertype: ipv4
+#            source-mac:
+#              address: 00:00:00:00:00:00
+#              mask: 00:00:00:00:00:00

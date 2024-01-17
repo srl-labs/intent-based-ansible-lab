@@ -95,6 +95,7 @@
 #    pretty_print: yes
 #  register: pretty
 #  when: platform == 'sros'
+#  changed_when: false
 
 #- name: DEBUG print XML
 #  ansible.builtin.debug:

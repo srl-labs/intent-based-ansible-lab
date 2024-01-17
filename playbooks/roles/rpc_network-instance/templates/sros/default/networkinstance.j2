@@ -9,7 +9,9 @@
 - path: /router[router-name=Base]
   value:
     router-id: {{ prop['router-id'] }} 
+      {% if prop['autonomous-system'] is defined %}
     autonomous-system: "{{ prop['autonomous-system'] | string }}"
+      {% endif %}
       {% if prop.interfaces is defined and prop.interfaces is not none %}
     interface:
         {% for itf in prop.interfaces %} 
@@ -115,6 +117,39 @@
             {% endif %}
           {% else %}
           []
+          {% endfor %}
+        {% endif %}
+        {% if prop.protocols.ospf is defined %}
+    ospf:
+          {% for instance, instance_spec in prop.protocols.ospf.items() %}
+      - ospf-instance: "{{ loop.index0 | string }}"
+        admin-state: enable
+        export-policy: {{ instance_spec.export_policy }}
+        area:
+            {% for area, area_spec in instance_spec.area.items() %}
+        - area-id: {{ area }}
+          interface:
+              {% for iface, iface_spec in area_spec.interfaces.items() %}
+                {% set PORT = iface | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+                {% if iface is ansible.builtin.regex('^system0') %}
+          - interface-name: system
+                {% else %}
+          - interface-name: I{{ PORT }}
+                {% endif %}
+                {% if iface_spec['interface-type'] is defined %}
+            interface-type: {{ iface_spec['interface-type'] }}
+                {% endif %}
+                {% if iface_spec.passive is defined and iface_spec.passive %}
+            passive: "true"
+                {% endif %}
+              {% else %}
+          []
+              {% endfor %}
+            {% else %}
+        []
+            {% endfor %}
+          {% else %}
+      []
           {% endfor %}
         {% endif %}
       {% endif %}
