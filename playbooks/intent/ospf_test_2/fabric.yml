@@ -2,17 +2,23 @@
 # Configuration settings for network fabric
 fabric:
   underlay_routing:
-    bgp:
-      # Flag for enabling/disabling BGP unnumbered. Needs to be false if p2p is defined.
-      # bgp-unnumbered with dcgw is currently not supported!
-      bgp-unnumbered: false
+    # iBGP underlay
+    # bgp:
+    #   # Flag for enabling/disabling BGP unnumbered. Needs to be false if p2p is defined.
+    #   # bgp-unnumbered with dcgw is currently not supported!
+    #   bgp-unnumbered: false
+    #
+    #   # AS number range for devices within the fabric.
+    #   # Can also be specified as a list of ranges.
+    #   # asn:
+    #   #   - 64601-64605
+    #   #   - 64610-65500
+    #   asn: 64601-65500
 
-      # AS number range for devices within the fabric.
-      # Can also be specified as a list of ranges.
-      # asn:
-      #   - 64601-64605
-      #   - 64610-65500
-      asn: 64601-65500
+    # OSPF underlay
+    ospf:
+      version: v2
+      area: 0.0.0.1
 
   # IP range for loopback interfaces
   loopback: 192.168.255.0/24
@@ -42,6 +48,10 @@ fabric:
 
   # Physical cabling layout between network devices
   fabric_cabling:
+    - endpoints: ["clab-4l2s-s1:e1-57", "clab-4l2s-d1:1/1/c3/1"]
+    - endpoints: ["clab-4l2s-s1:e1-121", "clab-4l2s-d2:1/1/c3/1"]
+    - endpoints: ["clab-4l2s-s2:e1-57", "clab-4l2s-d1:1/1/c2/1"]
+    - endpoints: ["clab-4l2s-s2:e1-121", "clab-4l2s-d2:1/1/c2/1"]
     - endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s1:e1-1"]
     - endpoints: ["clab-4l2s-l1:e1-48", "clab-4l2s-s2:e1-1"]
     - endpoints: ["clab-4l2s-l2:e1-49", "clab-4l2s-s1:e1-2"]
@@ -54,6 +64,14 @@ fabric:
   # Override settings for specific devices
   # Overrides can be 'asn', 'loopback' or 'id'
   overrides:
+    clab-4l2s-d1:
+      asn: 65201
+      loopback: 192.168.255.201
+      #loopback: 10.10.10.1
+    clab-4l2s-d2:
+      asn: 65202
+      loopback: 192.168.255.202
+      #loopback: 10.10.10.2
     clab-4l2s-s1:
       asn: 65100
       loopback: 192.168.255.101
@@ -66,7 +84,7 @@ fabric:
     clab-4l2s-l2:
       asn: 65002
       loopback: 192.168.255.2
-    lab-4l2s-l3:
+    clab-4l2s-l3:
       asn: 65003
       loopback: 192.168.255.3
     clab-4l2s-l4:
