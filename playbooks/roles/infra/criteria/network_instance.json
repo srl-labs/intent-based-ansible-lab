@@ -239,6 +239,51 @@
                                     }
                                 }
                             }
+                        },
+                        "ospf": {
+                            "type": "object",
+                            "patternProperties": {
+                                "^.*": {
+                                    "type": "object",
+                                    "required": ["version", "export_policy"],
+                                    "properties": {
+                                        "version": {
+                                            "type": "string",
+                                            "enum": ["ospf-v2"]
+                                        },
+                                        "export_policy": {
+                                            "type": "string"
+                                        },
+                                        "area": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                "^([0-9]{1,3}\\.){3}[0-9]{1,3}$": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "interfaces": {
+                                                            "type": "object",
+                                                            "patternProperties": {
+                                                                "^.*": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "passive": {
+                                                                            "type": "boolean"
+                                                                        },
+                                                                        "interface-type": {
+                                                                            "type": "string",
+                                                                            "enum": ["point-to-point", "broadcast"]
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
