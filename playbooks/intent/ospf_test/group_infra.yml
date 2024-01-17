@@ -110,6 +110,12 @@ spine:
     ethernet-1/4:
       admin_state: enable
       _tag: isl
+    ethernet-1/57:
+      admin_state: enable
+      _tag: isl
+    ethernet-1/121:
+      admin_state: enable
+      _tag: isl
     system0:
       admin_state: enable
   bfd:
@@ -139,6 +145,16 @@ spine:
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
+      ethernet-1/57.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      ethernet-1/121.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
   network_instance:
     default:
       interfaces:
@@ -147,6 +163,8 @@ spine:
         - ethernet-1/2.0
         - ethernet-1/3.0
         - ethernet-1/4.0
+        - ethernet-1/57.0
+        - ethernet-1/121.0
       autonomous-system: "{{ asn }}"
       router-id: "{{ router_id }}"
       protocols:
@@ -165,6 +183,10 @@ spine:
                   ethernet-1/3.0:
                     interface-type: point-to-point
                   ethernet-1/4.0:
+                    interface-type: point-to-point
+                  ethernet-1/57.0:
+                    interface-type: point-to-point
+                  ethernet-1/121.0:
                     interface-type: point-to-point
                   system0.0:
                     passive: true
@@ -203,6 +225,60 @@ spine:
 #                admin_state: enable
 #              epvn:
 #                admin_state: disable
+dcgw:
+  interfaces:
+    1/1/c2/1:
+      _tag: isl
+      admin_state: enable
+    1/1/c3/1:
+      _tag: isl
+      admin_state: enable
+    system0:
+      admin_state: enable
+  bfd:
+    interfaces:
+      1/1/c2/1.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      1/1/c3/1.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+      system0.0:
+        admin_state: enable
+        desired_min_tx_interval: 100000
+        detection_multiplier: 3
+        required_min_rx_interval: 100000
+  network_instance:
+    default:
+      interfaces:
+        - 1/1/c2/1.0
+        - 1/1/c3/1.0
+        - system0.0
+      router-id: "{{ router_id }}"
+      protocols:
+        bgp:
+          neighbor:
+            192.168.255.101:
+              peer_group: overlay
+            192.168.255.102:
+              peer_group: overlay
+          group:
+            overlay:
+              enable_bfd: true
+              fast_failover: true
+              peer_as: "{{ overlay_asn }}"
+              export_policy: pass-evpn
+              import_policy: pass-evpn
+              ipv4:
+                admin_state: disable
+              evpn:
+                admin_state: enable
+              local_as: "{{ overlay_asn }}"
+              local_address: "{{ router_id }}"
 srl:
   _features:
     auto_itf_desc: no # generate itf-desription from LLDP state
@@ -212,6 +288,43 @@ srl:
     information:
       location: "Somewhere"
       contact: "John Doe"
+#  acl_filters:
+#    ipv4-filter1:
+#      description: "ACL for loopbacks"
+#      type: ipv4 # [ipv4|ipv6|mac]
+#      acl-entries:
+#        10: # sequence number
+#          action: accept # [accept|drop]
+#          match:
+#            destination-ip:
+#              prefix: 10.0.0.0/8
+#            source-ip:
+#              prefix: 0.0.0.0/0
+#            source-port:
+#              range: 1024..65000 # nr + '..' nr
+#            destination-port:
+#              range: 1024..65000 # nr + '..' nr
+#            protocol: tcp # nr or string
+#            icmp:
+#              code: 0 # nr
+#              type: echo " str"
+#        9999:
+#          action: drop
+#    mac-filter1:
+#      description: "mac filter"
+#      type: mac
+#      acl-entries:
+#        10:
+#          action: accept
+#          match:
+#            destination-mac:
+#              address: 00:00:00:00:00:00
+#              mask: 00:00:00:00:00:00
+#            ethertype: ipv4
+#            source-mac:
+#              address: 00:00:00:00:00:00
+#              mask: 00:00:00:00:00:00
+all:
   routing_policy:
     prefix_set:
       loopbacks:
@@ -264,41 +377,3 @@ srl:
               protocol: bgp-evpn
             action:
               policy-result: accept
-#  acl_filters:
-#    ipv4-filter1:
-#      description: "ACL for loopbacks"
-#      type: ipv4 # [ipv4|ipv6|mac]
-#      acl-entries:
-#        10: # sequence number
-#          action: accept # [accept|drop]
-#          match:
-#            destination-ip:
-#              prefix: 10.0.0.0/8 
-#            source-ip:
-#              prefix: 0.0.0.0/0
-#            source-port:
-#              range: 1024..65000 # nr + '..' nr
-#            destination-port:
-#              range: 1024..65000 # nr + '..' nr
-#            protocol: tcp # nr or string
-#            icmp: 
-#              code: 0 # nr
-#              type: echo " str"
-#        9999:
-#          action: drop
-#    mac-filter1:
-#      description: "mac filter"
-#      type: mac
-#      acl-entries:
-#        10:
-#          action: accept
-#          match:
-#            destination-mac:
-#              address: 00:00:00:00:00:00
-#              mask: 00:00:00:00:00:00
-#            ethertype: ipv4
-#            source-mac:
-#              address: 00:00:00:00:00:00
-#              mask: 00:00:00:00:00:00
-      
-

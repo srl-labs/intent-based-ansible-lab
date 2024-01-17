@@ -2,6 +2,12 @@
 #  ansible.builtin.debug:
 #    var: intent
 
+#- name: DEBUG save intent
+#  ansible.builtin.copy:
+#    content: "{{ intent | to_yaml  }}"
+#    dest: "/tmp/{{ inventory_hostname }}_intent.yml"
+#  delegate_to: localhost
+
 - name: "Generate config for /system"
   ansible.builtin.include_role:
     name: rpc_system
