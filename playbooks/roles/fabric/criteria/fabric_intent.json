@@ -42,7 +42,7 @@
                             "properties": {
                                 "version": {
                                     "type": "string",
-                                    "enum": ["v2", "v3"]
+                                    "enum": ["v2"]
                                 },
                                 "area": {
                                     "type": "string",
@@ -184,11 +184,11 @@
                     "if": {
                         "properties": {
                             "underlay_routing": {
-				"required": ["bgp"],
+                                "required": ["bgp"],
                                 "properties": {
                                     "bgp": {
+                                        "required": ["bgp-unnumbered"],
                                         "properties": {
-				            "required": ["bgp-unnumbered"],
                                             "bgp-unnumbered": { "const": true }
                                         }
                                     }
@@ -198,6 +198,9 @@
                     },
                     "then": {
                         "not": {"required": ["p2p"]}
+                    },
+                    "else": {
+                        "required": ["p2p", "spine"]
                     }
                 }
             ]
