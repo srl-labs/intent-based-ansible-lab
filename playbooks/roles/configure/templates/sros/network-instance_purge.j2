@@ -40,6 +40,37 @@
 {% endif %}
 {% endfor %}
 
+{% set OSPF = namespace(instances=[]) %}
+{% if ROUTERBASE['ospf'] | type_debug == "list" %}
+{% set OSPF.instances = ROUTERBASE['ospf'] %}
+{% elif ROUTERBASE['ospf'] is mapping %}
+{% set OSPF.instances = [ROUTERBASE['ospf']] %}
+{% endif %}
+{% for ospf in OSPF.instances %}
+  {% set ospf_instance = ospf['ospf-instance'] %}
+  {% set OSPF_A = namespace(instances=[]) %}
+  {% if ospf['area'] | type_debug == "list" %}
+  {% set OSPF_A.instances = ospf['area'] %}
+  {% elif ospf['area'] is mapping %}
+  {% set OSPF_A.instances = [ospf['area']] %}
+  {% endif %}
+  {% for area in OSPF_A.instances %}
+    {% set ospf_area = area['area-id'] %}
+    {% set AREA_I = namespace(instances=[]) %}
+    {% if area['interface'] | type_debug == "list" %}
+    {% set AREA_I.instances = area['interface'] %}
+    {% elif area['interface'] is mapping %}
+    {% set AREA_I.instances = [area['interface']] %}
+    {% endif %}
+    {% for iface in AREA_I.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+    {% set iface_name = iface['interface-name'] %}
+    {% if (iface_name not in (network_instance['default'].protocols.ospf['default'].area[ospf_area].interface | default({}) | list)) %}
+- path: /router[router-name=Base]/ospf[ospf-instance={{ ospf_instance }}]/area[area-id={{ ospf_area }}]/interface[interface-name={{ iface_name }}]
+    {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+
 {% set VPRN = namespace(instances=[]) %}
 {% if running_config['service']['vprn'] | type_debug == "list" %}
 {% set VPRN.instances = running_config['service']['vprn'] %}

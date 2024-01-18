@@ -127,7 +127,7 @@
 - path: /router[router-name=Base]/ospf[ospf-instance={{ OSPFINSTANCE }}]/area[area-id={{ area }}]/interface[interface-name={{ IFACENAME }}]
   operation: replace
   value:
-    _tag: true
+    _tag: {{ IFACENAME != "system" }}
                 {% if iface_spec['interface-type'] is defined %}
     interface-type: {{ iface_spec['interface-type'] }}
                 {% endif %}
