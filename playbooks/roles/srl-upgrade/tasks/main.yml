@@ -34,6 +34,7 @@
         datastore: state
   register: pre_status
   failed_when: pre_status.result is not system_ready
+  when: pre_checks | default(true) | bool
 
 - name: Verify startup config is up to date
   nokia.srlinux.cli:
@@ -41,6 +42,7 @@
       - diff startup
   register: up2datecheck
   failed_when: "'text' in up2datecheck.result[0]"
+  when: pre_checks | default(true) | bool
 
 - name: Upgrade
   when: is_upgrade or is_downgrade
@@ -98,7 +100,8 @@
     ansible.builtin.copy:
       remote_src: true
       src: "/etc/opt/srlinux/config.json"
-      dest: "/home/{{ ansible_user }}/config.json_{{ pre_version | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}.bak"
+      # dest: "/home/{{ ansible_user }}/config.json_{{ pre_version }}.bak"
+      dest: "/etc/opt/srlinux/config.json_{{ pre_version }}.bak"
 
   - name: Upgrade and reboot
     vars:
@@ -107,6 +110,9 @@
       commands:
         - "tools system deploy-image {% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
         - "tools platform chassis reboot delay 2"
+
+  - name: Reset persistent connection
+    ansible.builtin.meta: clear_facts
 
   - name: Wait for reboot to be executed
     ansible.builtin.pause:
@@ -123,7 +129,7 @@
     register: post_status
     delay: 10
     retries: 100
-    until: post_status.result is system_ready(pre_status.result)
+    until: post_status.result is system_ready(pre_status.result | default(None))
 
   - name: Wait for network to stabilize again
     ansible.builtin.pause:
@@ -143,14 +149,14 @@
   #    commands:
   #      - diff startup
   #  register: requiresave
-  #  when: "save_startup | default(false)"
+  #  when: save_startup | default(false) | bool
 
   #- name: Save startup config if requested and required
   #  nokia.srlinux.cli:
   #    commands:
   #      - save startup
   #  register: requiresave
-  #  when: "save_startup | default(false) and 'text' in requiresave"
+  #  when: save_startup | default(false) | bool and 'text' in requiresave
 
   - name: Set facts
     ansible.builtin.set_fact:
