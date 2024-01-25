@@ -105,6 +105,8 @@ network_instance:
             fast_failover: true
             {% if "local_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
             local_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_as"] }}
+            {% elif preprocessed_fabric[inventory_hostname]["role"] == 'dcgw' and preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "underlay" %}
+            local_as: {{ preprocessed_fabric[inventory_hostname].asn }}
             {% endif %}
             {% if "local_address" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
             local_address: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_address"] }}

@@ -2,6 +2,12 @@
 {% set NETWORK_INSTANCE = namespace(found = false) %}
 {% set DCGW_SERVICEID_OFFSET = hostvars[inventory_hostname]['dcgw_serviceid_offset'] | default(0) | int %}
 {% set DCGW_BHVPLS_OFFSET = hostvars[inventory_hostname]['dcgw_bhvpls_offset'] | default(10000) | int %}
+{% set ROUTERBASEIFACE = namespace(instances=[]) %}
+{% if running_config.router.interface | type_debug == "list" %}
+{% set ROUTERBASEIFACE.instances = running_config.router.interface %}
+{% elif running_config.router.interface is mapping %}
+{% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
+{% endif %}
 {% for ni, prop in network_instance.items() %}
   {% if prop._state|default('present') != 'deleted' %}
     {% if ni == "default" %}
@@ -9,9 +15,13 @@
 - path: /router[router-name=Base]
   operation: update
   value:
-    router-id: {{ prop['router-id'] }} 
-      {% if prop['autonomous-system'] is defined %}
+      {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['router-id'] is not defined %}
+    router-id: {{ prop['router-id'] }}
+      {% endif %}
+      {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['autonomous-system'] is not defined %}
+        {% if prop['autonomous-system'] is defined %}
     autonomous-system: "{{ prop['autonomous-system'] | string }}"
+        {% endif %}
       {% endif %}
       {% if prop.protocols is defined and prop.protocols is not none %}
         {% if prop.protocols.ospf is defined %}
@@ -27,12 +37,7 @@
         {% if prop.protocols.bgp is defined %}
     bgp:
       admin-state: enable
-      min-route-advertisement: "1"
       rapid-withdrawal: "true"
-      peer-ip-tracking: "true"
-      split-horizon: "true"
-      ebgp-default-reject-policy:
-        import: "false"
       rapid-update:
         evpn: "true"
         {% endif %}
@@ -43,6 +48,11 @@
   value:
     _tag: true
     admin-state: enable
+    min-route-advertisement: "1"
+    peer-ip-tracking: "true"
+    split-horizon: "true"
+    ebgp-default-reject-policy:
+      import: "false"
     description: {{ group_spec.description|default('no description') }}
             {% if group_spec.peer_as is defined %}
     peer-as: "{{ group_spec.peer_as }}"
@@ -149,7 +159,11 @@
           {% endif %}
 - path: /router[router-name=Base]/interface[interface-name={{ IFACENAME }}]
           {% if IFACENAME == 'system' %}
+            {% if (dcgw_unsafe_updates | default(false) | bool) or ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | length == 0 %}
   operation: update
+            {% else %}
+  operation: ignore
+            {% endif %}
           {% else %}
   operation: replace
           {% endif %}
