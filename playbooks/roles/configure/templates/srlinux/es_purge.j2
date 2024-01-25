@@ -1,0 +1,18 @@
+#jinja2: lstrip_blocks: "True"
+{% if system is defined and "srl_nokia-system-network-instance:network-instance" in running_config['srl_nokia-system:system'] %}
+    {% set evpn_data = running_config['srl_nokia-system:system']['srl_nokia-system-network-instance:network-instance']
+        ['protocols'] | default({}, true) %}
+    {% if 'evpn' in evpn_data and 'srl_nokia-system-network-instance-bgp-evpn-ethernet-segments:ethernet-segments' in evpn_data.evpn | default({}, true) %}    
+    
+        {% set ethernet_segments = evpn_data['evpn']['srl_nokia-system-network-instance-bgp-evpn-ethernet-segments:ethernet-segments'] | default({}, true) %}
+        {% if ethernet_segments %}
+            {% for bgp_inst in ethernet_segments.get('bgp-instance', []) %}
+                {% for es in bgp_inst.get('ethernet-segment', []) %}
+                    {% if es.name not in system.ethernet_segments | default({}, true) %}
+- path: /system/network-instance/protocols/evpn/ethernet-segments/bgp-instance[id={{ bgp_inst.id }}]/ethernet-segment[name={{ es.name }}]
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endif %}
