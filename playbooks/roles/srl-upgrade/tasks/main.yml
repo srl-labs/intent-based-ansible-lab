@@ -12,9 +12,18 @@
 
 - name: Set facts
   ansible.builtin.set_fact:
-    pre_version: "{{ info_pre.result[0] }}"
+    pre_version: "{{ info_pre.result[0] | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}"
     binfile_version: "{{ binfile | ansible.builtin.regex_replace('.*srlinux-(\\d+\\.\\d+\\.\\d+-\\d+)\\.bin$', '\\1') }}"
-  failed_when: pre_version is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
+  failed_when: info_pre.result[0] is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
+
+- name: Set facts
+  ansible.builtin.set_fact:
+    is_upgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '<') }}"
+    is_downgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '>') }}"
+
+- name: Print current version
+  ansible.builtin.debug:
+    msg: "{% if is_upgrade %}Upgrade from version {% elif is_downgrade %}Downgrade from version {% else %}No upgrade required. Current version {% endif %}{{ pre_version }} {% if is_upgrade or is_downgrade %}to version {% else %}is the same as requested version {% endif %}{{ binfile_version }}."
 
 - name: Check system state before upgrade
   nokia.srlinux.get:
@@ -25,6 +34,7 @@
         datastore: state
   register: pre_status
   failed_when: pre_status.result is not system_ready
+  when: pre_checks | default(true) | bool
 
 - name: Verify startup config is up to date
   nokia.srlinux.cli:
@@ -32,13 +42,10 @@
       - diff startup
   register: up2datecheck
   failed_when: "'text' in up2datecheck.result[0]"
-
-- name: Print current version
-  ansible.builtin.debug:
-    msg: "Current version: {{ pre_version }}; requested verion: {{ binfile_version }}{% if binfile_version + '-' in pre_version%}; upgrade not required!{% endif %}"
+  when: pre_checks | default(true) | bool
 
 - name: Upgrade
-  when: binfile_version + "-" not in pre_version
+  when: is_upgrade or is_downgrade
   block:
   - name: Prepare HTTP transfer
     vars:
@@ -93,7 +100,8 @@
     ansible.builtin.copy:
       remote_src: true
       src: "/etc/opt/srlinux/config.json"
-      dest: "/home/{{ ansible_user }}/config.json_{{ pre_version | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}.bak"
+      # dest: "/home/{{ ansible_user }}/config.json_{{ pre_version }}.bak"
+      dest: "/etc/opt/srlinux/config.json_{{ pre_version }}.bak"
 
   - name: Upgrade and reboot
     vars:
@@ -102,6 +110,9 @@
       commands:
         - "tools system deploy-image {% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
         - "tools platform chassis reboot delay 2"
+
+  - name: Reset persistent connection
+    ansible.builtin.meta: clear_facts
 
   - name: Wait for reboot to be executed
     ansible.builtin.pause:
@@ -118,7 +129,7 @@
     register: post_status
     delay: 10
     retries: 100
-    until: post_status.result is system_ready(pre_status.result)
+    until: post_status.result is system_ready(pre_status.result | default(None))
 
   - name: Wait for network to stabilize again
     ansible.builtin.pause:
@@ -138,23 +149,24 @@
   #    commands:
   #      - diff startup
   #  register: requiresave
-  #  when: "save_startup | default(false)"
+  #  when: save_startup | default(false) | bool
 
   #- name: Save startup config if requested and required
   #  nokia.srlinux.cli:
   #    commands:
   #      - save startup
   #  register: requiresave
-  #  when: "save_startup | default(false) and 'text' in requiresave"
+  #  when: save_startup | default(false) | bool and 'text' in requiresave
 
   - name: Set facts
     ansible.builtin.set_fact:
-      post_version: "{{ info_post.result[0] }}"
+      post_version: "{{ info_post.result[0] | ansible.builtin.regex_replace('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$', '\\1') }}"
+    failed_when: info_post.result[0] is not ansible.builtin.regex('^v(\\d+\\.\\d+\\.\\d+-\\d+)-g[a-fA-F0-9]+$')
 
   - name: Print new version
     ansible.builtin.debug:
-      msg: "Previous version: {{ pre_version }}; requested verion: {{ binfile_version }}; current version: {{ post_version }}"
-    failed_when: binfile_version + "-" not in post_version
+      msg: "{% if is_upgrade %}Upgrade {% elif is_downgrade %}Downgrade {% endif %}from version {{ pre_version }} to version {{ post_version }} completed."
+    failed_when: binfile_version != post_version
 
   - name: Remove remote binfile
     vars:
