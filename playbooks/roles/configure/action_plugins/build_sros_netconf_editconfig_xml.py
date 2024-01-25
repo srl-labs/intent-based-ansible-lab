@@ -75,8 +75,8 @@ def navigate_path(path, root, create=False):
     path_elements = split_path(path)
     node = root
     for i in range(len(path_elements)):
-        xpath = convert_path_to_xpath("/".join([".", *path_elements[:i+1]]))
-        xpathmatch = try_xpath(root, xpath)
+        xpath = convert_path_to_xpath("/".join([".", *path_elements[i:i+1]]))
+        xpathmatch = try_xpath(node, xpath)
         if len(xpathmatch) != 1:
             if len(xpathmatch) == 0 and create:
                 path2create = str(path_elements[i])
