@@ -20,6 +20,9 @@
       {% if prop.reload_delay is defined %}
       reload-delay: {{ prop.reload_delay }}
       {% endif %}
+      {% if prop.port_speed is defined %}
+      port-speed: {{ prop.port_speed }}
+      {% endif %}
     {% endif %}
     {% if itf.startswith("lag") %}
     lag:
