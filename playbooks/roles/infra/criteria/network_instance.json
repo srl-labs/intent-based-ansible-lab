@@ -245,7 +245,7 @@
                             "patternProperties": {
                                 "^.*": {
                                     "type": "object",
-                                    "required": ["version", "export_policy"],
+                                    "required": ["version"],
                                     "properties": {
                                         "version": {
                                             "type": "string",
@@ -253,6 +253,61 @@
                                         },
                                         "export_policy": {
                                             "type": "string"
+                                        },
+                                        "max-ecmp-paths": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 64
+                                        },
+                                        "timers": {
+                                            "type": "object",
+                                            "properties": {
+                                                "incremental-spf-wait": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 1000
+                                                },
+                                                "lsa-generate": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "lsa-initial-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "lsa-second-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "max-lsa-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        }
+                                                    }
+                                                },
+                                                "spf-wait": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "spf-initial-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "spf-second-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "spf-max-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         },
                                         "area": {
                                             "type": "object",
@@ -272,6 +327,19 @@
                                                                         "interface-type": {
                                                                             "type": "string",
                                                                             "enum": ["point-to-point", "broadcast"]
+                                                                        },
+                                                                        "hello-interval": {
+                                                                            "type": "number",
+                                                                            "minimum": 1,
+                                                                            "maximum": 65535
+                                                                        },
+                                                                        "dead-interval": {
+                                                                            "type": "number",
+                                                                            "minimum": 1,
+                                                                            "maximum": 65535
+                                                                        },
+                                                                        "enable-bfd": {
+                                                                            "type": "boolean"
                                                                         }
                                                                     }
                                                                 }

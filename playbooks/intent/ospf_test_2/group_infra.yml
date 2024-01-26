@@ -7,6 +7,21 @@ srl:
     information:
       location: "Somewhere"
       contact: "John Doe"
+  network_instance: # overriding fabric intent parameters
+    default:
+      protocols:
+        ospf:
+          default:
+            max-ecmp-paths: 64
+            timers:
+              incremental-spf-wait: 100
+              lsa-generate:
+                lsa-initial-wait: 50
+            area:
+              "0.0.0.1":
+                interfaces:
+                  ethernet-1/48.0:
+                    hello-interval: 10
   routing_policy:
     prefix_set:
       servers:

@@ -158,7 +158,24 @@
           admin-state: enable
           router-id: {{ prop["router-id"] }}
           version: {{ instance_spec.version }}
+          max-ecmp-paths: {{ instance_spec["max-ecmp-paths"] | default(8) }}
           export-policy: {{ instance_spec.export_policy }}
+          {% if instance_spec.timers is defined %}
+          timers:
+            incremental-spf-wait: {{ instance_spec.timers["incremental-spf-wait"] | default(200) }}
+            {% if 'lsa-generate' in instance_spec.timers %}
+            lsa-generate:
+              lsa-initial-wait: {{ instance_spec.timers["lsa-generate"]["lsa-initial-wait"] | default(100) }}
+              lsa-second-wait: {{ instance_spec.timers["lsa-generate"]["lsa-second-wait"] | default(200) }}
+              max-lsa-wait: {{ instance_spec.timers["lsa-generate"]["max-lsa-wait"] | default(1000) }}
+            {% endif %}
+            {% if 'spf-wait' in instance_spec.timers %}
+            spf-wait:
+              spf-initial-wait: {{ instance_spec.timers["spf-wait"]["spf-initial-wait"] | default(100) }}
+              spf-second-wait: {{ instance_spec.timers["spf-wait"]["spf-second-wait"] | default(200) }}
+              spf-max-wait: {{ instance_spec.timers["spf-wait"]["spf-max-wait"] | default(1000) }}
+            {% endif %}
+          {% endif %}
           area:
           {% for area, area_spec in instance_spec.area.items() %}
           - area-id: {{ area }}
@@ -171,6 +188,10 @@
               {% if iface_spec.passive is defined and iface_spec.passive %}
               passive: "true"
               {% endif %}
+              hello-interval: {{ iface_spec['hello-interval']|default(10) }}
+              dead-interval: {{ iface_spec['dead-interval']|default(40) }}
+              failure-detection:
+                enable-bfd: {{ iface_spec['enable-bfd']|default(False) }}
             {% else %}
             []
             {% endfor %}

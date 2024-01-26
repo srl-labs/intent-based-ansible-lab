@@ -60,6 +60,8 @@ leaf:
                 interfaces:
                   ethernet-1/48.0:
                     interface-type: point-to-point
+                    hello-interval: 10
+                    enable-bfd: false
                   ethernet-1/49.0:
                     interface-type: point-to-point
                   system0.0:
