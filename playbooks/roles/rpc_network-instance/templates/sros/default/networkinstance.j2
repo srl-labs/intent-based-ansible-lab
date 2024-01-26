@@ -54,6 +54,9 @@
     ebgp-default-reject-policy:
       import: "false"
     description: {{ group_spec.description|default('no description') }}
+            {% if group_spec.enable_bfd | default(false) %}
+    bfd-liveness: "true"
+            {% endif %}
             {% if group_spec.peer_as is defined %}
     peer-as: "{{ group_spec.peer_as }}"
             {% endif %}
@@ -175,6 +178,21 @@
     admin-state: enable
           {% if subinterface[itf].ipv4_address is defined %}
     ipv4:
+            {% if bfd.interfaces[itf].admin_state | default("disable") == "enable" %}
+      bfd:
+        admin-state: enable
+              {% if bfd.interfaces[itf].desired_min_tx_interval is defined %}
+        transmit-interval: {{ bfd.interfaces[itf].desired_min_tx_interval | int // 1000 }}
+              {% endif %}
+              {% if bfd.interfaces[itf].required_min_rx_interval is defined %}
+        receive: {{ bfd.interfaces[itf].required_min_rx_interval | int // 1000 }}
+              {% endif %}
+              {% if bfd.interfaces[itf].detection_multiplier is defined %}
+        multiplier: {{ bfd.interfaces[itf].detection_multiplier }}
+              {% endif %}
+              {% if bfd.interfaces[itf].max_hop_count is defined %}
+              {% endif %}
+            {% endif %}
       primary:
         address: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('address') | string }}
         prefix-length: "{{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}"

@@ -122,6 +122,8 @@ def set_value(value, node, tag=None):
                 set_value(val, n, tag=tag)
     elif isinstance(value, str):
         node.text = value
+    elif isinstance(value, (bool, int, float,)):
+        node.text = str(value).lower()
     else:
         raise Exception(f"Invalid type {type(value).__name__}")
 
