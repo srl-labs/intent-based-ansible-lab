@@ -64,7 +64,7 @@
     {% endif %}
     {% for iface in AREA_I.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
     {% set iface_name = iface['interface-name'] %}
-    {% if (iface_name not in (network_instance['default'].protocols.ospf['default'].area[ospf_area].interface | default({}) | list)) %}
+    {% if (iface_name not in (network_instance['default'].protocols.ospf['default'].area[ospf_area].interfaces | default({}) | list | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', 'I\\1'))) %}
 - path: /router[router-name=Base]/ospf[ospf-instance={{ ospf_instance }}]/area[area-id={{ ospf_area }}]/interface[interface-name={{ iface_name }}]
     {% endif %}
     {% endfor %}
