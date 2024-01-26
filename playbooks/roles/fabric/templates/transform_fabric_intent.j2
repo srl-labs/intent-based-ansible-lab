@@ -163,6 +163,7 @@ network_instance:
                   passive: true
                 {% for iface in preprocessed_fabric[inventory_hostname].isls %}
                 {{iface}}.0:
+                  enable-bfd: true
                   interface-type: point-to-point
                 {% endfor %}
       {% endif %}
