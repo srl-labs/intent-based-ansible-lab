@@ -9,6 +9,7 @@
     name: utils_tpl_version
 
 - name: Generate JSON-RPC data for /interface
+  delegate_to: localhost
   ansible.builtin.set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
@@ -18,6 +19,7 @@
     template_file: "{{ tpl_base.path + '/interface.j2' }}"
 
 - name: Generate JSON-RPC data for /interface/subinterface
+  delegate_to: localhost
   ansible.builtin.set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
@@ -27,6 +29,7 @@
     template_file: "{{ tpl_base.path + '/subinterface.j2' }}"
 
 - name: Generate JSON-RPC data for /tunnel-interface
+  delegate_to: localhost
   ansible.builtin.set_fact:
     update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
     replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"

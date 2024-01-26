@@ -48,6 +48,7 @@
 #  when: platform == 'sros'
 
 - name: Set facts for device
+  delegate_to: localhost
   ansible.builtin.set_fact:
     running_config: "{{ res['result'][0] }}"
     sw_version: "{{ res['result'][1].split('-')[0] }}"
@@ -55,6 +56,7 @@
   when: platform == 'srlinux'
 
 - name: Set facts for device
+  delegate_to: localhost
   ansible.builtin.set_fact:
     running_config: "{{ sros_res2.output.data.configure }}"
     sw_version: "{{ sros_res.output.data.state.system.version['version-number'] }}"
@@ -62,6 +64,7 @@
   when: platform == 'sros'
 
 - name: Check SR Linux version
+  delegate_to: localhost
   ansible.builtin.assert:
     that:
       - sw_version | ansible.builtin.regex_search('^v(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('23.3', '>=')
@@ -69,6 +72,7 @@
   when: platform == 'srlinux'
 
 - name: Check SROS version
+  delegate_to: localhost
   ansible.builtin.assert:
     that:
       - sw_version | ansible.builtin.regex_search('^[A-Z]-(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('21.10', '>=')
