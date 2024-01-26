@@ -1,16 +1,20 @@
 #jinja2: lstrip_blocks: "True"
 - path: /system/lldp
+  operation: replace
   value:
     admin-state: {{ system.lldp["admin-state"] | default('enable') }}
 - path: /system/information
+  operation: replace
   value:
     location: {{ system.information.location | default('n/a') }}
     contact: {{ system.information.contact | default('n/a') }}
 - path: /system/network-instance/protocols/bgp-vpn
+  operation: replace
   value:
     bgp-instance:
       - id: 1
 - path: /system/mtu
+  operation: replace
   value:
     default-ip-mtu: {{ system.mtu["default-ip-mtu"] | default(9214) }}
 {% if system.mtu is defined and "default-l2-mtu" in system.mtu %}
@@ -27,6 +31,7 @@
 {% endif %}
 {% if ES.found %}
 - path: /system/network-instance/protocols/evpn/ethernet-segments/bgp-instance[id=1]
+  operation: replace
   value:
     ethernet-segment:
   {% for es, es_prop in system.ethernet_segments.items() %}

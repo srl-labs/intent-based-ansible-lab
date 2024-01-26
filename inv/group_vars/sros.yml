@@ -9,3 +9,4 @@ platform: sros
 #
 #dcgw_serviceid_offset: 0
 #dcgw_bhvpls_offset: 10000
+overlay_asn: 100

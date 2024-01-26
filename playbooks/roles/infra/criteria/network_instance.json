@@ -239,6 +239,119 @@
                                     }
                                 }
                             }
+                        },
+                        "ospf": {
+                            "type": "object",
+                            "patternProperties": {
+                                "^.*": {
+                                    "type": "object",
+                                    "required": ["version"],
+                                    "properties": {
+                                        "version": {
+                                            "type": "string",
+                                            "enum": ["ospf-v2"]
+                                        },
+                                        "export_policy": {
+                                            "type": "string"
+                                        },
+                                        "max-ecmp-paths": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 64
+                                        },
+                                        "timers": {
+                                            "type": "object",
+                                            "properties": {
+                                                "incremental-spf-wait": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 1000
+                                                },
+                                                "lsa-generate": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "lsa-initial-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "lsa-second-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "max-lsa-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        }
+                                                    }
+                                                },
+                                                "spf-wait": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "spf-initial-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "spf-second-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        },
+                                                        "spf-max-wait": {
+                                                            "type": "number",
+                                                            "minimum": 10,
+                                                            "maximum": 10000
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "area": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                "^([0-9]{1,3}\\.){3}[0-9]{1,3}$": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "interfaces": {
+                                                            "type": "object",
+                                                            "patternProperties": {
+                                                                "^.*": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "passive": {
+                                                                            "type": "boolean"
+                                                                        },
+                                                                        "interface-type": {
+                                                                            "type": "string",
+                                                                            "enum": ["point-to-point", "broadcast"]
+                                                                        },
+                                                                        "hello-interval": {
+                                                                            "type": "number",
+                                                                            "minimum": 1,
+                                                                            "maximum": 65535
+                                                                        },
+                                                                        "dead-interval": {
+                                                                            "type": "number",
+                                                                            "minimum": 1,
+                                                                            "maximum": 65535
+                                                                        },
+                                                                        "enable-bfd": {
+                                                                            "type": "boolean"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

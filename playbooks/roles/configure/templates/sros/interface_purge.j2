@@ -1,1 +1,13 @@
 #jinja2: lstrip_blocks: "True"
+{% set PORT = namespace(instances=[]) %}
+{% if running_config['port'] | type_debug == "list" %}
+{% set PORT.instances = running_config['port'] %}
+{% elif running_config['port'] is mapping %}
+{% set PORT.instances = [running_config['port']] %}
+{% endif %}
+{% for port in PORT.instances | selectattr('@nokia-attr:comment', 'defined') | selectattr('@nokia-attr:comment', 'eq', 'Ansible managed') %}
+{% set port_id = port['port-id'] %}
+{% if (port_id is ansible.builtin.regex('^\\d+/\\d+/c\\d+/\\d+$') and port_id not in interfaces | default({}) | list) or (port_id is ansible.builtin.regex('^\\d+/\\d+/c\\d+$') and (port_id not in interfaces | default({}) | list | map('ansible.builtin.regex_replace', '^(\\d+/\\d+/c\\d+)/\\d+$', '\\1'))) %}
+- path: /port[port-id={{ port_id }}]
+{% endif %}
+{% endfor %}

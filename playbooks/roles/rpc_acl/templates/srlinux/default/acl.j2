@@ -2,6 +2,7 @@
 {% for acl, acl_spec in acl_filters.items() %}
   {% if acl_spec.type == "ipv4" %}
 - path: /acl/ipv4-filter[name={{ acl }}]
+  operation: replace
   value:
     description: {{ acl_spec.description | default('') }}
     {% if acl_spec['acl-entries'] is defined and acl_spec['acl-entries'] | length > 0 %}

@@ -1,6 +1,19 @@
 ---
 # Configuration settings for network fabric
 fabric:
+  underlay_routing:
+    bgp:
+      # Flag for enabling/disabling BGP unnumbered. Needs to be false if p2p is defined.
+      # bgp-unnumbered with dcgw is currently not supported!
+      bgp-unnumbered: false
+
+      # AS number range for devices within the fabric.
+      # Can also be specified as a list of ranges.
+      # asn:
+      #   - 64601-64605
+      #   - 64610-65500
+      asn: 64601-65500
+
   # IP range for loopback interfaces
   loopback: 192.168.255.0/24
 
@@ -9,17 +22,6 @@ fabric:
   #   - 100.64.0.0/17
   #   - 100.64.128.0/24
   p2p: 100.64.0.0/16
-
-  # Flag for enabling/disabling BGP unnumbered. Needs to be false if p2p is defined.
-  # bgp-unnumbered with dcgw is currently not supported!
-  bgp-unnumbered: false
-
-  # AS number range for devices within the fabric.
-  # Can also be specified as a list of ranges.
-  # asn:
-  #   - 64601-64605
-  #   - 64610-65500
-  asn: 64601-65500
 
   # AS number for overlay network
   overlay_asn: 65501

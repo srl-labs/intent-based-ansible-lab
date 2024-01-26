@@ -3,6 +3,7 @@
     my_intent: {}
 
 - name: Validate l3vpn intent
+  delegate_to: localhost
   ansible.utils.validate:
     data: "{{ l3vpn }}"
     criteria:
@@ -10,11 +11,13 @@
     engine: ansible.utils.jsonschema
 
 - name: Generate low-level intent for L3VPN
+  delegate_to: localhost
   ansible.builtin.set_fact:
     my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
   when: l3vpn is mapping
 
 - name: Update 'network_instance' in intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance | default({}, true)}, recursive=true, list_merge='append') }}"
   when:
@@ -22,6 +25,7 @@
     - my_intent.network_instance is defined and my_intent.network_instance is not none
 
 - name: Update 'subinterface' in intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}) | combine({'subinterface': my_intent.subinterface | default({}, true)}, recursive=true) }}"
   when:
@@ -29,6 +33,7 @@
     - my_intent.subinterface is defined and my_intent.subinterface is not none
 
 - name: Update 'tunnel_interface' in intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface | default({}, true)}, recursive=true) }}"
   when:

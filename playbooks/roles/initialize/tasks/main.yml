@@ -1,4 +1,5 @@
 - name: Initialize facts
+  delegate_to: localhost
   ansible.builtin.set_fact:
     update: []
     replace: []
@@ -48,6 +49,7 @@
 #  when: platform == 'sros'
 
 - name: Set facts for device
+  delegate_to: localhost
   ansible.builtin.set_fact:
     running_config: "{{ res['result'][0] }}"
     sw_version: "{{ res['result'][1].split('-')[0] }}"
@@ -55,6 +57,7 @@
   when: platform == 'srlinux'
 
 - name: Set facts for device
+  delegate_to: localhost
   ansible.builtin.set_fact:
     running_config: "{{ sros_res2.output.data.configure }}"
     sw_version: "{{ sros_res.output.data.state.system.version['version-number'] }}"
@@ -62,8 +65,17 @@
   when: platform == 'sros'
 
 - name: Check SR Linux version
+  delegate_to: localhost
   ansible.builtin.assert:
     that:
-      - sw_version | regex_search('^v(\\d+)', '\\1') | map('int') | first  >= 23
+      - sw_version | ansible.builtin.regex_search('^v(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('23.3', '>=')
     fail_msg: "Minimal SR Linux version is 23.3.1. Please upgrade your switches first"
   when: platform == 'srlinux'
+
+- name: Check SROS version
+  delegate_to: localhost
+  ansible.builtin.assert:
+    that:
+      - sw_version | ansible.builtin.regex_search('^[A-Z]-(\\d+\\.\\d+)', '\\1') | first is ansible.builtin.version('21.10', '>=')
+    fail_msg: "Minimal SROS version is 21.10.R1. Please upgrade your switches first"
+  when: platform == 'sros'

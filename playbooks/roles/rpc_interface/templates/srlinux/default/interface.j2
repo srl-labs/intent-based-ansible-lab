@@ -2,6 +2,7 @@
 {%- for itf, prop in interfaces.items() %}
   {% if prop._state | default('present') == 'present' %}
 - path: /interface[name={{ itf }}]
+  operation: update
   value:
     admin-state: {{ prop.admin_state | default('enable') }}
     description: {{ prop.description|default('no description')}}
@@ -18,6 +19,9 @@
       {% endif %}
       {% if prop.reload_delay is defined %}
       reload-delay: {{ prop.reload_delay }}
+      {% endif %}
+      {% if prop.port_speed is defined %}
+      port-speed: {{ prop.port_speed }}
       {% endif %}
     {% endif %}
     {% if itf.startswith("lag") %}

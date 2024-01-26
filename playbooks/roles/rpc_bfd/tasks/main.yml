@@ -1,4 +1,5 @@
 - name: Get role path
+  delegate_to: localhost
   ansible.builtin.set_fact:
     my_dir: "{{ role_path }}"
 
@@ -9,8 +10,10 @@
     name: utils_tpl_version
 
 - name: Generate JSON-RPC data for /bfd
+  delegate_to: localhost
   ansible.builtin.set_fact:
-    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) }}"
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
     cacheable: true
   vars:
     template_file: "{{ tpl_base.path + '/bfd.j2' }}"

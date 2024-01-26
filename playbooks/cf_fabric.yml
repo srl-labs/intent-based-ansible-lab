@@ -48,6 +48,8 @@
           - subinterface
           - network-instance
           - tunnel-interface
+          - bfd
+          - es
       tags: [always]
 - name: Commit changes when confirm_timeout is set
   gather_facts: false

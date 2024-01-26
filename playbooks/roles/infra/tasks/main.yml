@@ -7,6 +7,7 @@
 #  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
 
 - name: Load templated group intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}, true) | combine((lookup('template', item.1) | from_yaml)[item.0], recursive=True) }}"
   with_nested:
@@ -23,6 +24,7 @@
 #  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
 
 - name: Load templated nodal intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}, true) | combine((lookup('template', item.1) | from_yaml)[item.0], recursive=True) }}"
   with_nested:
@@ -31,6 +33,7 @@
   when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
 
 - name: "Load host vars for ENV:{{ env }}"
+  delegate_to: localhost
   ansible.builtin.include_vars:
     name: host_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
@@ -38,6 +41,7 @@
     ignore_unknown_extensions: true
 
 - name: "Load group vars for ENV:{{ env }}"
+  delegate_to: localhost
   ansible.builtin.include_vars:
     name: group_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
@@ -45,17 +49,20 @@
     ignore_unknown_extensions: true
 
 - name: Load group intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}) | combine(group_intent[item], recursive=True) }}"
   loop: "{{ group_names }}"
   when: item in group_intent|default({}, true)
 
 - name: Load nodal intent
+  delegate_to: localhost
   ansible.builtin.set_fact:
     intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname], recursive=True) }}"
   when: inventory_hostname in host_intent|default({}, true)
 
 - name: Validate infra intent
+  delegate_to: localhost
   ansible.utils.validate:
     data: "{{ intent[item] }}"
     criteria:

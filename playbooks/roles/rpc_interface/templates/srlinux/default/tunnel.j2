@@ -16,6 +16,7 @@
   {% for tunnel, tunnel_ids in my.tunnels.items() %}
     {% if tunnel_ids|length >0 %}
 - path: /tunnel-interface[name={{ tunnel }}]
+  operation: update
   value:
     vxlan-interface:
       {% for id in tunnel_ids %}

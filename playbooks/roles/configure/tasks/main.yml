@@ -2,6 +2,12 @@
 #  ansible.builtin.debug:
 #    var: intent
 
+#- name: DEBUG save intent
+#  ansible.builtin.copy:
+#    content: "{{ intent | to_yaml  }}"
+#    dest: "/tmp/{{ inventory_hostname }}_intent.yml"
+#  delegate_to: localhost
+
 - name: "Generate config for /system"
   ansible.builtin.include_role:
     name: rpc_system
@@ -39,6 +45,7 @@
 
 ## this task is pruning resources from the device that are not in the intent
 - name: Generate Delete sets for implicit pruning
+  delegate_to: localhost
   vars:
     purge_exclude:
       network_instance:
@@ -58,6 +65,7 @@
 
 ## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
 - name: Generate Delete sets for explicit pruning
+  delegate_to: localhost
   ansible.builtin.set_fact:
     delete: "{{ delete + lookup('template', '{{platform}}/{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
@@ -76,6 +84,7 @@
 #    var: delete
 
 - name: Build XML
+  delegate_to: localhost
   build_sros_netconf_editconfig_xml:
     update: "{{ update }}"
     replace: "{{ replace }}"
@@ -89,6 +98,7 @@
 #    pretty_print: yes
 #  register: pretty
 #  when: platform == 'sros'
+#  changed_when: false
 
 #- name: DEBUG print XML
 #  ansible.builtin.debug:

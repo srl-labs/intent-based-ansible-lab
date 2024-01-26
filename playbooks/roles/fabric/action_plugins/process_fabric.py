@@ -212,7 +212,7 @@ class IpFabricParser:
                 peer = n2 if node == n1 else n2
                 iface = properties[node]
                 ret[node]["isls"][iface] = {k: v for k, v in properties.items() if k not in {n1, n2, "p2p_address"}}
-                if not self._topo.graph["bgp_unnumbered"]:
+                if self._topo.graph["underlay_routing"] != "bgp" or not self._topo.graph["bgp_unnumbered"]:
                     ret[node]["isls"][iface]["peer"] = peer
                     ret[node]["isls"][iface]["p2p_address"] = properties["p2p_address"][node]
                     ret[node]["isls"][iface]["peer_p2p_address"] = properties["p2p_address"][peer]
@@ -224,7 +224,17 @@ class IpFabricParser:
 
         self._topo = nx.MultiGraph()
         self._topo.graph["overlay_asn"] = int(self._fabric_data["overlay_asn"])
-        self._topo.graph["bgp_unnumbered"] = "bgp-unnumbered" in self._fabric_data and self._fabric_data["bgp-unnumbered"]
+        if len(self._fabric_data["underlay_routing"].keys()) != 1:
+            raise Exception("Unable to determine underlay routing protocol!")
+        self._topo.graph["underlay_routing"] = list(self._fabric_data["underlay_routing"].keys())[0]
+        if self._topo.graph["underlay_routing"] == "bgp":
+            self._topo.graph["bgp_unnumbered"] = "bgp-unnumbered" in self._fabric_data["underlay_routing"]["bgp"] and \
+                                                 self._fabric_data["underlay_routing"]["bgp"]["bgp-unnumbered"]
+        elif self._topo.graph["underlay_routing"] == "ospf":
+            self._topo.graph["ospf_area"] = self._fabric_data["underlay_routing"]["ospf"]["area"]
+            self._topo.graph["ospf_version"] = self._fabric_data["underlay_routing"]["ospf"]["version"]
+        else:
+            raise Exception(f"Unknow underlay routing protocol {self._topo.graph['underlay_routing']}!")
         self._topo.graph["pods"] = dict()
 
         # Populate network-graph with nodes fabric_nodes (from ansible inventory)
@@ -369,19 +379,22 @@ class IpFabricParser:
                 self._topo.nodes[leaf]["id"] -= podleafidoffset  # Make leafs in the pod count from 1 again
 
         # Preparation for asn and loopback allocation
-        allocated_asns = dict()
         allocated_loopbacks = list()
         overwrite_loopbacks = list()
 
         self._topo.graph['loopback'] = list()
 
-        asn_r_re = re.compile(r"^(?P<start>\d+)(-|\.\.)(?P<end>\d+)$")
+        if self._topo.graph["underlay_routing"] == "bgp":
+            allocated_asns = dict()
 
-        asnpool_gen = itertools.chain(*[range(int(asn_r_re.match(x)['start']), int(asn_r_re.match(x)['end']) + 1)
-                                        for x in (self._fabric_data['asn'] if isinstance(self._fabric_data['asn'], list) else [self._fabric_data['asn']])])
-        # asnpool_gen is a generator, could be huge!
-        # convert genrator into list to allocate asn from, initially 16 long (arbitrary), grows later
-        asnpool = list(itertools.islice(asnpool_gen, 16))
+            asn_r_re = re.compile(r"^(?P<start>\d+)(-|\.\.)(?P<end>\d+)$")
+
+            asn_fabric_data = self._fabric_data['underlay_routing']['bgp']['asn']
+            asnpool_gen = itertools.chain(*[range(int(asn_r_re.match(x)['start']), int(asn_r_re.match(x)['end']) + 1)
+                                            for x in (asn_fabric_data if isinstance(asn_fabric_data, list) else [asn_fabric_data])])
+            # asnpool_gen is a generator, could be huge!
+            # convert genrator into list to allocate asn from, initially 16 long (arbitrary), grows later
+            asnpool = list(itertools.islice(asnpool_gen, 16))
 
         if 'loopback' in self._fabric_data and self._fabric_data['loopback'] is not None:
             self._topo.graph['loopback'].append(str(netaddr.IPNetwork(self._fabric_data['loopback'])))
@@ -403,8 +416,9 @@ class IpFabricParser:
                     raise Exception(f"Spine {node} exceeds maximum # spines in pod!")
 
                 # When not using BGP unnumbered, validate that ISL ports are defined for spine
-                if not self._topo.graph["bgp_unnumbered"] and node not in self._spine_islports:
-                    raise Exception(f"No isl-port information found for spine {node}")
+                if self._topo.graph["underlay_routing"] != "bgp" or not self._topo.graph["bgp_unnumbered"]:
+                    if node not in self._spine_islports:
+                        raise Exception(f"No isl-port information found for spine {node}")
             elif properties['role'] == 'leaf':
                 # Verify all leafs have been assigned a podid
                 if 'podid' not in properties:
@@ -431,7 +445,7 @@ class IpFabricParser:
                     raise Exception(f"DCGW {node} exceeds maximum # DCGWs!")
 
                 # Verify not using bgp-unnumbered as this is not supported due to SROS problem
-                if self._topo.graph["bgp_unnumbered"]:
+                if self._topo.graph["underlay_routing"] == "bgp" and self._topo.graph["bgp_unnumbered"]:
                     raise Exception("Using BGP-unnumbered is not supported in combination with DCGW integration.")
 
             # Validate podid
@@ -439,57 +453,58 @@ class IpFabricParser:
                 if properties['podid'] >= self.max_pod:
                     raise Exception("Maximum number of pods exceeded!")
 
-            # Allocate asn
-            #
-            # allocation scheme: (if not overridden)
-            # | dcgws  | superspines | ---------- pod 1 ------------ | ---------- pod 2 ------------ | ...
-            # |        |             | spines | borderleafs | leafs  | spines | borderleafs | leafs  | ...
-            # | X asns | 1 asn       | 1 asn  | X asns      | X asns | 1 asn  | X asns      | X asns | ...
-            #
-            # where applicable, all spaces are reserved till max allowed /role /pod
+            if self._topo.graph["underlay_routing"] == "bgp":
+                # Allocate asn
+                #
+                # allocation scheme: (if not overridden)
+                # | dcgws  | superspines | ---------- pod 1 ------------ | ---------- pod 2 ------------ | ...
+                # |        |             | spines | borderleafs | leafs  | spines | borderleafs | leafs  | ...
+                # | X asns | 1 asn       | 1 asn  | X asns      | X asns | 1 asn  | X asns      | X asns | ...
+                #
+                # where applicable, all spaces are reserved till max allowed /role /pod
 
-            offset = nodeid if properties['role'] in ['dcgw', 'leaf', 'borderleaf'] else 0
-            podoffset = 0
-            roleoffset = 0
+                offset = nodeid if properties['role'] in ['dcgw', 'leaf', 'borderleaf'] else 0
+                podoffset = 0
+                roleoffset = 0
 
-            if properties['role'] in ['spine', 'leaf', 'borderleaf']:
-                podoffset = properties['podid'] * (1 + self.max_borderleaf_in_pod + self.max_leaf_in_pod)
+                if properties['role'] in ['spine', 'leaf', 'borderleaf']:
+                    podoffset = properties['podid'] * (1 + self.max_borderleaf_in_pod + self.max_leaf_in_pod)
 
-            # reserve for dcgw
-            roleoffset += self.max_dcgw if properties['role'] in ['spine', 'leaf', 'borderleaf', 'superspine'] else 0
-            # reserve for superspine
-            roleoffset += 1 if properties['role'] in ['spine', 'leaf', 'borderleaf'] else 0
-            # reserve for spine in pod
-            roleoffset += 1 if properties['role'] in ['leaf', 'borderleaf'] else 0
-            # reserve for borderleaf in pod
-            roleoffset += self.max_borderleaf_in_pod if properties['role'] in ['leaf'] else 0
+                # reserve for dcgw
+                roleoffset += self.max_dcgw if properties['role'] in ['spine', 'leaf', 'borderleaf', 'superspine'] else 0
+                # reserve for superspine
+                roleoffset += 1 if properties['role'] in ['spine', 'leaf', 'borderleaf'] else 0
+                # reserve for spine in pod
+                roleoffset += 1 if properties['role'] in ['leaf', 'borderleaf'] else 0
+                # reserve for borderleaf in pod
+                roleoffset += self.max_borderleaf_in_pod if properties['role'] in ['leaf'] else 0
 
-            asn_offset = offset + podoffset + roleoffset
+                asn_offset = offset + podoffset + roleoffset
 
-            # Allocate ASN
-            if 'asn' not in properties:
-                if node in self._overrides and 'asn' in self._overrides[node]:
-                    allocated_asn = self._overrides[node]['asn']
-                else:
-                    # Grow asnpool with new items from generator if needed
-                    while asn_offset >= len(asnpool):
-                        curr = len(asnpool)
-                        asnpool.extend(itertools.islice(asnpool_gen, 16))  # Extend with 16 more items (16 = arbitrary)
-                        if len(asnpool) <= curr:
-                            raise IndexError("asnpool exhausted!")
+                # Allocate ASN
+                if 'asn' not in properties:
+                    if node in self._overrides and 'asn' in self._overrides[node]:
+                        allocated_asn = self._overrides[node]['asn']
+                    else:
+                        # Grow asnpool with new items from generator if needed
+                        while asn_offset >= len(asnpool):
+                            curr = len(asnpool)
+                            asnpool.extend(itertools.islice(asnpool_gen, 16))  # Extend with 16 more items (16 = arbitrary)
+                            if len(asnpool) <= curr:
+                                raise IndexError("asnpool exhausted!")
 
-                    allocated_asn = asnpool[asn_offset]
+                        allocated_asn = asnpool[asn_offset]
 
-                if allocated_asn in allocated_asns:
-                    r, p = allocated_asns[allocated_asn]
-                    if properties['role'] in ['leaf', 'borderleaf']:
-                        # (border-)leafs and dcgws need their own ASN
-                        raise Exception(f"ASN {allocated_asn} for {node} already in use!")
-                    if allocated_asns[allocated_asn] != (properties['role'], properties['podid'] if 'podid' in properties else None,):
-                        # for other roles, only allow reuse within same role, podid
-                        raise Exception(f"ASN {allocated_asn} for {node} already in use!")
-                self._topo.nodes[node]['asn'] = allocated_asn
-                allocated_asns[allocated_asn] = (properties['role'], properties['podid'] if 'podid' in properties else None,)
+                    if allocated_asn in allocated_asns:
+                        r, p = allocated_asns[allocated_asn]
+                        if properties['role'] in ['leaf', 'borderleaf']:
+                            # (border-)leafs and dcgws need their own ASN
+                            raise Exception(f"ASN {allocated_asn} for {node} already in use!")
+                        if allocated_asns[allocated_asn] != (properties['role'], properties['podid'] if 'podid' in properties else None,):
+                            # for other roles, only allow reuse within same role, podid
+                            raise Exception(f"ASN {allocated_asn} for {node} already in use!")
+                    self._topo.nodes[node]['asn'] = allocated_asn
+                    allocated_asns[allocated_asn] = (properties['role'], properties['podid'] if 'podid' in properties else None,)
 
             # Allocate loopback
             #
@@ -548,7 +563,7 @@ class IpFabricParser:
                 self._topo.graph['loopback'].append(str(loopback))
 
         # Iterate over the network-graph edges for ISL-address assignment
-        if not self._topo.graph['bgp_unnumbered']:
+        if self._topo.graph["underlay_routing"] != "bgp" or not self._topo.graph["bgp_unnumbered"]:
             roleorder = ["spine", "dcgw", "superspine", "borderleaf", "leaf"]  # used to allocate address within /31 p2p subnet to nodes.
             if isinstance(self._fabric_data['p2p'], list):
                 p2ppool_gen = itertools.chain(*[netaddr.IPNetwork(x).subnet(31) for x in self._fabric_data['p2p']])
@@ -559,7 +574,6 @@ class IpFabricParser:
             p2ppool = list(itertools.islice(p2ppool_gen, max(16, 4 * self.max_dcgw)))
 
             # The allocation happens based on the usable ports in the spine layer since (almost) every p2p-link involves the spine layer.
-
             # allocation scheme:
             # | reserved range for | ------------- pod 1 ------------ | ------------- pod 2 ------------ | ...
             # | DCGW connected to  | spine1 | ... | max_spine_per_pod | spine1 | ... | max_spine_per_pod |
@@ -655,37 +669,38 @@ class IpFabricParser:
             self._topo.nodes[node]["bgp"] = dict()
             self._topo.nodes[node]["bgp"]["groups"] = dict()
 
-            # Underlay peer via ISLs
-            underlay_peergroups = dict()
-            for n1, n2, key, edgeproperties in self._topo.edges([node], data=True, keys=True):
-                peer = n2 if node == n1 else n2
-                peergroup = nodeproperties[peer]["role"]
-                if peergroup not in underlay_peergroups:
-                    underlay_peergroups[peergroup] = list()
-                if not self._topo.graph['bgp_unnumbered']:
-                    underlay_peergroups[peergroup].append((edgeproperties["p2p_address"][peer], nodeproperties[peer]["asn"],))
-                else:
-                    underlay_peergroups[peergroup].append((edgeproperties[node], nodeproperties[peer]["asn"],))
+            if self._topo.graph["underlay_routing"] == "bgp":
+                # Underlay peer via ISLs
+                underlay_peergroups = dict()
+                for n1, n2, key, edgeproperties in self._topo.edges([node], data=True, keys=True):
+                    peer = n2 if node == n1 else n2
+                    peergroup = nodeproperties[peer]["role"]
+                    if peergroup not in underlay_peergroups:
+                        underlay_peergroups[peergroup] = list()
+                    if not self._topo.graph['bgp_unnumbered']:
+                        underlay_peergroups[peergroup].append((edgeproperties["p2p_address"][peer], nodeproperties[peer]["asn"],))
+                    else:
+                        underlay_peergroups[peergroup].append((edgeproperties[node], nodeproperties[peer]["asn"],))
 
-            for peergroup, peers in underlay_peergroups.items():
-                if peergroup not in self._topo.nodes[node]["bgp"]["groups"]:
-                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"] = dict()
-                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["type"] = "underlay"
-                    self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["description"] = f"Peer-group for {peergroup} neighbors"
-                if not self._topo.graph['bgp_unnumbered']:
-                    peer_asns = list({asn for _, asn in peers})
-                    for neighbor, asn in peers:
-                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor] = dict()
-                        if len(peer_asns) > 1:
-                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor]["peer_as"] = asn
-                    if len(peer_asns) == 1:
-                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["peer_as"] = peer_asns[0]
-                else:
-                    for interface, asn in peers:
-                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface] = dict()
-                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
+                for peergroup, peers in underlay_peergroups.items():
+                    if peergroup not in self._topo.nodes[node]["bgp"]["groups"]:
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"] = dict()
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"] = dict()
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"] = dict()
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["type"] = "underlay"
+                        self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["description"] = f"Peer-group for {peergroup} neighbors"
+                    if not self._topo.graph['bgp_unnumbered']:
+                        peer_asns = list({asn for _, asn in peers})
+                        for neighbor, asn in peers:
+                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor] = dict()
+                            if len(peer_asns) > 1:
+                                self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["neighbors"][neighbor]["peer_as"] = asn
+                        if len(peer_asns) == 1:
+                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["peer_as"] = peer_asns[0]
+                    else:
+                        for interface, asn in peers:
+                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface] = dict()
+                            self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
 
             # Overlay
             neighbor_addresses = list()
