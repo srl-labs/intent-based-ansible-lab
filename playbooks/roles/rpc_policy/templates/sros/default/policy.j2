@@ -8,8 +8,8 @@
       - ip-prefix: {{ pfx_entry['ip-prefix'] }}
       {% if pfx_entry['mask-length-range'] is defined %}
         type: range
-        start-length: "{{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\1') }}"
-        end-length: "{{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\2') }}"
+        start-length: {{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\1') }}
+        end-length: {{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\2') }}
       {% else %}
         type: exact
       {% endif %}
@@ -23,7 +23,7 @@
   value:
     entry:
     {% for stmt in pol_spec.statement %}
-      - entry-id: "{{ stmt.name }}"
+      - entry-id: {{ stmt.name }}
         from:
           {%if stmt.match['prefix-set'] is defined %}
           prefix-list: {{ stmt.match['prefix-set'] }}

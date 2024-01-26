@@ -20,14 +20,14 @@
       {% endif %}
       {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['autonomous-system'] is not defined %}
         {% if prop['autonomous-system'] is defined %}
-    autonomous-system: "{{ prop['autonomous-system'] | string }}"
+    autonomous-system: {{ prop['autonomous-system'] }}
         {% endif %}
       {% endif %}
       {% if prop.protocols is defined and prop.protocols is not none %}
         {% if prop.protocols.ospf is defined %}
     ospf:
           {% for instance, instance_spec in prop.protocols.ospf.items() %}
-      - ospf-instance: "{{ loop.index0 | string }}"
+      - ospf-instance: {{ loop.index0 }}
         admin-state: enable
         export-policy: {{ instance_spec.export_policy }}
           {% else %}
@@ -37,9 +37,9 @@
         {% if prop.protocols.bgp is defined %}
     bgp:
       admin-state: enable
-      rapid-withdrawal: "true"
+      rapid-withdrawal: true
       rapid-update:
-        evpn: "true"
+        evpn: true
         {% endif %}
         {% if prop.protocols.bgp is defined %}
           {% for group, group_spec in prop.protocols.bgp.group.items() %}
@@ -48,22 +48,22 @@
   value:
     _tag: true
     admin-state: enable
-    min-route-advertisement: "1"
-    peer-ip-tracking: "true"
-    split-horizon: "true"
+    min-route-advertisement: 1
+    peer-ip-tracking: true
+    split-horizon: true
     ebgp-default-reject-policy:
-      import: "false"
+      import: false
     description: {{ group_spec.description|default('no description') }}
             {% if group_spec.enable_bfd | default(false) %}
-    bfd-liveness: "true"
+    bfd-liveness: true
             {% endif %}
             {% if group_spec.peer_as is defined %}
-    peer-as: "{{ group_spec.peer_as }}"
+    peer-as: {{ group_spec.peer_as }}
             {% endif %}
             {% if group_spec.local_as is defined %}
     local-as:
-      as-number: "{{ group_spec.local_as }}"
-      prepend-global-as: "false"
+      as-number: {{ group_spec.local_as }}
+      prepend-global-as: false
             {% endif %}
             {% if group_spec.export_policy is defined %}
     export:
@@ -79,12 +79,12 @@
     family:
             {% if group_spec.ipv4 is defined %}
               {% if group_spec.ipv4.admin_state | default('disable') == 'enable' %}
-      ipv4: "true"
+      ipv4: true
               {% endif %}
             {% endif %}
             {% if group_spec.evpn is defined %}
               {% if group_spec.evpn.admin_state | default('disable') == 'enable' %}
-      evpn: "true"
+      evpn: true
               {% endif %}
             {% endif %}
             {% if prop.protocols.bgp.dynamic is defined %}
@@ -104,7 +104,7 @@
           _tag: true
           allowed-peer-as:
                     {% for as in nbr_prop['allow-as'] %}
-            - "{{as}}"
+            - {{ as }}
                     {% else %}
             []
                     {% endfor %}
@@ -121,7 +121,7 @@
     admin-state: enable
     group: {{ nbr_spec.peer_group }}
             {% if nbr_spec.peer_as is defined %}
-    peer-as: "{{ nbr_spec.peer_as }}"
+    peer-as: {{ nbr_spec.peer_as }}
             {% endif %}
           {% endfor %}
         {% endif %}
@@ -145,7 +145,7 @@
     interface-type: {{ iface_spec['interface-type'] }}
                 {% endif %}
                 {% if iface_spec.passive is defined and iface_spec.passive %}
-    passive: "true"
+    passive: true
                 {% endif %}
               {% endfor %}
             {% endfor %}
@@ -195,11 +195,11 @@
             {% endif %}
       primary:
         address: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('address') | string }}
-        prefix-length: "{{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}"
+        prefix-length: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}
           {% endif %}
           {% if subinterface[itf].ipv6 is defined %}
     ipv6:
-      forward-ipv4-packets: "true"
+      forward-ipv4-packets: true
           {% endif %}
         {% endfor %}
       {% endif %}
@@ -211,9 +211,9 @@
   value:
     _tag: true
     admin-state: enable
-    customer: "1"
-    description: "{{ DCGW_SERVICEID_OFFSET }}"
-    service-id: "{{ DCGW_SERVICEID_OFFSET + prop.id }}"
+    customer: 1
+    description: {{ DCGW_SERVICEID_OFFSET }}
+    service-id: {{ DCGW_SERVICEID_OFFSET + prop.id }}
     interface:
       interface-name: bhvpls
       admin-state: enable
@@ -225,13 +225,13 @@
   value:
     _tag: true
     admin-state: enable
-    customer: "1"
-    service-id: "{{ DCGW_BHVPLS_OFFSET + DCGW_SERVICEID_OFFSET + prop.id }}"
+    customer: 1
+    service-id: {{ DCGW_BHVPLS_OFFSET + DCGW_SERVICEID_OFFSET + prop.id }}
     routed-vpls:
-      vxlan-ipv4-tep-ecmp: "true"
+      vxlan-ipv4-tep-ecmp: true
         {% if 'bgp_vpn' in prop.protocols %}
     bgp:
-      bgp-instance: "1"
+      bgp-instance: 1
       route-target:
         export: "target:{{ prop.protocols.bgp_vpn.export_rt }}"
         import: "target:{{ prop.protocols.bgp_vpn.import_rt }}"
@@ -242,17 +242,17 @@
         {% set tunnel_instance_id = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^vxlan\\d+\\.(\\d+)$', '\\1') | int %}
     vxlan:
       instance:
-        vxlan-instance: "{{ vxlan_instance }}"
-        vni: "{{ tunnel_interface[tunnel_instance][tunnel_instance_id].ingress_vni }}"
+        vxlan-instance: {{ vxlan_instance }}
+        vni: {{ tunnel_interface[tunnel_instance][tunnel_instance_id].ingress_vni }}
     bgp-evpn:
-      evi: "{{ prop.protocols.bgp_evpn.evi }}"
+      evi: {{ prop.protocols.bgp_evpn.evi }}
       routes:
         ip-prefix:
-           advertise: "true"
+           advertise: true
       vxlan:
-        bgp-instance: "1"
+        bgp-instance: 1
         admin-state: enable
-        vxlan-instance: "{{ vxlan_instance }}"
+        vxlan-instance: {{ vxlan_instance }}
         {% endif %}
       {% endif %}
     {% endif %}

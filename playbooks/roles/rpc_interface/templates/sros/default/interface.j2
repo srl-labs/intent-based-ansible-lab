@@ -22,11 +22,11 @@
       mode: hybrid
       encap-type: dot1q
       {% if system.mtu["default-port-mtu"] is defined %}
-      mtu: "{{ system.mtu['default-port-mtu'] }}"
+      mtu: {{ system.mtu['default-port-mtu'] }}
       {% elif system.mtu["default-l2-mtu"] is defined %}
-      mtu: "{{ system.mtu['default-l2-mtu'] }}"
+      mtu: {{ system.mtu['default-l2-mtu'] }}
       {% else %}
-      mtu: "9232"
+      mtu: 9232
       {% endif %}
     {% endif %}
   {% endif %}
