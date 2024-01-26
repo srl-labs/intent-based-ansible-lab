@@ -8,6 +8,12 @@
 {% elif running_config.router.interface is mapping %}
 {% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
 {% endif %}
+{% set ROUTERBASEOSPF = namespace(instances=[]) %}
+{% if running_config.router.ospf | type_debug == "list" %}
+{% set ROUTERBASEOSPF.instances = running_config.router.ospf %}
+{% elif running_config.router.ospf is mapping %}
+{% set ROUTERBASEOSPF.instances = [running_config.router.ospf] %}
+{% endif %}
 {% for ni, prop in network_instance.items() %}
   {% if prop._state|default('present') != 'deleted' %}
     {% if ni == "default" %}
@@ -27,9 +33,30 @@
         {% if prop.protocols.ospf is defined %}
     ospf:
           {% for instance, instance_spec in prop.protocols.ospf.items() %}
+            {% set running_ospf_instance=(ROUTERBASEOSPF.instances | selectattr('ospf-instance', 'eq', loop.index0 | string) | first | default({})) %}
       - ospf-instance: {{ loop.index0 }}
         admin-state: enable
+            {% if (dcgw_unsafe_updates | default(false) | bool) or running_ospf_instance["export-policy"] is not defined %}
         export-policy: {{ instance_spec.export_policy }}
+            {% endif %}
+            {% if (dcgw_unsafe_updates | default(false) | bool) or running_ospf_instance.timers is not defined %}
+              {% if instance_spec.timers is defined %}
+        timers:
+          incremental-spf-wait: {{ instance_spec.timers["incremental-spf-wait"] | default(200) }}
+                {% if 'lsa-generate' in instance_spec.timers %}
+          lsa-generate:
+            lsa-initial-wait: {{ instance_spec.timers["lsa-generate"]["lsa-initial-wait"] | default(100) }}
+            lsa-second-wait: {{ instance_spec.timers["lsa-generate"]["lsa-second-wait"] | default(200) }}
+            max-lsa-wait: {{ instance_spec.timers["lsa-generate"]["max-lsa-wait"] | default(1000) }}
+                {% endif %}
+                {% if 'spf-wait' in instance_spec.timers %}
+          spf-wait:
+            spf-initial-wait: {{ instance_spec.timers["spf-wait"]["spf-initial-wait"] | default(100) }}
+            spf-second-wait: {{ instance_spec.timers["spf-wait"]["spf-second-wait"] | default(200) }}
+            spf-max-wait: {{ instance_spec.timers["spf-wait"]["spf-max-wait"] | default(1000) }}
+                {% endif %}
+              {% endif %}
+            {% endif %}
           {% else %}
       []
           {% endfor %}
@@ -146,6 +173,12 @@
                 {% endif %}
                 {% if iface_spec.passive is defined and iface_spec.passive %}
     passive: true
+                {% else %}
+    hello-interval: {{ iface_spec['hello-interval']|default(10) }}
+    dead-interval: {{ iface_spec['dead-interval']|default(40) }}
+                {% endif %}
+                {% if iface_spec['enable-bfd']|default(False) %}
+    bfd-liveness: ""
                 {% endif %}
               {% endfor %}
             {% endfor %}
