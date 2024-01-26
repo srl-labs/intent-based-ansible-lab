@@ -33,6 +33,7 @@
   when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
 
 - name: "Load host vars for ENV:{{ env }}"
+  delegate_to: localhost
   ansible.builtin.include_vars:
     name: host_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
@@ -40,6 +41,7 @@
     ignore_unknown_extensions: true
 
 - name: "Load group vars for ENV:{{ env }}"
+  delegate_to: localhost
   ansible.builtin.include_vars:
     name: group_intent
     dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"

@@ -1,4 +1,5 @@
 - name: Initialize facts
+  delegate_to: localhost
   ansible.builtin.set_fact:
     update: []
     replace: []

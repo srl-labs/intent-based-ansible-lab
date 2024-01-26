@@ -1,4 +1,5 @@
 - name: Reset var 'my_intent'
+  delegate_to: localhost
   ansible.builtin.set_fact:
     my_intent: {}
 

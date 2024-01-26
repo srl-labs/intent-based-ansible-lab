@@ -1,4 +1,5 @@
 - name: Get role path
+  delegate_to: localhost
   ansible.builtin.set_fact:
     my_dir: "{{ role_path }}"
 
