@@ -51,14 +51,14 @@
 - name: Load group intent
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine(group_intent[item], recursive=True) }}"
+    intent: "{{ intent | default({}) | combine(group_intent[item] | expand_ranges, recursive=True) }}"
   loop: "{{ group_names }}"
   when: item in group_intent|default({}, true)
 
 - name: Load nodal intent
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname], recursive=True) }}"
+    intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname] | expand_ranges, recursive=True) }}"
   when: inventory_hostname in host_intent|default({}, true)
 
 - name: Validate infra intent
