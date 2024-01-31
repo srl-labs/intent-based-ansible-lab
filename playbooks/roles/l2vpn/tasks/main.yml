@@ -14,8 +14,8 @@
 - name: Generate low-level intent for L2VPN
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2') | from_yaml }}"
-  when: l2vpn is defined and l2vpn is not none
+    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2', template_vars=intent) | from_yaml }}"
+  when: l2vpn is defined and l2vpn is not none and intent is defined and intent is not none
 
 - name: Update 'network_instance' in intent
   delegate_to: localhost

@@ -5,14 +5,12 @@
 {% set ipvrf_ns.tunnels = {} %}
 
 {% if l3vpn is mapping %}
-{% for svc, svc_spec in l3vpn.items() %}
-    {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( { svc: {} }) %}
-    {% for snet in svc_spec.snet_list|default([]) %}
-        {% if snet.macvrf in l2vpn|default({}, true) and 
-                    l2vpn[snet.macvrf]._state | default('present') != 'deleted' %}
-            {% if inventory_hostname in l2vpn[snet.macvrf].interface_list %}
-                {% set irb_itf = 'irb1.' + l2vpn[snet.macvrf].id | string %}
-                {% set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( 
+{%      for svc, svc_spec in l3vpn.items() %}
+{%          set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( { svc: {} }) %}
+{%          for snet in svc_spec.snet_list|default([]) %}
+{%              if snet.macvrf in network_instance | default({}, True)  %}
+{%                  set irb_itf = 'irb1.' + l2vpn[snet.macvrf].id | string %}
+{%                  set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( 
                     {
                         svc:
                         {
@@ -25,37 +23,36 @@
                                 }
                         }
                     }
-                , recursive=True) %}
-                {% set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
+                , recursive=True)                                                  %}
+{%                  set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
                     {
                         svc_spec.id:
                         {
                             '_state': svc_spec._state | default('present')
                         }
                     }
-                ) %}
-                {% if svc_spec._state|default('present') != 'deleted' %}
-                   {% set ipvrf_ns.macvrfs = ipvrf_ns.macvrfs | combine( 
+                )                                                                   %}
+{%                  if svc_spec._state|default('present') != 'deleted'              %}
+{%                      set ipvrf_ns.macvrfs = ipvrf_ns.macvrfs | combine( 
                         { snet.macvrf: { 
                             'irb': irb_itf, 
                             'state': svc_spec.state|default('present')
                             } 
-                      }
-                 ) %}
-                {% endif %}
-            {% elif 'dcgw' in group_names and (svc_spec.external | default(False)) %}
-                {% set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
-                    {
-                        svc_spec.id:
-                        {
-                            '_state': svc_spec._state | default('present')
                         }
-                    }
-                ) %}
-            {% endif %}
-        {% endif %}
-    {% endfor %}
-{% endfor %}
+                        )                                                           %}
+{%                  endif                                                           %}
+{%              elif 'dcgw' in group_names and (svc_spec.external | default(False)) %}
+{%                  set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
+                        {
+                            svc_spec.id:
+                            {
+                                '_state': svc_spec._state | default('present')
+                            }
+                        }
+                    )                                                               %}
+{%              endif                                                               %}
+{%          endfor                                                                  %}
+{%      endfor %}
 
 network_instance:
 {% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}

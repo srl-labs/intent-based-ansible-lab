@@ -4,11 +4,13 @@ subnet-1:
   type: mac-vrf
   description: subnet-1
   proxy_arp: true
-  interface_list:
-    clab-4l2s-l1:
-    - lag1
-    clab-4l2s-l2:
-    - lag1
+  interface_tags:
+    - svc_101
+#  interface_list:
+#    clab-4l2s-l1:
+#    - lag1
+#    clab-4l2s-l2:
+#    - lag1
   export_rt: 100:101
   import_rt: 100:101
   vlan: 100
