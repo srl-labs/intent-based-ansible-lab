@@ -1,0 +1,26 @@
+- name: Get Netbox ISL interfaces from inventory
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    netbox_isls: "{{ interfaces | selectattr('tags', 'contains', 'isl') }}"
+  when: interfaces is defined and interfaces | type_debug == "list" and interfaces | length > 0
+
+- name: Get Netbox ISL interfaces through lookup fall-back
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    netbox_isls: "{{ query('netbox.netbox.nb_lookup', 'interfaces', api_filter='device=' + inventory_hostname + ' tag=isl', api_endpoint=netbox_url, token=netbox_token) | map(attribute='value') }}"
+  when: netbox_isls is not defined
+
+#- name: Print discovered ISLs
+#  ansible.builtin.debug:
+#    var: intent.network_instance.default.interfaces | default([])
+
+#- name: Print discovered ISLs
+#  ansible.builtin.debug:
+#    var: netbox_isls | map(attribute='name')
+
+- name: Netbox check
+  delegate_to: localhost
+  ansible.builtin.assert:
+    that:
+      - intent.network_instance.default.interfaces | default([]) | reject('ansible.builtin.regex', '^system') | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', '\\1') | reject('in', netbox_isls | map(attribute='name') | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', '\\1')) | length == 0
+    msg: "There are interfaces in network_instance[name=default] that I can not find back in NetBox as ISL: {{ intent.network_instance.default.interfaces | default([]) | reject('ansible.builtin.regex', '^system') | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', '\\1') | reject('in', netbox_isls | map(attribute='name') | map('ansible.builtin.regex_replace', '^(.*)\\.\\d+$', '\\1')) }}"
