@@ -3,7 +3,7 @@
     "patternProperties": {
         "^\\w+\\-\\d+" : {
             "type": "object",
-            "required": ["lag_id", "mh_mode", "interface_list"],
+            "required": ["lag_id", "mh_mode" ],
             "properties": {
                 "lag_id": {
                     "type": "string",
@@ -43,6 +43,12 @@
                                 "pattern": "^ethernet\\-.+"
                             }
                         }
+                    }
+                },
+                "interface_tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 },
                 "lacp": {

@@ -12,7 +12,7 @@
 {%      endif                                                           %}
 {%      for tag in svc_spec.interface_tags | default([], True)          %}
 {%          for itf, itf_spec in interfaces.items()                     %}
-{%              if tag in itf_spec.tags | default([], True)             %}
+{%              if tag in itf_spec._tags | default([], True)             %}
 {%                  set _ = itf_list.append(itf)                        %}
 {%              endif                                                   %}
 {%          endfor                                                      %}
