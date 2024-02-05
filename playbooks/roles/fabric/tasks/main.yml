@@ -1,9 +1,10 @@
 - name: "Load fabric intent for ENV:{{ env }}"
-  ansible.builtin.include_vars:
-    name: fabric_intent
-    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
-    files_matching: "fabric"
-
+  vars:
+    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    files_matching: fabric
+    varname: fabric_intent
+  ansible.builtin.include_role:
+    name: utils_load_intent
 
 - name: Process fabric
   when: fabric_intent is defined and fabric_intent is not none and fabric_intent | length

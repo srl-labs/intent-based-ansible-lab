@@ -1,52 +1,18 @@
-#- name: Debug templated group intent
-#  ansible.builtin.debug:
-#    var: (lookup('template', item.1) | from_yaml)[item.0]
-#  with_nested:
-#    - "{{group_names}}"
-#    - "{{ (playbook_dir + '/' + intent_dir + '/' + env + '/*group_infra*.j2') | fileglob }}"
-#  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
-
-- name: Load templated group intent
-  delegate_to: localhost
-  ansible.builtin.set_fact:
-    intent: "{{ intent | default({}, true) | combine((lookup('template', item.1) | from_yaml)[item.0], recursive=True) }}"
-  with_nested:
-    - "{{group_names}}"
-    - "{{ (playbook_dir + '/' + intent_dir + '/' + env + '/*group_infra*.j2') | fileglob }}"
-  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
-
-#- name: Debug templated nodal intent
-#  ansible.builtin.debug:
-#    var: (lookup('template', item.1) | from_yaml)[item.0]
-#  with_nested:
-#    - "{{ [inventory_hostname] }}"
-#    - "{{ (playbook_dir + '/' + intent_dir + '/' + env + '/*host_infra*.j2') | fileglob}}"
-#  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
-
-- name: Load templated nodal intent
-  delegate_to: localhost
-  ansible.builtin.set_fact:
-    intent: "{{ intent | default({}, true) | combine((lookup('template', item.1) | from_yaml)[item.0], recursive=True) }}"
-  with_nested:
-    - "{{ [inventory_hostname] }}"
-    - "{{ (playbook_dir + '/' + intent_dir + '/' + env + '/*host_infra*.j2') | fileglob}}"
-  when: item.0 in lookup('template', item.1) | default("", true) | from_yaml
-
 - name: "Load host vars for ENV:{{ env }}"
-  delegate_to: localhost
-  ansible.builtin.include_vars:
-    name: host_intent
-    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
-    files_matching: "host_infra"
-    ignore_unknown_extensions: true
+  vars:
+    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    files_matching: host_infra
+    varname: host_intent
+  ansible.builtin.include_role:
+    name: utils_load_intent
 
 - name: "Load group vars for ENV:{{ env }}"
-  delegate_to: localhost
-  ansible.builtin.include_vars:
-    name: group_intent
-    dir: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
-    files_matching: "group_infra"
-    ignore_unknown_extensions: true
+  vars:
+    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    files_matching: group_infra
+    varname: group_intent
+  ansible.builtin.include_role:
+    name: utils_load_intent
 
 - name: Load group intent
   delegate_to: localhost

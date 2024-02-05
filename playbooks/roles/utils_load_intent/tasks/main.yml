@@ -1,0 +1,39 @@
+- name: "Reset variable for intent load"
+  ansible.builtin.set_fact:
+    "{{ varname | default('loaded_intent') }}": {}
+
+- name: "Reset variable for intent load"
+  delegate_to: localhost
+  ansible.builtin.include_vars:
+    name: __loaded_variables__
+    file: "/dev/null"
+
+- name: "Load templated intent for ENV:{{ env }}"
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    "{{ varname | default('loaded_intent') }}": "{{ lookup('ansible.builtin.vars', varname | default('loaded_intent')) | combine((lookup('template', template_file) | from_yaml), recursive=True) }}"
+  with_items: "{{ ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.j2') | ansible.builtin.path_join | fileglob }}"
+  when: template_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))
+  loop_control:
+    loop_var: template_file
+
+- name: "Load intent for ENV:{{ env }}"
+  delegate_to: localhost
+  ansible.builtin.include_vars:
+    name: __loaded_variables__
+    file: "{{ var_file }}"
+    hash_behaviour: merge
+  loop: "{{ query('fileglob', *(extensions | map('ansible.builtin.regex_replace', '^(.*)$', ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.\\1') | ansible.builtin.path_join) | list)) }}"
+  loop_control:
+    loop_var: var_file
+  when: var_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))
+  vars:
+    extensions:
+      - yaml
+      - yml
+      - json
+
+- name: Merge included variables
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    "{{ varname | default('loaded_intent') }}": "{{ lookup('ansible.builtin.vars', varname | default('loaded_intent')) | combine(__loaded_variables__, recursive=True) }}"
