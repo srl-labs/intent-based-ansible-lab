@@ -14,7 +14,7 @@
     method: "PATCH"
     body:
       custom_fields:
-        Status: Operational
+        Deployment_state: Success
   with_items: "{{ netbox_l2vpns | map(attribute='name') }}"
   loop_control:
     loop_var: svc

@@ -86,8 +86,10 @@ class ActionModule(ActionBase):
                         headers = nb_plugin.headers
                         if version.parse(ansible_version) < version.parse("2.11"):
                             filters = nb_plugin.get_option("query_filters")
+                            filters.extend(nb_plugin.get_option("device_query_filters"))
                         else:
                             filters = nb_plugin.templar.template(nb_plugin.get_option("query_filters"))
+                            filters.extend(nb_plugin.templar.template(nb_plugin.get_option("device_query_filters")))
                         display.v(f"Filters: {filters}")
 
                         _ = open_url(f"{url}/api/status/", headers=headers)
