@@ -253,6 +253,17 @@
       vpls:
         vpls-name: {{ ni }}-bhvpls
         evpn-tunnel: ""
+        {% if prop.protocols.bgp_ipvpn is defined %}
+    bgp-ipvpn:
+      mpls:
+        admin-state: enable
+        auto-bind-tunnel:
+          resolution: any
+        route-distinguisher: {{ prop.protocols.bgp_ipvpn.route_distinguisher }}
+        vrf-target:
+          export-community: "target:{{ prop.protocols.bgp_ipvpn.export_rt }}"
+          import-community: "target:{{ prop.protocols.bgp_ipvpn.import_rt }}"
+        {% endif %}
 - path: /service/vpls[service-name={{ ni }}-bhvpls]
   operation: replace
   value:

@@ -59,8 +59,55 @@
                 "import_rt": {
                     "type": "string",
                     "pattern": "^\\d+:\\d+"
+                },
+                "external_export_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                },
+                "external_import_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                },
+                "external_rd": {
+                    "type": "string",
+                    "pattern": "^(?:\\d{1,3}\\.){3}\\d{1,3}:\\d+$"
                 }
-            }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "required": ["external"],
+                        "properties": {
+                            "external": { "const": true }
+                        }
+                    },
+                    "else": {
+                        "not": {"required": ["external_export_rt"]}
+                    }
+                },
+                {
+                    "if": {
+                         "required": ["external"],
+                         "properties": {
+                              "external": { "const": true }
+                         }
+                    },
+                    "else": {
+                        "not": {"required": ["external_import_rt"]}
+                    }
+                },
+                {
+                    "if": {
+                         "required": ["external"],
+                         "properties": {
+                              "external": { "const": true }
+                         }
+                    },
+                    "else": {
+                        "not": {"required": ["external_rd"]}
+                    }
+                }
+            ]
         }
     }
 }
