@@ -113,6 +113,12 @@
       evpn: true
               {% endif %}
             {% endif %}
+            {% if group_spec.vpn_apply_import is defined %}
+      vpn-apply-import: {{ group_spec.vpn_apply_import }}
+            {% endif %}
+            {% if group_spec.vpn_apply_export is defined %}
+      vpn-apply-export: {{ group_spec.vpn_apply_export }}
+            {% endif %}
             {% if prop.protocols.bgp.dynamic is defined %}
               {% set DYNAMIC = namespace(found=false) %}
               {% for nbr_itf, nbr_prop in prop.protocols.bgp.dynamic.interfaces.items() %}
