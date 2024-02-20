@@ -81,13 +81,34 @@ network_instance:
                 export_rt: {{ l3vpn[ipvrf].export_rt | default("100:" + l3vpn[ipvrf].id|string) }}
                 import_rt: {{ l3vpn[ipvrf].import_rt | default("100:" + l3vpn[ipvrf].id|string) }}
             {% if 'dcgw' in group_names %}
-              {% if l3vpn[ipvrf].external | default(False) and l3vpn[ipvrf].external_import_rt is defined and l3vpn[ipvrf].external_export_rt is defined %}
+              {% set ROUTERBASEIFACE = namespace(instances=[]) %}
+              {% if running_config.router.interface | type_debug == "list" %}
+                {% set ROUTERBASEIFACE.instances = running_config.router.interface %}
+              {% elif running_config.router.interface is mapping %}
+                {% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
+              {% endif %}
+              {% if ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | length == 0 %}
+                {% set system_ip=intent.subinterface["system0.0"].ipv4_address | ansible.utils.ipaddr("address") %}
+              {% else %}
+                {% set system_ip=(ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | first).ipv4.primary.address %}
+              {% endif %}
+              {% set DCGW_SERVICEID_OFFSET = hostvars[inventory_hostname]['dcgw_serviceid_offset'] | default(0) | int %}
+              {% set service_id=DCGW_SERVICEID_OFFSET + l3vpn[ipvrf].id | int %}
+              {% if l3vpn[ipvrf].external | default(False) %}
             bgp_ipvpn:
-                route_distinguisher: {{ l3vpn[ipvrf].external_rd | default(intent.subinterface["system0.0"].ipv4_address | ansible.utils.ipaddr("address") + ":" + l3vpn[ipvrf].id|string) }}
+                route_distinguisher: {{ l3vpn[ipvrf].external_rd | default(system_ip + ":" + l3vpn[ipvrf].id|string) }}
+                {% if l3vpn[ipvrf].external_import_rt is defined and l3vpn[ipvrf].external_export_rt is defined %}
                 export_rt: {{ l3vpn[ipvrf].external_export_rt }}
                 import_rt: {{ l3vpn[ipvrf].external_import_rt }}
+                {% elif l3vpn[ipvrf].external_community_rt is defined %}
+                community_rt: {{ l3vpn[ipvrf].external_community_rt }}
+                {% else %}
+                {% set system_asn=running_config.router['autonomous-system'] | default(65144) %}
+                export_rt: "{{ system_asn }}:{{ service_id }}"
+                import_rt: "{{ system_asn }}:{{ service_id }}"
+                {% endif %}
               {% endif %}
-        id: {{ l3vpn[ipvrf].id }}
+        id: {{ service_id }}
             {% endif %}
         {% endif %}
     {% endif %}
