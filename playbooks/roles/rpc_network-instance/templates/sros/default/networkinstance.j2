@@ -80,6 +80,12 @@
     ebgp-default-reject-policy:
       import: false
     description: {{ group_spec.description|default('no description') }}
+            {% if group_spec.vpn_apply_import is defined %}
+    vpn-apply-import: {{ group_spec.vpn_apply_import }}
+            {% endif %}
+            {% if group_spec.vpn_apply_export is defined %}
+    vpn-apply-export: {{ group_spec.vpn_apply_export }}
+            {% endif %}
             {% if group_spec.enable_bfd | default(false) %}
     bfd-liveness: true
             {% endif %}
@@ -112,12 +118,6 @@
               {% if group_spec.evpn.admin_state | default('disable') == 'enable' %}
       evpn: true
               {% endif %}
-            {% endif %}
-            {% if group_spec.vpn_apply_import is defined %}
-      vpn-apply-import: {{ group_spec.vpn_apply_import }}
-            {% endif %}
-            {% if group_spec.vpn_apply_export is defined %}
-      vpn-apply-export: {{ group_spec.vpn_apply_export }}
             {% endif %}
             {% if prop.protocols.bgp.dynamic is defined %}
               {% set DYNAMIC = namespace(found=false) %}
