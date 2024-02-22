@@ -1,0 +1,28 @@
+- name: Augment l3vpn intents
+  gather_facts: false
+  hosts:
+    - localhost
+  vars:
+    intent_dir: "intent"
+  tasks:
+
+  - name: Check if 'ENV' environment var is set
+    ansible.builtin.set_fact:
+      env: "{{ lookup('env', 'ENV') | default('') }}"
+    failed_when: env == ''
+
+  - name: Discover NetBox
+    discover_netbox:
+
+  - when: netbox_discovered
+    block:
+    - name: Get Netbox services
+      ansible.builtin.set_fact:
+        netbox_l3vpns: "{{ query('netbox.netbox.nb_lookup', 'vrfs', api_endpoint=netbox_url, token=netbox_token, api_filter=[netbox_query_filter_str | ansible.builtin.split | select('ansible.builtin.regex', '^(?:tenant|location_id)=') | map('ansible.builtin.regex_replace', 'location_id=', 'cf_Service_location='), 'cf_Commissioning_state=Commissioned'] | ansible.builtin.flatten |  join(' ') | trim) | map(attribute='value') }}"
+
+    - name: "Augment l3vpn intents for ENV:{{ env }}"
+      vars:
+        look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+        files_matching: l3vpn
+      ansible.builtin.include_role:
+        name: netbox_augment_l3vpn_intent

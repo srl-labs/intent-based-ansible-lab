@@ -1,0 +1,13 @@
+#jinja2: lstrip_blocks: "True"
+{% if l3vpn_intents is mapping %}
+  {% for svc, svc_spec in l3vpn_intents.items() %}
+{{ svc }}:
+    {% for key, value in svc_spec.items() %}
+      {% if not value is none %}
+  {{ key }}: {{ value }}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% else %}
+{}
+{% endif %}

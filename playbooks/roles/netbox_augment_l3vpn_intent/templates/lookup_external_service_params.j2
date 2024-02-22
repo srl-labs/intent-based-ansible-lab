@@ -1,0 +1,32 @@
+#jinja2: lstrip_blocks: "True"
+{% if l3vpn_intents is mapping %}
+  {% for svc, svc_spec in l3vpn_intents.items() %}
+    {% if netbox_l3vpns | selectattr('name', 'eq', svc) | length == 1 %}
+      {% set nb_svc=netbox_l3vpns | selectattr('name', 'eq', svc) | first %}
+{{ svc }}:
+      {% if nb_svc.custom_fields.Vrf_dcivrf is defined and nb_svc.custom_fields.Vrf_dcivrf %}
+      {% set nb_dcivrf=lookup('netbox.netbox.nb_lookup', 'vrfs', api_endpoint=netbox_url, token=netbox_token, api_filter='id=' + nb_svc.custom_fields.Vrf_dcivrf.id | string ) %}
+  external: true
+        {% if nb_dcivrf.import_targets | length > 0 %} 
+  external_import_rt: {{ nb_dcivrf.import_targets | map(attribute='name') | first }}
+        {% else %}
+  external_import_rt: null
+        {% endif %}
+        {% if nb_dcivrf.export_targets | length > 0 %} 
+  external_export_rt: {{ nb_dcivrf.export_targets | map(attribute='name') | first }}
+        {% else %}
+  external_export_rt: null
+        {% endif %}
+  external_community_rt: null
+      {% else %}
+  external: false
+  external_import_rt: null
+  external_export_rt: null
+  external_community_rt: null
+  external_rd: null
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% else %}
+{}
+{% endif %}

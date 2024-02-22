@@ -1,0 +1,21 @@
+- name: "Load intents from {{ var_file }}"
+  delegate_to: localhost
+  ansible.builtin.include_vars:
+    name: l3vpn_intents
+    file: "{{ var_file }}"
+
+- name: Augment intents
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    l3vpn_intents: "{{ l3vpn_intents | default({}) | combine((lookup('template', 'lookup_external_service_params.j2') | from_yaml), recursive=True) }}"
+
+- name: Remove nulls
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    l3vpn_intents: "{{ lookup('template', 'remove_nulls.j2') | from_yaml }}"
+
+- name: "Save augmented intents to {{ var_file }}"
+  ansible.builtin.copy:
+    content: "{% if True %}{{ l3vpn_intents | to_yaml }}{% else %}{{ l3vpn_intents | to_json }}{% endif %}"
+    dest: "{{ var_file }}"
+  delegate_to: localhost
