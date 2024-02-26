@@ -5,8 +5,8 @@ mh-1: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id far
   description: mh-1:LAG1
   lacp_interval: FAST
   node_tags:
-    - RACK1
-  interface_tags:
+    - RACK1       # nodes must be tagged with ALL tags specified in node_tags
+  interface_tags: # interfaces must be tagged with ANY tags specified in interface_tags
     - mh-1
 #  interface_list:
 #    clab-4l2s-l1:

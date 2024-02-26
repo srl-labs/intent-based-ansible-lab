@@ -3,20 +3,28 @@
 {% set macvrf.svc = {}                                                  %}
 {% for svc, svc_spec in l2vpn.items()                                   %}
 {%      set itf_list = []                                               %}
-{%      if 'interface_list' in svc_spec                                 %}
-{%          if inventory_hostname in svc_spec.interface_list | default({}, True) %}
-{%              for itf in svc_spec.interface_list[inventory_hostname]      %}
-{%                  set _ = itf_list.append(itf)                            %}
+{%      set macvrf.node_rejected = False                                            %}
+{%      for htag in svc_spec.node_tags | default([], True)                    %}
+{%          if not htag in TAGS | default([], True) %}
+{%              set macvrf.node_rejected = True                                     %}
+{%          endif                                                            %}
+{%      endfor                                                               %}
+{%      if not macvrf.node_rejected                                                 %}
+{%          if 'interface_list' in svc_spec                                 %}
+{%              if inventory_hostname in svc_spec.interface_list | default({}, True) %}
+{%                  for itf in svc_spec.interface_list[inventory_hostname]      %}
+{%                      set _ = itf_list.append(itf)                            %}
+{%                  endfor                                                      %}
+{%              endif                                                       %}
+{%          endif                                                           %}
+{%          for tag in svc_spec.interface_tags | default([], True)          %}
+{%              for itf, itf_spec in interfaces.items()                     %}
+{%                  if tag in itf_spec.TAGS | default([], True)             %}
+{%                      set _ = itf_list.append(itf)                        %}
+{%                  endif                                                   %}
 {%              endfor                                                      %}
-{%          endif                                                       %}
+{%          endfor                                                          %}
 {%      endif                                                           %}
-{%      for tag in svc_spec.interface_tags | default([], True)          %}
-{%          for itf, itf_spec in interfaces.items()                     %}
-{%              if tag in itf_spec.TAGS | default([], True)             %}
-{%                  set _ = itf_list.append(itf)                        %}
-{%              endif                                                   %}
-{%          endfor                                                      %}
-{%      endfor                                                          %}
 {%      if itf_list | length > 0                                        %}
 {%          set macvrf.svc = macvrf.svc | combine( { svc: {'itfs': itf_list}}, recursive=True) %}
 {%      endif                                                           %}

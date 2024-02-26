@@ -3,10 +3,12 @@
 {% set mh.access = {} %}
 {% for mh_id, mh_spec in mh_access.items()                                   %}
 {%      set itf_list = []                                                    %}
-{%      set mh.node_rejected = False                                         %}  
-{%      if not any(item in mh_spec.node_tags | default([], True) for item in TAGS)    %}
-{%          set mh.node_rejected = True                                      %}
-{%      endif                                                                %}
+{%      set mh.node_rejected = False                                            %}
+{%      for htag in mh_spec.node_tags | default([], True)                    %}
+{%          if not htag in TAGS | default([], True) %}
+{%              set mh.node_rejected = True                                     %}
+{%          endif                                                            %}
+{%      endfor                                                               %}
 {%      if not mh.node_rejected                                                 %}
 {%          if 'interface_list' in mh_spec                                       %}
 {%              if inventory_hostname in mh_spec.interface_list | default({}, True) %}
