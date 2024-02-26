@@ -13,8 +13,8 @@
 - name: Generate low-level intent for L3VPN
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2') | from_yaml }}"
-  when: l3vpn is mapping
+    my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2', template_vars=intent) | from_yaml }}"
+  when: l3vpn is mapping and intent is mapping
 
 - name: Update 'network_instance' in intent
   delegate_to: localhost

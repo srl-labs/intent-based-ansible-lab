@@ -1,28 +1,53 @@
 #jinja2: lstrip_blocks: "True"
-{% set go = namespace(found=false) %}
-{% for svc, svc_spec in l2vpn.items() %}
-{% if inventory_hostname in svc_spec.interface_list %}
-{% set go.found = true %}
-{% endif %}
-{% endfor %}
-{% if go.found %} 
+{% set macvrf = namespace()                                             %}
+{% set macvrf.svc = {}                                                  %}
+{% for svc, svc_spec in l2vpn.items()                                   %}
+{%      set itf_list = []                                               %}
+{%      set macvrf.node_rejected = False                                            %}
+{%      for htag in svc_spec.node_tags | default([], True)                    %}
+{%          if not htag in TAGS | default([], True) %}
+{%              set macvrf.node_rejected = True                                     %}
+{%          endif                                                            %}
+{%      endfor                                                               %}
+{%      if not macvrf.node_rejected                                                 %}
+{%          if 'interface_list' in svc_spec                                 %}
+{%              if inventory_hostname in svc_spec.interface_list | default({}, True) %}
+{%                  for itf in svc_spec.interface_list[inventory_hostname]      %}
+{%                      set _ = itf_list.append(itf)                            %}
+{%                  endfor                                                      %}
+{%              endif                                                       %}
+{%          endif                                                           %}
+{%          for tag in svc_spec.interface_tags | default([], True)          %}
+{%              for itf, itf_spec in interfaces.items()                     %}
+{%                  if tag in itf_spec.TAGS | default([], True)             %}
+{%                      set _ = itf_list.append(itf)                        %}
+{%                  endif                                                   %}
+{%              endfor                                                      %}
+{%          endfor                                                          %}
+{%      endif                                                           %}
+{%      if itf_list | length > 0                                        %}
+{%          set macvrf.svc = macvrf.svc | combine( { svc: {'itfs': itf_list}}, recursive=True) %}
+{%      endif                                                           %}
+{% endfor                                                               %}
+
+{% if macvrf.svc | length > 0                                           %} 
 network_instance: 
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
-    {% if svc_spec.vlan == 'untagged' %}
-        {% set subif_idx = 0 %}
-    {% else %}
-        {% set subif_idx = svc_spec.vlan %}
-    {% endif %}
+{%      for svc in macvrf.svc                                           %}
     {{ svc }}:
-        _state: {{ svc_spec._state|default('present') }}
+{%          set svc_spec = l2vpn[svc]                                   %}
+        _state: {{ svc_spec._state | default('present') }}
+{%          if svc_spec.vlan == 'untagged'                              %}
+{%              set subif_idx = 0                                       %}
+{%          else                                                        %}
+{%              set subif_idx = svc_spec.vlan                           %}
+{%          endif                                                       %}
         interfaces:
-        {% for itf in svc_spec.interface_list[inventory_hostname] %}
+{%          for itf in macvrf.svc[svc]['itfs'] | default([])            %}
         - {{ itf }}.{{ subif_idx }}
-        {% endfor %}
+{%          endfor                                                      %}
         description: {{ svc_spec.description | default("no description") }}
         type: {{ svc_spec.type | default('mac-vrf') }}
-        {% if svc_spec.proxy_arp | default(false) %}
+{%          if svc_spec.proxy_arp | default(false)                      %}
         mac_learning:
             admin_state: enable
             age_time: {{ svc_spec.mac_age_time | default(300) }}
@@ -30,7 +55,7 @@ network_instance:
         proxy_arp:
             admin_state: enable
             age_time: {{ svc_spec.proxy_arp_age_time | default(300) }}
-        {% endif %}
+{%          endif                                                       %}
         vxlan_interface:
             - vxlan1.{{svc_spec.id}}
         protocols:
@@ -40,25 +65,25 @@ network_instance:
             bgp_vpn:
                 export_rt: {{svc_spec.export_rt | default('100:%s'|format(svc_spec.id)) }}
                 import_rt: {{svc_spec.import_rt | default('100:%s'|format(svc_spec.id)) }}
-    {% endif %}
-{% endfor %}
+{%      endfor                                                          %}
+
 subinterface:
-{% set acls_v4_in = [] %}
-{% set acls_v4_out = [] %}
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if svc_spec.vlan == 'untagged' %}
-        {% set subif_idx = 0 %}
-    {% else %}
-        {% set subif_idx = svc_spec.vlan %}
-    {% endif %}
-    {% if svc_spec.acl_v4_in is defined %}
-        {% set acls_v4_in = acls_v4_in + svc_spec.acl_v4_in %}
-    {% endif %}
-    {% if svc_spec.acl_v4_out is defined %}
-        {% set acls_v4_out = acls_v4_out + svc_spec.acl_v4_out %}
-    {% endif %}
-    {% if inventory_hostname in svc_spec.interface_list %}
-    {% for itf in svc_spec.interface_list[inventory_hostname] %}
+{%      set acls_v4_in = []                                             %}
+{%      set acls_v4_out = []                                            %}
+{%      for svc in macvrf.svc                                           %}
+{%          set svc_spec = l2vpn[svc]                                   %}
+{%          if svc_spec.vlan == 'untagged'                              %}
+{%              set subif_idx = 0                                       %}
+{%          else                                                        %}
+{%              set subif_idx = svc_spec.vlan                           %}
+{%          endif                                                       %}
+{%          if svc_spec.acl_v4_in is defined                            %}
+{%              set acls_v4_in = acls_v4_in + svc_spec.acl_v4_in        %}
+{%          endif                                                       %}
+{%          if svc_spec.acl_v4_out is defined                           %}
+{%              set acls_v4_out = acls_v4_out + svc_spec.acl_v4_out     %}
+{%          endif                                                       %}
+{%          for itf in macvrf.svc[svc]['itfs']                          %}
     {{ itf }}.{{ subif_idx }}:
         _state: {{ svc_spec._state|default('present') }}
         type: bridged
@@ -68,27 +93,24 @@ subinterface:
                 ipv4: {{ acls_v4_in }}
             out:
                 ipv4: {{ acls_v4_out }}
-    {% endfor %}
-    {% endif %}
-{% endfor %}
+{%          endfor                                                      %}
+{%      endfor                                                          %}
 interfaces:
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
-    {% for itf in svc_spec.interface_list[inventory_hostname] %}
+{%      for svc in macvrf.svc                                           %}
+{%      set svc_spec = l2vpn[svc]                                       %}
+{%          for itf in macvrf.svc[svc]['itfs']                          %}
     {{ itf }}:
         _state: {{ svc_spec._state|default('present') }}
         vlan_tagging: true
-    {% endfor %}
-    {% endif %}
-{% endfor %}
+{%          endfor                                                      %}
+{%      endfor                                                          %}
 tunnel_interface:
     vxlan1:
-{% for svc, svc_spec in l2vpn.items() %}
-    {% if inventory_hostname in svc_spec.interface_list %}
+{%      for svc in macvrf.svc                                           %}
+{%          set svc_spec = l2vpn[svc]                                   %}
         {{svc_spec.id}}:
             _state: {{ svc_spec._state|default('present') }}
             type: bridged
             ingress_vni: {{ svc_spec.id }}
-    {% endif %}
-{% endfor %}
-{% endif %}
+{%      endfor                                                          %}
+{% endif                                                                %}

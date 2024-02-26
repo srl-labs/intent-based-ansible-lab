@@ -14,8 +14,8 @@
 - name: Generate low-level intent for mh_access
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_mh_access_intent.j2') | from_yaml }}"
-  when: mh_access is defined and mh_access is not none
+    my_intent: "{{ lookup('template', 'transform_mh_access_intent.j2',template_vars=intent) | from_yaml }}"
+  when: mh_access is defined and mh_access is not none and intent is mapping
 
 - name: Update 'interface' in intent
   delegate_to: localhost

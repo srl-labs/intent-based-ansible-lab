@@ -3,7 +3,7 @@
     "patternProperties": {
         "^.*" : {
             "type": "object",
-            "required": ["id", "interface_list", "vlan"],
+            "required": ["id", "vlan"],
             "properties": {
                 "id": {
                     "type": "number"
@@ -54,6 +54,12 @@
                                 "pattern": "^(ethernet-[^\\.]+)$|^(lag\\d+)$"
                             }
                         }
+                    }
+                },
+                "interface_tags": {
+                    "type": "array",
+                    "items" : {
+                        "type": "string"
                     }
                 },
                 "export_rt": {

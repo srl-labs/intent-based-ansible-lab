@@ -1,0 +1,24 @@
+macvrf-300:
+  id: 300
+  type: mac-vrf
+  description: MACVRF300
+  interface_list:
+    clab-4l2s-l1:
+    - ethernet-1/1
+    clab-4l2s-l2:
+    - ethernet-1/1
+  export_rt: 100:300
+  import_rt: 100:300
+  vlan: 300
+macvrf-301:
+  id: 301
+  type: mac-vrf
+  description: MACVRF301
+  interface_list:
+    clab-4l2s-l3:
+    - ethernet-1/1
+    clab-4l2s-l4:
+    - ethernet-1/1
+  export_rt: 100:301
+  import_rt: 100:301
+  vlan: 301
