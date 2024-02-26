@@ -4,6 +4,8 @@ mh-1: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id far
   # _state: deleted 
   description: mh-1:LAG1
   lacp_interval: FAST
+  node_tags:
+    - RACK1
   interface_tags:
     - mh-1
 #  interface_list:

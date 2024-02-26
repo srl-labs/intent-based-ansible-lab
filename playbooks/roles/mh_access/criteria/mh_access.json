@@ -38,6 +38,7 @@
                     "patternProperties" : {
                         "^.*": {
                             "type": "array",
+                            "minItems": 1,
                             "items": {
                                 "type": "string",
                                 "pattern": "^ethernet\\-.+"
@@ -47,6 +48,7 @@
                 },
                 "interface_tags": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "type": "string"
                     }
