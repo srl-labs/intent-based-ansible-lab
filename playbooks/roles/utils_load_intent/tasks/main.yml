@@ -8,6 +8,18 @@
     name: __loaded_variables__
     file: "/dev/null"
 
+#- name: DEBUG save rendered template
+#  ansible.builtin.copy:
+#    content: "{{ lookup('template', template_file) }}"
+#    dest: "/tmp/{{ template_file | ansible.builtin.basename }}.{{ inventory_hostname }}.rendered"
+#  with_items: "{{ ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.j2') | ansible.builtin.path_join | fileglob }}"
+#  when: template_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))
+#  loop_control:
+#    loop_var: template_file
+#  delegate_to: localhost
+#  changed_when: false
+#  check_mode: false
+
 - name: "Load templated intent for ENV:{{ env }}"
   delegate_to: localhost
   ansible.builtin.set_fact:
