@@ -210,6 +210,12 @@
                                                             "maximum": 255
                                                         }
                                                     }
+                                                },
+                                                "vpn_apply_import":{
+                                                    "type": "boolean"
+                                                },
+                                                "vpn_apply_export": {
+                                                    "type": "boolean"
                                                 }
                                             }
                                         }

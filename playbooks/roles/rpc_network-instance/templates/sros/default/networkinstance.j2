@@ -1,6 +1,5 @@
 #jinja2: lstrip_blocks: "True"
 {% set NETWORK_INSTANCE = namespace(found = false) %}
-{% set DCGW_SERVICEID_OFFSET = hostvars[inventory_hostname]['dcgw_serviceid_offset'] | default(0) | int %}
 {% set DCGW_BHVPLS_OFFSET = hostvars[inventory_hostname]['dcgw_bhvpls_offset'] | default(10000) | int %}
 {% set ROUTERBASEIFACE = namespace(instances=[]) %}
 {% if running_config.router.interface | type_debug == "list" %}
@@ -24,10 +23,10 @@
       {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['router-id'] is not defined %}
     router-id: {{ prop['router-id'] }}
       {% endif %}
-      {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['autonomous-system'] is not defined %}
-        {% if prop['autonomous-system'] is defined %}
+      {% if running_config.router['autonomous-system'] is not defined %}
+    autonomous-system: 65144
+      {% elif (dcgw_unsafe_updates | default(false) | bool) and running_config.router['autonomous-system'] != 65144 %}{#DIRTY HACK! 65144 is our magic value for it was not managed! If that was the case we forever stick with it...#}
     autonomous-system: {{ prop['autonomous-system'] }}
-        {% endif %}
       {% endif %}
       {% if prop.protocols is defined and prop.protocols is not none %}
         {% if prop.protocols.ospf is defined %}
@@ -81,6 +80,12 @@
     ebgp-default-reject-policy:
       import: false
     description: {{ group_spec.description|default('no description') }}
+            {% if group_spec.vpn_apply_import is defined %}
+    vpn-apply-import: {{ group_spec.vpn_apply_import }}
+            {% endif %}
+            {% if group_spec.vpn_apply_export is defined %}
+    vpn-apply-export: {{ group_spec.vpn_apply_export }}
+            {% endif %}
             {% if group_spec.enable_bfd | default(false) %}
     bfd-liveness: true
             {% endif %}
@@ -245,21 +250,39 @@
     _tag: true
     admin-state: enable
     customer: 1
-    description: {{ DCGW_SERVICEID_OFFSET }}
-    service-id: {{ DCGW_SERVICEID_OFFSET + prop.id }}
+    description: {{ prop.description }}
+    service-id: {{ prop.id }}
     interface:
       interface-name: bhvpls
       admin-state: enable
       vpls:
         vpls-name: {{ ni }}-bhvpls
         evpn-tunnel: ""
+        {% if prop.protocols.bgp_ipvpn is defined %}
+    bgp-ipvpn:
+      mpls:
+        admin-state: enable
+        auto-bind-tunnel:
+          resolution: any
+        route-distinguisher: {{ prop.protocols.bgp_ipvpn.route_distinguisher }}
+        vrf-target:
+          {% if prop.protocols.bgp_ipvpn.export_rt is defined and prop.protocols.bgp_ipvpn.import_rt is defined %}
+          export-community: "target:{{ prop.protocols.bgp_ipvpn.export_rt }}"
+          import-community: "target:{{ prop.protocols.bgp_ipvpn.import_rt }}"
+          {% elif prop.protocols.bgp_ipvpn.community_rt is defined %}
+          community: "target:{{ prop.protocols.bgp_ipvpn.community_rt }}"
+          {% else %}
+          {}
+          {% endif %}
+        {% endif %}
 - path: /service/vpls[service-name={{ ni }}-bhvpls]
   operation: replace
   value:
     _tag: true
     admin-state: enable
     customer: 1
-    service-id: {{ DCGW_BHVPLS_OFFSET + DCGW_SERVICEID_OFFSET + prop.id }}
+    description: "{{ prop.description }} BHVPLS"
+    service-id: {{ DCGW_BHVPLS_OFFSET + prop.id }}
     routed-vpls:
       vxlan-ipv4-tep-ecmp: true
         {% if 'bgp_vpn' in prop.protocols %}

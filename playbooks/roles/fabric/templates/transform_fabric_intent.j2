@@ -124,6 +124,9 @@ network_instance:
             {% if preprocessed_fabric[inventory_hostname]["role"] != 'dcgw' %}
             export_policy: pass-evpn
             import_policy: pass-evpn
+            {% else %}
+            vpn_apply_import: true
+            vpn_apply_export: true
             {% endif %}
             ipv4:
               admin_state: disable
