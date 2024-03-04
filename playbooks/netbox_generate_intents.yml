@@ -1,0 +1,35 @@
+- name: Generate service intents
+  gather_facts: false
+  hosts:
+    - localhost
+  tasks:
+
+  - name: Check if 'ENV' environment var is set
+    delegate_to: localhost
+    ansible.builtin.set_fact:
+      env: "{{ lookup('env', 'ENV') | default('') }}"
+    when: intent_dir | default('') == ''   # 'env' can be set from the command line with '-e ENV=lab'
+    failed_when: env == ''
+
+  - name: Set intent dir
+    delegate_to: localhost
+    ansible.builtin.set_fact:
+      intent_dir: "{{ playbook_dir }}/intent/{{ env }}" # default location for intent files
+    when: intent_dir | default('') == ''
+
+  - name: Discover NetBox
+    discover_netbox:
+
+  - when: netbox_discovered
+    block:
+    - name: "Generate l2vpn intents for ENV:{{ env }} from Netbox"
+      vars:
+        look_in: "{{ intent_dir }}"
+      ansible.builtin.include_role:
+        name: generate_netbox_l2vpn_intents
+
+    - name: "Generate l3vpn intents for ENV:{{ env }} from Netbox"
+      vars:
+        look_in: "{{ intent_dir }}"
+      ansible.builtin.include_role:
+        name: generate_netbox_l3vpn_intents
