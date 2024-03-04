@@ -1,0 +1,55 @@
+#jinja2: lstrip_blocks: "True"
+{% set netbox_l3vpn_ids=netbox_l3vpns | map(attribute='id')%}
+{% set l3vpn_ns = namespace() %}
+{% set l3vpn_ns.l3vpns = {} %}
+{% set l3vpn_ns.FOUND = false %}
+{% for svc in query('netbox.netbox.nb_lookup', 'l2vpns', api_endpoint=netbox_url, token=netbox_token, api_filter=[netbox_query_filter_str | ansible.builtin.split | select('ansible.builtin.regex', '^(?:tenant|location_id)=') | map('ansible.builtin.regex_replace', 'location_id=', 'cf_Service_location='), 'cf_Commissioning_state=Commissioned'] | ansible.builtin.flatten |  join(' ') | trim) | map(attribute='value') %}
+  {% if svc.custom_fields.L2vpn_ipvrf.id is defined and svc.custom_fields.L2vpn_ipvrf.id in netbox_l3vpn_ids and svc.custom_fields.L2vpn_gateway.address is defined %}
+    {% set l3vpn_ns.l3vpns = l3vpn_ns.l3vpns | combine({svc.custom_fields.L2vpn_ipvrf.name: {'snet_list': [{'macvrf': svc.name, 'gw': svc.custom_fields.L2vpn_gateway.address }]}}, recursive=True, list_merge='append') %}
+  {% endif %}
+{% endfor %}
+{% for svc in netbox_l3vpns %}
+  {% if svc.name in l3vpn_ns.l3vpns | list %}
+    {% set l3vpn_ns.FOUND = true %}
+    {% if svc.custom_fields.Vrf_identifier is defined and svc.custom_fields.Vrf_identifier is not none %}
+      {% set id=svc.custom_fields.Vrf_identifier %}
+    {% else %}
+      {% set id=svc.name | split('-') | last | int %}
+    {% endif %}
+{{ svc.name }}:
+  id: {{ id }}
+  type: ip-vrf
+  snet_list:
+    {% for item in l3vpn_ns.l3vpns[svc.name].snet_list %}
+    - macvrf: {{ item.macvrf }}
+      gw: {{ item.gw }}
+    {% else %}
+    []
+    {% endfor %}
+  export_rt:
+    {% if svc.export_targets | length > 0 %}
+    {{ svc.export_targets | map(attribute='name') | first }}
+    {% else %}
+    "100:{{ id }}"
+    {% endif %}
+  import_rt:
+    {% if svc.import_targets | length > 0 %}
+    {{ svc.import_targets | map(attribute='name') | first }}
+    {% else %}
+    "100:{{ id }}"
+    {% endif %}
+    {% if svc.custom_fields.Vrf_wanvrf.id is defined %}
+      {% set nb_wanvrf=lookup('netbox.netbox.nb_lookup', 'vrfs', api_endpoint=netbox_url, token=netbox_token, api_filter='id=' + svc.custom_fields.Vrf_wanvrf.id | string ) %}
+  external: true
+      {% if nb_wanvrf.import_targets | length > 0 %}
+  external_import_rt: {{ nb_wanvrf.import_targets | map(attribute='name') | first }}
+      {% endif %}
+      {% if nb_wanvrf.export_targets | length > 0 %}
+  external_export_rt: {{ nb_wanvrf.export_targets | map(attribute='name') | first }}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if not l3vpn_ns.FOUND %}
+{}
+{% endif %}
