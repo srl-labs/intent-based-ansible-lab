@@ -1,6 +1,6 @@
 - name: "Load fabric intent for ENV:{{ env }}"
   vars:
-    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    look_in: "{{ intent_dir }}"
     files_matching: fabric
     varname: fabric_intent
   ansible.builtin.include_role:

@@ -7,9 +7,17 @@
     cacheable: true
 
 - name: Check if 'ENV' environment var is set
+  delegate_to: localhost
   ansible.builtin.set_fact:
     env: "{{ lookup('env', 'ENV') | default('') }}"
+  when: intent_dir | default('') == ''   # 'env' can be set from the command line with '-e ENV=lab'
   failed_when: env == ''
+
+- name: Set intent dir
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent_dir: "{{ playbook_dir }}/intent/{{ env }}" # default location for intent files
+  when: intent_dir | default('') == ''
 
 - name: Get data from SRlinux device
   nokia.srlinux.get:

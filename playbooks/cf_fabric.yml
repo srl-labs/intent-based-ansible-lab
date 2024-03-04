@@ -13,17 +13,17 @@
     ## INFRA - Load infrastructure-related intent
     - role: fabric
       vars:
-        intent_dir: "intent"
+        intent_dir: "{{ intent_dir }}"
       tags:
         - infra
     - role: infra
       vars:
-        intent_dir: "intent"
+        intent_dir: "{{ intent_dir }}"
       tags: [infra]
     ## SERVICES - Load/generate service-related intent
     - role: services          # Loads l2vpn and l3vpn intents from ./intent dir
       vars:
-        intent_dir: "intent"  # relative to 'plat'
+        intent_dir: "{{ intent_dir }}"
       tags: [services]
     - role: mh_access         # Generates low-level intent from 'mh_access' intent
       vars:

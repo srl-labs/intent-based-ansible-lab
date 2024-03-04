@@ -1,6 +1,6 @@
 - name: "Load host vars for ENV:{{ env }}"
   vars:
-    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    look_in: "{{ intent_dir }}"
     files_matching: host_infra
     varname: host_intent
   ansible.builtin.include_role:
@@ -8,7 +8,7 @@
 
 - name: "Load group vars for ENV:{{ env }}"
   vars:
-    look_in: "{{ playbook_dir + '/' + intent_dir + '/' + env }}"
+    look_in: "{{ intent_dir }}"
     files_matching: group_infra
     varname: group_intent
   ansible.builtin.include_role:
