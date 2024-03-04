@@ -125,7 +125,12 @@ def set_value(value, node, tag=None):
     elif isinstance(value, (bool, int, float,)):
         node.text = str(value).lower()
     else:
-        raise Exception(f"Invalid type {type(value).__name__}")
+        tree = list()
+        n = node
+        while n:
+            tree.insert(0, n)
+            n = n.getparent()
+        raise Exception(f"Invalid type {type(value).__name__} at /{'/'.join([x.tag for x in tree])}")
 
 
 class ActionModule(ActionBase):
@@ -147,7 +152,7 @@ class ActionModule(ActionBase):
 
         doc = etree.Element("{urn:ietf:params:xml:ns:netconf:base:1.0}config", nsmap={"nc": "urn:ietf:params:xml:ns:netconf:base:1.0"})
         configure = etree.SubElement(doc, "{urn:nokia.com:sros:ns:yang:sr:conf}configure",
-                                     nsmap={"nokia-conf": "urn:nokia.com:sros:ns:yang:sr:conf",
+                                     nsmap={None: "urn:nokia.com:sros:ns:yang:sr:conf",
                                             "nokia-attr": "urn:nokia.com:sros:ns:yang:sr:attributes"})
 
         nc_operation = {
