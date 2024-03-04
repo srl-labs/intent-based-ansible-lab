@@ -1,0 +1,35 @@
+- name: Get Netbox services
+  ansible.builtin.set_fact:
+    netbox_l2vpns: "{{ query('netbox.netbox.nb_lookup', 'l2vpns', api_endpoint=netbox_url, token=netbox_token, api_filter=[netbox_query_filter_str | ansible.builtin.split | select('ansible.builtin.regex', '^(?:tenant|location_id)=') | map('ansible.builtin.regex_replace', 'location_id=', 'cf_Service_location='), 'cf_Commissioning_state=Commissioned'] | ansible.builtin.flatten |  join(' ') | trim) | map(attribute='value') }}"
+
+- name: "Generate L2VPN intents for ENV:{{ env }} from Netbox"
+  ansible.builtin.set_fact:
+    generated_intents: "{{ lookup('template', 'generate_l2vpn_intent.j2') | from_yaml }}"
+
+- name: "Build list of L2VPN intents for ENV:{{ env }}"
+  set_fact:
+    generated_intent_files: "{{ generated_intents | dict2items | map(attribute='value') | map(attribute='id') | map('string') | map('ansible.builtin.regex_replace', '^(.*)$', 'l2vpn_\\1.yml') }}"
+
+- name: "Save L2VPN intents for ENV:{{ env }}"
+  ansible.builtin.copy:
+    content: "{{ {svc: generated_intents[svc]} | to_yaml }}"
+    dest: "{{ look_in + '/l2vpn_' + generated_intents[svc].id | string + '.yml' }}"
+  delegate_to: localhost
+  loop: "{{ generated_intents | list }}"
+  loop_control:
+    loop_var: svc
+
+- name: "Prune L2VPN intents for ENV:{{ env }}"
+  ansible.builtin.file:
+    dest: "{{ var_file }}"
+    state: absent
+  loop: "{{ query('fileglob', *(extensions | map('ansible.builtin.regex_replace', '^(.*)$', ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.\\1') | ansible.builtin.path_join) | list)) }}"
+  loop_control:
+    loop_var: var_file
+  when: (prune | default(false) | bool) and (var_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))) and ((var_file | ansible.builtin.basename) not in generated_intent_files)
+  vars:
+    files_matching: l2vpn
+    extensions:
+      - yaml
+      - yml
+      - json

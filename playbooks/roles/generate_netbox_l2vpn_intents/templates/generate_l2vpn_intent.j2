@@ -1,0 +1,47 @@
+#jinja2: lstrip_blocks: "True"
+{% for svc in netbox_l2vpns %}
+  {% if svc.identifier is defined and svc.identifier is not none %}
+    {% set id=svc.identifier %}
+  {% else %}
+    {% set id=svc.name | split('-') | last | int %}
+  {% endif %}
+{{ svc.name }}:
+  id: {{ id }}
+  {% set l2vpn_ns = namespace() %}
+  {% set l2vpn_ns.iface_list = {} %}
+  {% set tag=query('netbox.netbox.nb_lookup', 'tags', api_endpoint=netbox_url, token=netbox_token, api_filter='name=l2vpn:' + svc.name) | map(attribute='value') %}
+  {% if tag | length == 1 %}
+    {% for iface in query('netbox.netbox.nb_lookup', 'interfaces', api_endpoint=netbox_url, token=netbox_token, api_filter='tag=' + tag[0].slug) | map(attribute='value') %}
+      {% set l2vpn_ns.iface_list = l2vpn_ns.iface_list | combine({iface.device.name: [iface.name]}, recursive=True) %}
+    {% endfor %}
+  {% endif %}
+  interface_list:
+  {% for node, ifaces in l2vpn_ns.iface_list.items() %}
+    {{ node }}:
+    {% for iface in ifaces %}
+      - {{ iface }}
+    {% else %}
+      []
+    {% endfor %}
+  {% else %}
+    {}
+  {% endfor %}
+  export_rt:
+  {% if svc.export_targets | length > 0 %}
+    {{ svc.export_targets | map(attribute='name') | first }}
+  {% else %}
+    "100:{{ id }}"
+  {% endif %}
+  import_rt:
+  {% if svc.import_targets | length > 0 %}
+    {{ svc.import_targets | map(attribute='name') | first }}
+  {% else %}
+    "100:{{ id }}"
+  {% endif %}
+  vlan:
+  {% if svc.custom_fields.L2vpn_vlan | default("untagged") == "untagged" or svc.custom_fields.L2vpn_vlan is none %}
+    untagged
+  {% else %}
+    {{ svc.custom_fields.L2vpn_vlan | int }}
+  {% endif %}
+{% endfor %}
