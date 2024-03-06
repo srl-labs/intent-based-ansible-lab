@@ -22,6 +22,12 @@
 
   - when: netbox_discovered
     block:
+    - name: "Generate underlay intent for ENV:{{ env }} from Netbox"
+      vars:
+        look_in: "{{ intent_dir }}"
+      ansible.builtin.include_role:
+        name: generate_netbox_underlay_intent
+
     - name: "Generate l2vpn intents for ENV:{{ env }} from Netbox"
       vars:
         look_in: "{{ intent_dir }}"
