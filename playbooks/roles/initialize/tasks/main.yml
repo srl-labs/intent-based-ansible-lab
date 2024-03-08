@@ -1,3 +1,6 @@
+- name: Discover NetBox
+  discover_netbox:
+
 - name: Initialize facts
   delegate_to: localhost
   ansible.builtin.set_fact:
