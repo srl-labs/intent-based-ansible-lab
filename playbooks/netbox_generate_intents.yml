@@ -10,15 +10,18 @@
       env: "{{ lookup('env', 'ENV') | default('') }}"
     when: intent_dir | default('') == ''   # 'env' can be set from the command line with '-e ENV=lab'
     failed_when: env == ''
+    tags: [always]
 
   - name: Set intent dir
     delegate_to: localhost
     ansible.builtin.set_fact:
       intent_dir: "{{ playbook_dir }}/intent/{{ env }}" # default location for intent files
     when: intent_dir | default('') == ''
+    tags: [always]
 
   - name: Discover NetBox
     discover_netbox:
+    tags: [always]
 
   - when: netbox_discovered
     block:
@@ -27,15 +30,24 @@
         look_in: "{{ intent_dir }}"
       ansible.builtin.include_role:
         name: generate_netbox_underlay_intent
+        apply:
+          tags: [infra]
+      tags: [infra]
 
     - name: "Generate l2vpn intents for ENV:{{ env }} from Netbox"
       vars:
         look_in: "{{ intent_dir }}"
       ansible.builtin.include_role:
         name: generate_netbox_l2vpn_intents
+        apply:
+          tags: [services, l2vpn]
+      tags: [services, l2vpn]
 
     - name: "Generate l3vpn intents for ENV:{{ env }} from Netbox"
       vars:
         look_in: "{{ intent_dir }}"
       ansible.builtin.include_role:
         name: generate_netbox_l3vpn_intents
+        apply:
+          tags: [services, l3vpn]
+      tags: [services, l3vpn]
