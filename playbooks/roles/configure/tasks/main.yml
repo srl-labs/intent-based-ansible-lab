@@ -127,6 +127,14 @@
     save: "{% if save_startup | default(false) | bool %}true{% else %}false{% endif %}"
   when: platform == 'sros'
 
+- name: Update netbox
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  when: netbox_discovered
+  with_items:
+    - netbox_l2vpn_service_update.yml
+    - netbox_l3vpn_service_update.yml
+
 - name: Show playbook stats
   ansible.builtin.set_stats:
     data:

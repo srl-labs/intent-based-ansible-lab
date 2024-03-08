@@ -10,6 +10,11 @@
       - "{{ lookup('file', 'criteria/l3vpn.json') | from_json }}"
     engine: ansible.utils.jsonschema
 
+- name: Crosscheck netbox
+  ansible.builtin.include_tasks:
+    file: netbox_l3vpn_service_check.yml
+  when: netbox_discovered
+
 - name: Generate low-level intent for L3VPN
   delegate_to: localhost
   ansible.builtin.set_fact:
