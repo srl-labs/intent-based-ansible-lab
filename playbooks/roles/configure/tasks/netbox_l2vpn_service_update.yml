@@ -1,0 +1,21 @@
+#- name: Print discovered L2VPNs
+#  delegate_to: localhost
+#  run_once: true
+#  ansible.builtin.debug:
+#    var: netbox_l2vpns | map(attribute='name')
+
+- name: Update Netbox L2VPN service status
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.uri:
+    url: "{{ (netbox_l2vpns | selectattr('name', 'eq', svc) | first).url }}"
+    headers: "{{ netbox_authorization_headers }}"
+    body_format: "json"
+    method: "PATCH"
+    body:
+      custom_fields:
+        Deployment_state: Success
+  with_items: "{{ netbox_l2vpns | map(attribute='name') }}"
+  loop_control:
+    loop_var: svc
+  when: ansible_play_hosts_all | reject('in', ansible_play_hosts) | length == 0
