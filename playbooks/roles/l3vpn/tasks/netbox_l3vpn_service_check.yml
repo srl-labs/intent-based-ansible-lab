@@ -1,0 +1,52 @@
+- name: Get Netbox services
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.set_fact:
+    netbox_l3vpns: "{{ query('netbox.netbox.nb_lookup', 'vrfs', api_endpoint=netbox_url, token=netbox_token, api_filter=[netbox_query_filter_str | ansible.builtin.split | select('ansible.builtin.regex', '^(?:tenant|location_id)=') | map('ansible.builtin.regex_replace', 'location_id=', 'cf_Service_location='), 'cf_Commissioning_state=Commissioned'] | ansible.builtin.flatten |  join(' ') | trim) | map(attribute='value') }}"
+
+#- name: Print discovered L3VPNs
+#  delegate_to: localhost
+#  run_once: true
+#  ansible.builtin.debug:
+#    var: l3vpn | list
+
+#- name: Print discovered L3VPNs
+#  delegate_to: localhost
+#  run_once: true
+#  ansible.builtin.debug:
+#    var: netbox_l3vpns | map(attribute='name')
+
+- name: Netbox check
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.assert:
+    that:
+      - l3vpn | reject('in', netbox_l3vpns | map(attribute='name')) | length == 0
+    msg: "There are L3VPN intents that I can not find back in NetBox: {{ l3vpn | reject('in', netbox_l3vpns | map(attribute='name')) }}"
+  ignore_errors: "{{ not(netbox_strict | default(True) | bool) }}"
+
+- name: Filter intents with NetBox discovered services
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    l3vpn: "{{ l3vpn | dict2items | selectattr('key', 'in', netbox_l3vpns | map(attribute='name')) | items2dict }}"
+
+- name: Update Netbox VRF service status
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.uri:
+    url: "{{ (netbox_l3vpns | selectattr('name', 'eq', svc) | first).url }}"
+    headers: "{{ netbox_authorization_headers }}"
+    body_format: "json"
+    method: "PATCH"
+    body:
+      custom_fields:
+        Deployment_state: Failed
+  with_items: "{{ netbox_l3vpns | map(attribute='name') | reject('in', l3vpn | list) }}"
+  loop_control:
+    loop_var: svc
+
+- name: Set netbox_l3vpn fact
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.set_fact:
+    netbox_l3vpns: "{{ netbox_l3vpns | selectattr('name', 'in', l3vpn | list) }}"
