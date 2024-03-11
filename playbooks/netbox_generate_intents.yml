@@ -34,6 +34,16 @@
           tags: [infra]
       tags: [infra]
 
+    - name: "Generate mh_access intents for ENV:{{ env }} from Netbox"
+      vars:
+        look_in: "{{ intent_dir }}"
+      ansible.builtin.include_role:
+        name: generate_netbox_mh_access_intents
+        apply:
+          tags: [services, mh_access]
+      tags: [services, mh_access]
+
+
     - name: "Generate l2vpn intents for ENV:{{ env }} from Netbox"
       vars:
         look_in: "{{ intent_dir }}"

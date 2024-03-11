@@ -1,0 +1,47 @@
+#jinja2: lstrip_blocks: "True"
+{% set mh_access_ns = namespace() %}
+{% set mh_access_ns.intents = {} %}
+{% for host in [query('inventory_hostnames', 'leaf'), query('inventory_hostnames', 'spine'), query('inventory_hostnames', 'borderleaf'), query('inventory_hostnames', 'superspine'), query('inventory_hostnames', 'dcgw')] | flatten %}
+  {% for item in hostvars[host].interfaces if item.lag is not none %}
+    {% set lagiface=hostvars[host].interfaces | selectattr('id', 'eq', item.lag.id) | first %}
+    {% set mhintent='mh-' + (lagiface.custom_fields.Iface_mh_id | string) %}
+    {% if mh_access_ns.intents[mhintent].lag_id is defined %}
+      {% if mh_access_ns.intents[mhintent].lag_id != lagiface.name %}
+        {% include "The LAG interface used for " + mhintent + " should be the same on all nodes" %}{# Misusing include to raise error #}
+      {% endif %}
+    {% else %}
+      {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'lag_id': lagiface.name}}, recursive=True) %}
+    {% endif %}
+    {% if mh_access_ns.intents[mhintent].mh_mode is defined %}
+      {% if mh_access_ns.intents[mhintent].mh_mode != lagiface.custom_fields.Iface_mh_mode %}
+        {% include "The MH mode for " + mhintent + " should be the same on all nodes" %}{# Misusing include to raise error #}
+      {% endif %}
+    {% else %}
+      {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'mh_mode': lagiface.custom_fields.Iface_mh_mode}}, recursive=True) %}
+    {% endif %}
+    {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'interface_list': {host: [item.name]}}}, recursive=True) %}
+  {% endfor %}
+{% endfor %}
+{% for item, props in mh_access_ns.intents.items() %}
+{{ item }}:
+  lag_id: {{ props.lag_id }}
+  interface_list:
+  {% for node, ifaces in props.interface_list.items() %}
+    {{ node }}:
+    {% for iface in ifaces %}
+      - {{ iface }}
+    {% else %}
+      []
+    {% endfor %}
+  {% else %}
+    {}
+  {% endfor %}
+  lacp: true
+  vlan_tagging: true
+  min_links: 1
+  mh_mode: {{ props.mh_mode }}
+  lacp_interval: FAST
+  reload_delay: 60
+{% else %}
+{}
+{% endfor %}
