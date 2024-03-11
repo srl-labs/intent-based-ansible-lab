@@ -19,11 +19,12 @@
     {% else %}
       {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'mh_mode': lagiface.custom_fields.Iface_mh_mode}}, recursive=True) %}
     {% endif %}
-    {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'interface_list': {host: [item.name]}}}, recursive=True) %}
+    {% set mh_access_ns.intents = mh_access_ns.intents | combine({mhintent: {'interface_list': {host: [item.name]}}}, recursive=True, list_merge='append') %}
   {% endfor %}
 {% endfor %}
 {% for item, props in mh_access_ns.intents.items() %}
 {{ item }}:
+  description: {{ item }}
   lag_id: {{ props.lag_id }}
   interface_list:
   {% for node, ifaces in props.interface_list.items() %}
