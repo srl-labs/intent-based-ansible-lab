@@ -1,0 +1,31 @@
+- name: "Generate mh_access intents for ENV:{{ env }} from Netbox"
+  ansible.builtin.set_fact:
+    generated_intents: "{{ lookup('template', 'generate_mh_access_intent.j2') | from_yaml }}"
+
+- name: "Build list of mh_access intents for ENV:{{ env }}"
+  set_fact:
+    generated_intent_files: "{{ generated_intents | list | map('ansible.builtin.regex_replace', '^(.*)$', 'mh_access_\\1.yml') }}"
+
+- name: "Save mh_access intents for ENV:{{ env }}"
+  ansible.builtin.copy:
+    content: "{{ {svc: generated_intents[svc]} | to_yaml }}"
+    dest: "{{ look_in + '/mh_access_' + svc + '.yml' }}"
+  delegate_to: localhost
+  loop: "{{ generated_intents | list }}"
+  loop_control:
+    loop_var: svc
+
+- name: "Prune mh_access intents for ENV:{{ env }}"
+  ansible.builtin.file:
+    dest: "{{ var_file }}"
+    state: absent
+  loop: "{{ query('fileglob', *(extensions | map('ansible.builtin.regex_replace', '^(.*)$', ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.\\1') | ansible.builtin.path_join) | list)) }}"
+  loop_control:
+    loop_var: var_file
+  when: (prune | default(false) | bool) and (var_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))) and ((var_file | ansible.builtin.basename) not in generated_intent_files)
+  vars:
+    files_matching: mh_access
+    extensions:
+      - yaml
+      - yml
+      - json
