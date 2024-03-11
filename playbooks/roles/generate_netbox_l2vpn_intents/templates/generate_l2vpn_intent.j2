@@ -12,7 +12,7 @@
   {% set tag=query('netbox.netbox.nb_lookup', 'tags', api_endpoint=netbox_url, token=netbox_token, api_filter='name=l2vpn:' + svc.name) | map(attribute='value') %}
   {% if tag | length == 1 %}
     {% for iface in query('netbox.netbox.nb_lookup', 'interfaces', api_endpoint=netbox_url, token=netbox_token, api_filter='tag=' + tag[0].slug) | map(attribute='value') %}
-      {% set l2vpn_ns.iface_list = l2vpn_ns.iface_list | combine({iface.device.name: [iface.name]}, recursive=True) %}
+      {% set l2vpn_ns.iface_list = l2vpn_ns.iface_list | combine({iface.device.name: [iface.name]}, recursive=True, list_merge='append') %}
     {% endfor %}
   {% endif %}
   interface_list:
