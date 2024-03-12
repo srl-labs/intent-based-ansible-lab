@@ -52,6 +52,7 @@ srl:
             protocol: bgp-evpn
           action:
             policy-result: accept
+
 sros:
   system:
     mtu:
@@ -61,6 +62,10 @@ sros:
       default:
         prefix:
           - ip-prefix: 0.0.0.0/0
+    community_set:
+      to_dc:
+        member:
+          - 100:666
     policy:
       export-to-underlay:
         default-action:
@@ -77,3 +82,62 @@ sros:
               protocol: direct
             action:
               policy-result: accept
+      from_dc:
+        default-action:
+          policy-result: accept
+        statement:
+          - name: "10"
+            match:
+              bgp:
+                community-set: "to_dc"
+            action:
+              policy-result: reject
+      to_dc:
+        default-action:
+          policy-result: accept
+          bgp:
+            communities:
+              add: "to_dc"
+
+leaf:
+  network_instance:
+    default:
+      protocols:
+        bgp:
+          group:
+            overlay:
+              export_policy: pass-evpn
+              import_policy: pass-evpn
+            spines:
+              export_policy: lo-and-servers
+              import_policy: pass-all
+
+spine:
+  network_instance:
+    default:
+      protocols:
+        bgp:
+          group:
+            overlay:
+              export_policy: pass-evpn
+              import_policy: pass-evpn
+            leafs:
+              export_policy: pass-all
+              import_policy: pass-all
+            dcgws:
+              export_policy: pass-all
+              import_policy: pass-all
+
+dcgw:
+  network_instance:
+    default:
+      protocols:
+        bgp:
+          group:
+            overlay:
+              export_policy: to_dc
+              import_policy: from_dc
+              vpn_apply_export: true
+              vpn_apply_import: true
+            spines:
+              export_policy: export-to-underlay
