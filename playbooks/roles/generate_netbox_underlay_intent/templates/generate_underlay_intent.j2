@@ -30,10 +30,6 @@
   {% endif %}
               evpn:
                 admin_state: enable
-  {% if 'spine' in hostvars[host].group_names or 'leaf' in hostvars[host].group_names %}
-              export_policy: pass-evpn
-              import_policy: pass-evpn
-  {% endif %}
               ipv4:
                 admin_state: disable
               local_address: {{ ((hostvars[host].interfaces | selectattr('name', 'eq', 'system0') | first).ip_addresses | first).address | split("/") | first }}
@@ -46,8 +42,6 @@
               description: Peer-group for spine neighbors
               epvn:
                 admin_state: disable
-              export_policy: lo-and-servers
-              import_policy: pass-all
               ipv4:
                 admin_state: enable
               enable_bfd: true
@@ -58,16 +52,12 @@
               description: Peer-group for leaf neighbors
               epvn:
                 admin_state: disable
-              export_policy: pass-all
-              import_policy: pass-all
               ipv4:
                 admin_state: enable
               enable_bfd: true
               fast_failover: true
             dcgws:
               description: Peer-group for dcgw neighbors
-              export_policy: pass-all
-              import_policy: pass-all
               ipv4:
                 admin_state: enable
               evpn:
@@ -79,7 +69,6 @@
               description: Peer-group for spine neighbors
               epvn:
                 admin_state: disable
-              export_policy: export-to-underlay
               ipv4:
                 admin_state: enable
               enable_bfd: true
