@@ -30,6 +30,10 @@
   {% endfor %}
 {% endif %}
 {% if ES.found %}
+- path: /system/network-instance/protocols/evpn/ethernet-segments/timers
+  operation: replace
+  value:
+    activation-timer: 0
 - path: /system/network-instance/protocols/evpn/ethernet-segments/bgp-instance[id=1]
   operation: replace
   value:
@@ -40,12 +44,21 @@
         admin-state: {{ es_prop.admin_state|default("enable") }}
         esi: {{ es_prop.esi }}
         multi-homing-mode: {{ es_prop.mh_mode|default("all-active") }}
-        {% if es_prop.mh_mode|default("all-active") == "single-active" %}
         df-election:
+        {% if es_prop.mh_mode|default("all-active") == "single-active" %}
           algorithm:
-            preference-alg: {}
+            preference-alg:
+              preference-value: 100
+              capabilities:
+                ac-df: exclude
+                non-revertive: true
             type: preference
           interface-standby-signaling-on-non-df: {}
+        {% elif es_prop.mh_mode|default("all-active") == "all-active" %}
+          timers:
+            activation-timer: 0
+        {% else %}
+          {}
         {% endif %}
         interface:
           - ethernet-interface: {{ es_prop.interface }}

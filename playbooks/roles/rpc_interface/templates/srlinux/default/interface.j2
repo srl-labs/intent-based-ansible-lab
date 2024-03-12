@@ -32,6 +32,7 @@
         {% set lagid = itf.split('lag')[1] | int %}
         admin-key: {{ prop.lacp.admin_key | default(lagid) }}
         interval: {{ prop.lacp.interval | default('SLOW') }}
+        lacp-mode: {{ prop.lacp.mode | default('ACTIVE') }}
         {% set sfx = "%02d" | format(lagid) %}
         system-id-mac: {{ prop.lacp.system_id | default('00:ba:db:ee:f0:' + sfx) }}
         system-priority: {{ prop.lacp.system_priority | default(1) }}

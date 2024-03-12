@@ -42,7 +42,7 @@ interfaces:
         admin_state: enable
         description: {{ mh_spec.description | default('') }}
         lacp:
-            mode: active
+            mode: ACTIVE
             interval: {{ mh_spec.lacp_interval | default('SLOW') }}
             system_priority: {{ mh_spec.system_priority | default(32768) }}
 {%          set def_sysid = "00:1a:60:00:00:%02d" | format(mh_spec.lag_id.split('lag')[1] | int ) %}
