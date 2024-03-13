@@ -42,7 +42,9 @@
       - diff startup
   register: up2datecheck
   failed_when: "'text' in up2datecheck.result[0]"
-  when: pre_checks | default(true) | bool
+  when:
+    - pre_checks | default(true) | bool
+    - is_upgrade
 
 - name: Upgrade
   when: is_upgrade or is_downgrade
@@ -92,7 +94,7 @@
         register: remotebinfile
         failed_when: remotebinfile.stat.exists is not defined or not remotebinfile.stat.exists or remotebinfile.stat.isreg is not defined or not remotebinfile.stat.isreg or localbinfile.stat.checksum != remotebinfile.stat.checksum
 
-  - name: Save startup configuration copy prior to upgrade
+  - name: Backup startup configuration prior to upgrade
     vars:
       ansible_connection: ssh
       ansible_user: linuxadmin
@@ -103,12 +105,16 @@
       # dest: "/home/{{ ansible_user }}/config.json_{{ pre_version }}.bak"
       dest: "/etc/opt/srlinux/config.json_{{ pre_version }}.bak"
 
-  - name: Upgrade and reboot
+  - name: Deploy new software version
     vars:
       ansible_command_timeout: 900
     nokia.srlinux.cli:
       commands:
         - "tools system deploy-image {% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
+
+  - name: Reboot
+    nokia.srlinux.cli:
+      commands:
         - "tools platform chassis reboot delay 2"
 
   - name: Reset persistent connection
