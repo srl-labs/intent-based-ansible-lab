@@ -22,7 +22,7 @@
   loop: "{{ query('fileglob', *(extensions | map('ansible.builtin.regex_replace', '^(.*)$', ((look_in | default((playbook_dir, 'vars') | ansible.builtin.path_join)), '*.\\1') | ansible.builtin.path_join) | list)) }}"
   loop_control:
     loop_var: var_file
-  when: (prune | default(false) | bool) and (var_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))) and ((var_file | ansible.builtin.basename) not in generated_intent_files)
+  when: (prune | default(true) | bool) and (var_file | ansible.builtin.basename is ansible.builtin.regex(files_matching | default(".*"))) and ((var_file | ansible.builtin.basename) not in generated_intent_files)
   vars:
     files_matching: mh_access
     extensions:
