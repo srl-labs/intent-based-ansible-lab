@@ -1,6 +1,35 @@
 {
     "type": "object",
     "properties": {
+        "ntp": {
+            "type": "object",
+            "properties": {
+                "admin-state": {
+                    "type": "string",
+                    "enum": ["enable", "disable"]
+                },
+                "network-instance": {
+                    "type": "string"
+                },
+                "servers": {
+                    "type": "object",
+                    "patternProperties": {
+                        ".+": {
+                            "type": "object",
+                            "properties": {
+                                "prefer": {
+                                    "type": "boolean"
+                                },
+                                "iburst": {
+                                    "type": "boolean"
+                                
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "mtu": {
             "type": "object",
             "properties": {
@@ -27,6 +56,35 @@
                 "admin-state": {
                     "type": "string",
                     "enum": ["enable", "disable"]
+                }
+            }
+        },
+        "oper-group": {
+            "type": "object",
+            "properties": {
+                "monitor-paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1
+                },
+                "down-links": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1
+                },
+                "hold-down-time": {
+                    "type": "number",
+                    "minimum": 1000,
+                    "maximum": 120000
+                },
+                "min-uplinks": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 8
                 }
             }
         },

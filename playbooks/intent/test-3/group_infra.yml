@@ -121,11 +121,31 @@ srl:
   _features:
     auto_itf_desc: no # generate itf-desription from LLDP state
   system:
+    logging:
+    ntp:
+      admin-state: enable
+      network-instance: mgmt
+      servers:
+        192.168.254.1:
+          prefer: true
+          iburst: true
+        192.168.254.20: {}
     lldp:
       admin-state: enable
     information:
       location: "Somewhere"
       contact: "John Doe"
+    oper-group:
+      monitor-paths:
+        - "interface ethernet-1/48 oper-state"
+        - "interface ethernet-1/49 oper-state"
+      down-links:
+        - ethernet-1/10
+        - ethernet-1/11
+        - ethernet-1/{20..21,30..31}
+      hold-down-time: 30000
+      min-uplinks: 1
+
   routing_policy:
     prefix_set:
       loopbacks:

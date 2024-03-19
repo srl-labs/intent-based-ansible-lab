@@ -21,6 +21,54 @@
     default-l2-mtu: {{ system.mtu["default-l2-mtu"] }}
 {% endif %}
     default-port-mtu: {{ system.mtu["default-port-mtu"] | default(9232) }}
+- path: /system/event-handler
+  operation: replace
+  value:
+{% if system["oper-group"] | default({}, True) | length > 0 %}
+    instance:
+      - name: oper-group
+        admin-state: enable
+        options:
+          object:
+            - name: "down-links"
+              values:
+  {% for v in system["oper-group"]["down-links"] %}
+                - {{ v }} 
+  {% endfor %}
+            - name: hold-down-time
+              value: {{ system["oper-group"]["hold-down-time"] | default(10000) }}
+            - name: required-up-uplinks
+              value: {{ system["oper-group"]["min-uplinks"] | default(1) }}
+        paths:
+  {% for p in system["oper-group"]["monitor-paths"] %}
+          - {{ p }}
+  {% endfor %}
+        upython-script: oper-group.py
+{% else %}
+    {}
+{% endif %}
+- path: /system/banner
+  operation: replace
+  value:
+    motd-banner: {{ system.banner.motd | default('""') }}
+    login-banner: {{ system.banner.login | default('""') }}
+- path: /system/ntp
+  operation: replace
+  value:
+{% if system.ntp | default({}, True) | length > 0 %}
+    admin-state: {{ system.ntp["admin-state"] | default('enable') }}
+    network-instance: {{ system.ntp["network-instance"] | default('mgmt') }}
+    {% if system.ntp.servers | default({}) | length > 0 %}
+    server:
+      {% for srv, srv_spec in system.ntp.servers.items() %}
+      - address: {{ srv }}
+        prefer: {{ srv_spec.prefer | default(False) }}
+        iburst: {{ srv_spec.iburst | default(False) }}
+      {% endfor %}
+    {% endif %}
+{% else %}
+    {}
+{% endif %}
 {% set ES = namespace(found = false) %}
 {% if system.ethernet_segments is defined and system.ethernet_segments is not none %}
   {% for es, es_prop in system.ethernet_segments.items() %}
