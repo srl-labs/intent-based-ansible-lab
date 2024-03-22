@@ -61,6 +61,12 @@
             vxlan-interface: {{ prop.protocols.bgp_evpn.vxlan_interface }}
             evi: {{ prop.protocols.bgp_evpn.evi }}
             ecmp: 4
+        {% if prop["proxy_arp"]["admin_state"] | default("disable") == "enable" %}
+            routes:
+              bridge-table:
+                mac-ip:
+                  advertise-arp-nd-only-with-mac-table-entry: true
+        {% endif %}
       {% endif %}
       {% if prop.protocols.bgp_vpn is defined %}
       bgp-vpn:
