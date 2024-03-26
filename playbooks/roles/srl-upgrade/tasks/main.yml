@@ -77,7 +77,6 @@
         ansible.builtin.stat:
           path: "{{ binfile }}"
         delegate_to: localhost
-        run_once: true
         register: localbinfile
         failed_when: localbinfile.stat.exists is not defined or not localbinfile.stat.exists or localbinfile.stat.isreg is not defined or not localbinfile.stat.isreg
         vars:
