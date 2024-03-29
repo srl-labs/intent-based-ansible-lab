@@ -140,6 +140,8 @@
     prefix_set:
       loopbacks:
         prefix:
-        - ip-prefix: {{ hostvars.values() | map(attribute='interfaces') | flatten | selectattr('name', 'eq', 'system0') | map(attribute='ip_addresses') | flatten | map(attribute='address') | ansible.utils.cidr_merge('span') }}
+  {% for lb_net in hostvars.values() | map(attribute='interfaces') | flatten | selectattr('name', 'eq', 'system0') | map(attribute='ip_addresses') | flatten | map(attribute='address') | ansible.utils.ipaddr('network/prefix') | summarize_cidrs %}
+        - ip-prefix: {{ lb_net }}
           mask-length-range: "32..32"
+  {% endfor %}
 {% endfor %}
