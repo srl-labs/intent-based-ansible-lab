@@ -44,4 +44,6 @@
   {% else %}
     {{ svc.custom_fields.L2vpn_vlan | int }}
   {% endif %}
+{% else %}
+{}
 {% endfor %}
