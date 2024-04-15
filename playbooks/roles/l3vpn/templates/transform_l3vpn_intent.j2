@@ -93,7 +93,7 @@ network_instance:
                 {% set system_ip=(ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | first).ipv4.primary.address %}
               {% endif %}
               {% set DCGW_SERVICEID_OFFSET = hostvars[inventory_hostname]['dcgw_serviceid_offset'] | default(0) | int %}
-              {% set service_id=DCGW_SERVICEID_OFFSET + l3vpn[ipvrf].id | int %}
+              {% set service_id=l3vpn[ipvrf].external_id | default(DCGW_SERVICEID_OFFSET + l3vpn[ipvrf].id) | int %}
               {% if l3vpn[ipvrf].external | default(False) %}
             bgp_ipvpn:
                 route_distinguisher: {{ l3vpn[ipvrf].external_rd | default(system_ip + ":" + l3vpn[ipvrf].id|string) }}
