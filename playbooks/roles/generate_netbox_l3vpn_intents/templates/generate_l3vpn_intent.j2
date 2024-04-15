@@ -47,6 +47,9 @@
       {% if nb_wanvrf.export_targets | length > 0 %}
   external_export_rt: {{ nb_wanvrf.export_targets | map(attribute='name') | first }}
       {% endif %}
+      {% if nb_wanvrf.custom_fields.Vrf_identifier is defined and nb_wanvrf.custom_fields.Vrf_identifier is not none %}
+  external_id: {{ nb_wanvrf.custom_fields.Vrf_identifier | int }}
+      {% endif %}
     {% endif %}
   {% endif %}
 {% endfor %}
