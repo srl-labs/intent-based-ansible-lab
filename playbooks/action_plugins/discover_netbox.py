@@ -8,6 +8,7 @@ from ansible.utils.display import Display
 from ansible.module_utils.ansible_release import __version__ as ansible_version
 from ansible.module_utils.urls import open_url
 from ansible.utils import py3compat
+from ansible.module_utils.basic import missing_required_lib
 import re
 import os
 
@@ -30,6 +31,12 @@ class ActionModule(ActionBase):
 
         result = super().run(tmp, task_vars)
         del tmp  # tmp no longer has any effect
+
+        if PACKAGING_IMPORT_ERROR:
+            result["failed"] = True
+            result["msg"] = missing_required_lib("packaging")
+            result["exception"] = PACKAGING_IMPORT_ERROR
+            return result
 
         discovery_result = dict()
         discovery_result["netbox_discovered"] = False
