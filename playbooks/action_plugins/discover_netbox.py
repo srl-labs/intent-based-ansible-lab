@@ -126,9 +126,11 @@ class ActionModule(ActionBase):
             url_variable_name_re = re.compile(r'api|addr(?:ess)?|url|endpoint', re.I)
             token_variable_name_re = re.compile(r'token|key', re.I)
             tenant_variable_name_re = re.compile(r'tenant', re.I)
+            locationid_variable_name_re = re.compile(r'loc(?:ation)?[-_]id', re.I)
             url_re = re.compile(r'^https?://', re.I)
             token_re = re.compile(r'^[a-fA-F0-9]{40}$')
             tenant_re = re.compile(r'^[a-fA-F0-9_-]+$')
+            locationid_re = re.compile(r'^[0-9]+$')
 
             env_vars = {var: py3compat.environ[var] for var in py3compat.environ.keys() if nb_variable_name_re.search(var)}
             display.vvv(f"Potential netbox environment variables are: {env_vars}")
@@ -149,7 +151,9 @@ class ActionModule(ActionBase):
                         token = val
                         headers = {"Authorization": "Token %s" % token}
                     if tenant_variable_name_re.search(var) and tenant_re.search(val):
-                        filters = [{"tenant": val}]
+                        filters.append({"tenant": val})
+                    if locationid_variable_name_re.search(var) and locationid_re.search(val):
+                        filters.append({"location_id": int(val)})
 
             if token and url:
                 display.v("Netbox discovered through variables...")
