@@ -1,6 +1,3 @@
-- name: Validate Netbox data
-  validate_netbox_l2vpn_data: {}
-
 - name: Get Netbox services
   ansible.builtin.set_fact:
     netbox_l2vpns: "{{ query('netbox.netbox.nb_lookup', 'l2vpns', api_endpoint=netbox_url, token=netbox_token, api_filter=[netbox_query_filter_str | ansible.builtin.split | select('ansible.builtin.regex', '^(?:tenant|location_id)=') | map('ansible.builtin.regex_replace', 'location_id=', 'cf_Service_location='), 'cf_Commissioning_state=Commissioned'] | ansible.builtin.flatten |  join(' ') | trim) | map(attribute='value') }}"
