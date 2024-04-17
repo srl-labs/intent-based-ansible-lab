@@ -25,6 +25,10 @@
 
   - when: netbox_discovered
     block:
+    - name: Validate Netbox data
+      validate_netbox_data: {}
+      tags: [always]
+
     - name: "Generate underlay intent for ENV:{{ env }} from Netbox"
       vars:
         look_in: "{{ intent_dir }}"
