@@ -133,42 +133,68 @@ class ActionModule(ActionBase):
             relevant_l2vpns = [x for x in l2vpns if x.id in (l2vpn_ids_for_endpoints | l2vpn_ids_for_location)]
             display.vvvv(f"relevant_l2vpns: {relevant_l2vpns}")
 
+            referenced_vrf_l2vpns_ids = dict()
+
             for svc in relevant_l2vpns:
-                display.vvvv(f"SVC {svc.name} has Commissioning_state {svc.custom_fields.get('Commissioning_state', None)}")
+                svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
+                display.vvvv(f"L2VPN {svc.name} has Commissioning_state {svc_comm_state}")
                 # Check commisioning field is set:
-                if svc.custom_fields.get("Commissioning_state", None) is None:
-                    validation_problems.append(f"Service `{svc.name}` has no value for `Commissioning_state`!")
-                elif svc.custom_fields.get("Commissioning_state", None) == "Commissioned":
-                    tgt = validation_problems
-                    svcstring = "Service"
-                else:
-                    tgt = validation_warnings
-                    svcstring = f"{svc.custom_fields.get('Commissioning_state', None)} service"
+                if svc_comm_state is None:
+                    validation_problems.append(f"L2VPN `{svc.name}` has no value for `Commissioning_state`!")
+                svcstring = "L2VPN" if svc_comm_state == "Commissioned" else f"{str.capitalize(svc_comm_state or 'uncommissioned')} L2VPN"
+                tgt = validation_problems if svc_comm_state == "Commissioned" else validation_warnings
 
                 if svc.custom_fields.get("L2vpn_vlan", None) is None:
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` has no value for `802.1Q`!")
+                    tgt.append(f"{svcstring} `{svc.name}` has no value for `802.1Q`!")
                 if svc.custom_fields.get("Service_location", None) is None:
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` has no value for `Location`!")
+                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
                 if svc.identifier is None:
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` has no value for `Identifier`!")
+                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
                 if len(svc.export_targets) != 1:
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
+                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
                 if len(svc.import_targets) != 1:
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
+                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
                 if (svc.custom_fields.get("L2vpn_ipvrf", None) is None) ^ (svc.custom_fields.get("L2vpn_gateway", None) is None):
-                    tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` should have both or none of `IP-VRF` and `Gateway` filled in!")
+                    tgt.append(f"{svcstring} `{svc.name}` should have both or none of `IP-VRF` and `Gateway` filled in!")
                 if svc.custom_fields.get("L2vpn_ipvrf", None) is not None:
-                    # TODO: tenant check and VRF check
+                    vrf_id = svc.custom_fields.get("L2vpn_ipvrf").get("id", None)
+                    if vrf_id not in referenced_vrf_l2vpns_ids:
+                        referenced_vrf_l2vpns_ids[vrf_id] = list()
+                    referenced_vrf_l2vpns_ids[vrf_id].append(svc.id)
                     pass
                 if svc.id in l2vpn_ids_with_issues:
                     if svc.id in l2vpn_ids_for_location:
-                        tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` is defined for location `{location.name}`, " +
+                        tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
                                    f"but has no device-interfaces associated with it via tag `l2vpn:{svc.name}`")
                     else:
-                        svcloc = svc.custom_fields.get('Service_location', None) or {}
+                        svc_loc = svc.custom_fields.get('Service_location', None) or {}
                         for ep in l2vpn_endpoints_by_ids[svc.id]:
-                            tgt.append(f"{str.capitalize(svcstring)} `{svc.name}` is defined on iterface `{ep[1].name}` of device `{ep[0].name}`, " +
-                                       f"but it has a different location `{svcloc.get('name', None)}`.")
+                            tgt.append(f"{svcstring} `{svc.name}` is defined on iterface `{ep[1].name}` of device `{ep[0].name}`, " +
+                                       f"but it has a different location `{svc_loc.get('name', None)}`.")
+
+            vrfs = list(nb.ipam.vrfs.all())
+            referenced_vrf_by_ids = {x.id: x for x in vrfs if x.id in referenced_vrf_l2vpns_ids}
+            display.vvvv(f"referenced_vrf map: {referenced_vrf_by_ids}")
+
+            for vrfid, vrf in referenced_vrf_by_ids.items():
+                vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
+                display.vvvv(f"VRF {vrf.name} has Commissioning_state {vrf_comm_state}")
+                # Check commisioning field is set:
+                if vrf_comm_state is None:
+                    validation_problems.append(f"VRF `{vrf.name}` has no value for `Commissioning_state`!")
+                vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
+
+                for l2vpnid in referenced_vrf_l2vpns_ids[vrfid]:
+                    l2vpn = l2vpn_by_ids[l2vpnid]
+                    l2vpn_comm_state = l2vpn.custom_fields.get("Commissioning_state", None)
+                    l2vpnsvcstring = "L2VPN" if l2vpn_comm_state == "Commissioned" else f"{str.capitalize(l2vpn_comm_state or 'uncommissioned')} L2VPN"
+                    tgt = validation_problems if l2vpn_comm_state == "Commissioned" else validation_warnings
+                    l2vpn_loc = l2vpn.custom_fields.get('Service_location', None) or {}
+                    if vrf_comm_state != l2vpn_comm_state:
+                        tgt.append(f"{l2vpnsvcstring} `{l2vpn.name}` references a {str.lower(vrf_comm_state)} VRF `{vrf.name}`")
+                    if vrf_loc.get("name", None) != l2vpn_loc.get("name", None):
+                        tgt.append(f"{l2vpnsvcstring} `{l2vpn.name}` references VRF `{vrf.name}`, " +
+                                   f"but it has a different location `{vrf_loc.get('name', None)}`!")
 
         except Exception as e:
             raise AnsibleError(f"{type(e).__name__} occured: {to_native(e)}" + "\n" + f"{traceback.format_exc()}")
