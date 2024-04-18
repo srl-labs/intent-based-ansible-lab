@@ -16,6 +16,7 @@
 #  ansible.builtin.debug:
 #    var: netbox_l2vpns | map(attribute='name')
 
+# Beware! This is just a quick check if SVC exists in netbox. No id-depth validation of all data in the intent!
 - name: Netbox check
   delegate_to: localhost
   run_once: true
