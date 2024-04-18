@@ -102,44 +102,64 @@ class ActionModule(ActionBase):
             l2vpn_svc_tags = {tag for tag in nb.extras.tags.all() if tag.name[:6] == "l2vpn:"}
 
             l2vpns = list(l2vpn_ep.all())
-            l2vpn_by_names = {x.name: x for x in l2vpns}
-            l2vpn_by_ids = {x.id: x for x in l2vpns}
-            display.vvvv(f"l2vpn map: {l2vpn_by_ids}")
-
             vrfs = list(nb.ipam.vrfs.all())
-            vrf_by_ids = {x.id: x for x in vrfs}
-            display.vvvv(f"vrf map: {vrf_by_ids}")
+            ifaces = list(nb.dcim.interfaces.all())
 
-            # Validate from device interface perspective
-            l2vpn_ids_for_endpoints = set()
-            l2vpn_endpoints_by_ids = {x.id: [] for x in l2vpns}
+            l2vpn_by_names = dict()  # Stores a mapping between L2VPN names and L2VPN objects
+            l2vpn_by_ids = dict()  # Stores a mapping between L2VPN ids and L2VPN objects
+            l2vpn_ids_for_endpoints = set()  # Stores ids of L2VPNs encountered on (relevant!) endpoints via 'l2vpn:<name>' tags
+            l2vpn_endpoints_by_ids = dict()  # Stores a mapping between L2VPN ids and a list of (device, interface, ) objects tuples where they were found
 
-            vrf_ids_for_endpoints = set()
-            vrf_l2vpns_by_ids = {x.id: set() for x in vrfs}
+            vrf_by_ids = dict()  # Stores a mapping vetween VRF ids and VRF objects
+            vrf_ids_for_endpoints = set()  # Stores ids of VRFs encountered on (relevant!) endpoints via L2VPN objects linking to them
+            vrf_l2vpns_by_ids = dict()  # Stores a mapping between VRF ids and the set of L2VPN ids where they were found
+            wanvrf_vrfs_by_ids = dict()  # Stores a mapping between VRF ids (used as WANVRF) and the set of VRF ids where they were found
 
-            for dev in devices:
-                for iface in nb.dcim.interfaces.filter(device_id=dev.id):
-                    for tag in iface.tags:
-                        if tag in l2vpn_svc_tags:
-                            display.vvvv(f"Device {dev.name} has tag {tag} on it's interface {iface.name}")
-                            if tag.name[6:] not in l2vpn_by_names:
-                                validation_problems.append(f"No L2VPN service with name `{tag.name[6:]}` found " +
-                                                           f"for interface `{iface.name}` of device `{dev.name}`.")
-                            else:
-                                svc = l2vpn_by_names[tag.name[6:]]
+            for l2vpn in l2vpns:
+                l2vpn_by_names[l2vpn.name] = l2vpn
+                l2vpn_by_ids[l2vpn.id] = l2vpn
+                l2vpn_endpoints_by_ids[l2vpn.id] = list()  # Initialize lists to be populated later
+                if l2vpn.custom_fields.get("L2vpn_ipvrf", None) and l2vpn.custom_fields.get("L2vpn_ipvrf").get("id", None):
+                    vrfid = l2vpn.custom_fields.get("L2vpn_ipvrf").get("id")
+                    if vrfid not in vrf_l2vpns_by_ids:
+                        vrf_l2vpns_by_ids[vrfid] = set()
+                    vrf_l2vpns_by_ids[vrfid].add(l2vpn.id)
+
+            for vrf in vrfs:
+                vrf_by_ids[vrf.id] = vrf
+                if vrf.custom_fields.get("Vrf_wanvrf", None) and vrf.custom_fields.get("Vrf_wanvrf").get("id", None):
+                    wanvrfid = vrf.custom_fields.get("Vrf_wanvrf").get("id")
+                    if wanvrfid not in wanvrf_vrfs_by_ids:
+                        wanvrf_vrfs_by_ids[wanvrfid] = set()
+                    wanvrf_vrfs_by_ids[wanvrfid].add(vrf.id)
+
+            for iface in ifaces:
+                for tag in iface.tags:
+                    if tag in l2vpn_svc_tags:
+                        if tag.name[6:] not in l2vpn_by_names:
+                            tgt = validation_problems if iface.device in devices else validation_warnings
+                            tgt.append(f"No L2VPN service with name `{tag.name[6:]}` found " +
+                                       f"for interface `{iface.name}` of device `{iface.device.name}`.")
+                        else:
+                            svc = l2vpn_by_names[tag.name[6:]]
+                            l2vpn_endpoints_by_ids[svc.id].append((iface.device, iface,))
+                            if iface.device in devices:
+                                display.vvvv(f"Device `{iface.device.name}` has tag `{tag.name}` on it's interface `{iface.name}`")
                                 l2vpn_ids_for_endpoints.add(svc.id)
-                                l2vpn_endpoints_by_ids[svc.id].append((dev, iface,))
 
-                                if svc.custom_fields.get("L2vpn_ipvrf", None) is not None:
-                                    vrf_id = svc.custom_fields.get("L2vpn_ipvrf").get("id", None)
-                                    vrf_ids_for_endpoints.add(vrf_id)
-                                    vrf_l2vpns_by_ids[vrf_id].add(svc.id)
+                                if svc.custom_fields.get("L2vpn_ipvrf", None) and svc.custom_fields.get("L2vpn_ipvrf").get("id", None):
+                                    vrf_ids_for_endpoints.add(svc.custom_fields.get("L2vpn_ipvrf").get("id"))
+                                    # TODO: Do I need to include linked WANVRF svcs here or not?
+                                    # If I do, then location becomes mandatory for WANVRF when I crosscheck later with vrf_ids_for_location
+                                    # If I don't then: ...
 
-            display.vvvv(f"l2vpn_ids_for_endpoints: {l2vpn_ids_for_endpoints}")
+            display.vvvv(f"l2vpn map: {l2vpn_by_ids}")
+            display.vvvv(f"vrf map: {vrf_by_ids}")
             display.vvvv(f"l2vpn_endpoints_by_ids: {l2vpn_endpoints_by_ids}")
-
+            display.vvvv(f"l2vpn_ids_for_endpoints: {l2vpn_ids_for_endpoints}")
             display.vvvv(f"vrf_ids_for_endpoints: {vrf_ids_for_endpoints}")
             display.vvvv(f"vrf_l2vpns_by_ids: {vrf_l2vpns_by_ids}")
+            display.vvvv(f"wanvrf_vrfs_by_ids: {wanvrf_vrfs_by_ids}")
 
             l2vpn_ids_for_location = {x.id for x in l2vpns
                                       if x.custom_fields.get("Service_location", None) and
@@ -189,6 +209,11 @@ class ActionModule(ActionBase):
                         for ep in l2vpn_endpoints_by_ids[svc.id]:
                             tgt.append(f"{svcstring} `{svc.name}` is defined on iterface `{ep[1].name}` of device `{ep[0].name}`, " +
                                        f"but it has a different location `{svc_loc.get('name', None)}`!")
+
+            for vrfid in (vrf_l2vpns_by_ids.keys() & wanvrf_vrfs_by_ids.keys()):
+                validation_problems.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as an L3VPN service by L2VPNs: " +
+                                           f"{['%s' % (l2vpn_by_ids[x].name, ) for x in vrf_l2vpns_by_ids[vrfid]]}" +
+                                           f"; and as a WANVRF service by VRFs: {['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}!")
 
             for svc in relevant_vrfs:
                 svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
