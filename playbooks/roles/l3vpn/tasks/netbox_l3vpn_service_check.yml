@@ -16,6 +16,7 @@
 #  ansible.builtin.debug:
 #    var: netbox_l3vpns | map(attribute='name')
 
+# Beware! This is just a quick check if SVC exists in netbox. No id-depth validation of all data in the intent!
 - name: Netbox check
   delegate_to: localhost
   run_once: true
@@ -41,7 +42,7 @@
     body:
       custom_fields:
         Deployment_state: Failed
-  with_items: "{{ netbox_l3vpns | map(attribute='name') | reject('in', l3vpn | list) }}"
+  with_items: "{{ netbox_l3vpns | map(attribute='name') | reject('in', l3vpn | list + netbox_l3vpns | map(attribute='custom_fields') | map(attribute='Vrf_wanvrf') | select | map(attribute='name'))}}"
   loop_control:
     loop_var: svc
 
@@ -49,4 +50,4 @@
   delegate_to: localhost
   run_once: true
   ansible.builtin.set_fact:
-    netbox_l3vpns: "{{ netbox_l3vpns | selectattr('name', 'in', l3vpn | list) }}"
+    netbox_l3vpns: "{{ netbox_l3vpns | selectattr('name', 'in', l3vpn | list + netbox_l3vpns | selectattr('name', 'in', l3vpn | list) | map(attribute='custom_fields') | map(attribute='Vrf_wanvrf') | select | map(attribute='name')) }}"

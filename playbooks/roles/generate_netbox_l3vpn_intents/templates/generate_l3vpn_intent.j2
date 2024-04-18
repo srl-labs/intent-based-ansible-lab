@@ -39,16 +39,18 @@
     "100:{{ id }}"
     {% endif %}
     {% if svc.custom_fields.Vrf_wanvrf.id is defined %}
-      {% set nb_wanvrf=lookup('netbox.netbox.nb_lookup', 'vrfs', api_endpoint=netbox_url, token=netbox_token, api_filter='id=' + svc.custom_fields.Vrf_wanvrf.id | string ) %}
+      {% if netbox_l3vpns | selectattr('id', 'eq', svc.custom_fields.Vrf_wanvrf.id) | length > 0 %}
+        {% set nb_wanvrf=netbox_l3vpns | selectattr('id', 'eq', svc.custom_fields.Vrf_wanvrf.id) | first %}
   external: true
-      {% if nb_wanvrf.import_targets | length > 0 %}
+        {% if nb_wanvrf.import_targets | length > 0 %}
   external_import_rt: {{ nb_wanvrf.import_targets | map(attribute='name') | first }}
-      {% endif %}
-      {% if nb_wanvrf.export_targets | length > 0 %}
+        {% endif %}
+        {% if nb_wanvrf.export_targets | length > 0 %}
   external_export_rt: {{ nb_wanvrf.export_targets | map(attribute='name') | first }}
-      {% endif %}
-      {% if nb_wanvrf.custom_fields.Vrf_identifier is defined and nb_wanvrf.custom_fields.Vrf_identifier is not none %}
+        {% endif %}
+        {% if nb_wanvrf.custom_fields.Vrf_identifier is defined and nb_wanvrf.custom_fields.Vrf_identifier is not none %}
   external_id: {{ nb_wanvrf.custom_fields.Vrf_identifier | int }}
+        {% endif %}
       {% endif %}
     {% endif %}
   {% endif %}
