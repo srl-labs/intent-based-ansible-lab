@@ -5,6 +5,7 @@ from ansible import constants as C
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import missing_required_lib
 import traceback
+from collections import namedtuple
 
 
 display = Display()
@@ -80,7 +81,7 @@ class ActionModule(ActionBase):
                 filters["platform"] = ['sros', 'srl']
 
             devices = list(nb.dcim.devices.filter(**filters))
-            # display.display("Devices:\n%s" % ("\n".join([f"- {x.name}" for x in devices]),), color=C.COLOR_VERBOSE)
+            display.vvvv("Devices:\n%s" % ("\n".join([f"- {x.name}" for x in devices]),))
 
             if len(devices) == 0:
                 raise AnsibleError("Unable to retrieve devices from netbox!")
@@ -100,6 +101,10 @@ class ActionModule(ActionBase):
             location = devices[0].location
 
             l2vpn_svc_tags = {tag for tag in nb.extras.tags.all() if tag.name[:6] == "l2vpn:"}
+            display.vvvv("L2VPN tags:\n%s" % ("\n".join([f"- {x.name}" for x in l2vpn_svc_tags]),))
+
+            svc_tenants = {tenant for tenant in nb.tenancy.tenants.all() if tenant.name[:4] == "svc:"}
+            display.vvvv("Service tenants:\n%s" % ("\n".join([f"- {x.name}" for x in svc_tenants]),))
 
             l2vpns = list(l2vpn_ep.all())
             vrfs = list(nb.ipam.vrfs.all())
@@ -114,11 +119,22 @@ class ActionModule(ActionBase):
             vrf_ids_for_endpoints = set()  # Stores ids of VRFs encountered on (relevant!) endpoints via L2VPN objects linking to them
             vrf_l2vpns_by_ids = dict()  # Stores a mapping between VRF ids and the set of L2VPN ids where they were found
             wanvrf_vrfs_by_ids = dict()  # Stores a mapping between VRF ids (used as WANVRF) and the set of VRF ids where they were found
+            vrf_having_wanvrf = set()  # Stores ids of VRFs that uses a WANVRF
+
+            Tenant_objects = namedtuple('Tenant_objects', ['l2vpns', 'vrfs'])
+            svctenant_objects_by_ids = dict()
+            svctenant_ids_for_endpoints = set()  # Stores ids of tenants encountered on (relevant!) endpoints via L2VPNs or VRFs
 
             for l2vpn in l2vpns:
                 l2vpn_by_names[l2vpn.name] = l2vpn
                 l2vpn_by_ids[l2vpn.id] = l2vpn
                 l2vpn_endpoints_by_ids[l2vpn.id] = list()  # Initialize lists to be populated later
+
+                if l2vpn.tenant:
+                    if l2vpn.tenant.id not in svctenant_objects_by_ids:
+                        svctenant_objects_by_ids[l2vpn.tenant.id] = Tenant_objects(set(), set())
+                    svctenant_objects_by_ids[l2vpn.tenant.id].l2vpns.add(l2vpn)
+
                 if l2vpn.custom_fields.get("L2vpn_ipvrf", None) and l2vpn.custom_fields.get("L2vpn_ipvrf").get("id", None):
                     vrfid = l2vpn.custom_fields.get("L2vpn_ipvrf").get("id")
                     if vrfid not in vrf_l2vpns_by_ids:
@@ -127,11 +143,18 @@ class ActionModule(ActionBase):
 
             for vrf in vrfs:
                 vrf_by_ids[vrf.id] = vrf
+
+                if vrf.tenant:
+                    if vrf.tenant.id not in svctenant_objects_by_ids:
+                        svctenant_objects_by_ids[vrf.tenant.id] = Tenant_objects(set(), set())
+                    svctenant_objects_by_ids[vrf.tenant.id].vrfs.add(vrf)
+
                 if vrf.custom_fields.get("Vrf_wanvrf", None) and vrf.custom_fields.get("Vrf_wanvrf").get("id", None):
                     wanvrfid = vrf.custom_fields.get("Vrf_wanvrf").get("id")
                     if wanvrfid not in wanvrf_vrfs_by_ids:
                         wanvrf_vrfs_by_ids[wanvrfid] = set()
                     wanvrf_vrfs_by_ids[wanvrfid].add(vrf.id)
+                    vrf_having_wanvrf.add(vrf.id)
 
             for iface in ifaces:
                 for tag in iface.tags:
@@ -147,11 +170,22 @@ class ActionModule(ActionBase):
                                 display.vvvv(f"Device `{iface.device.name}` has tag `{tag.name}` on it's interface `{iface.name}`")
                                 l2vpn_ids_for_endpoints.add(svc.id)
 
+                                if l2vpn.tenant:
+                                    svctenant_ids_for_endpoints.add(l2vpn.tenant.id)
+
                                 if svc.custom_fields.get("L2vpn_ipvrf", None) and svc.custom_fields.get("L2vpn_ipvrf").get("id", None):
-                                    vrf_ids_for_endpoints.add(svc.custom_fields.get("L2vpn_ipvrf").get("id"))
-                                    # TODO: Do I need to include linked WANVRF svcs here or not?
-                                    # If I do, then location becomes mandatory for WANVRF when I crosscheck later with vrf_ids_for_location
-                                    # If I don't then: ...
+                                    vrf = vrf_by_ids[svc.custom_fields.get("L2vpn_ipvrf").get("id")]
+                                    vrf_ids_for_endpoints.add(vrf.id)
+
+                                    if vrf.tenant:
+                                        svctenant_ids_for_endpoints.add(vrf.tenant.id)
+
+                                    if vrf.custom_fields.get("Vrf_wanvrf", None) and vrf.custom_fields.get("Vrf_wanvrf").get("id", None):
+                                        wanvrf = vrf_by_ids[vrf.custom_fields.get("Vrf_wanvrf").get("id")]
+                                        vrf_ids_for_endpoints.add(wanvrf.id)
+
+                                        if wanvrf.tenant:
+                                            svctenant_ids_for_endpoints.add(wanvrf.tenant.id)
 
             display.vvvv(f"l2vpn map: {l2vpn_by_ids}")
             display.vvvv(f"vrf map: {vrf_by_ids}")
@@ -211,9 +245,18 @@ class ActionModule(ActionBase):
                                        f"but it has a different location `{svc_loc.get('name', None)}`!")
 
             for vrfid in (vrf_l2vpns_by_ids.keys() & wanvrf_vrfs_by_ids.keys()):
-                validation_problems.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as an L3VPN service by L2VPNs: " +
-                                           f"{['%s' % (l2vpn_by_ids[x].name, ) for x in vrf_l2vpns_by_ids[vrfid]]}" +
-                                           f"; and as a WANVRF service by VRFs: {['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}!")
+                tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
+                                              any([l2vpn_by_ids[x] in relevant_l2vpns for x in vrf_l2vpns_by_ids[vrfid]])) else validation_warnings
+                tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as an L3VPN service by L2VPNs: " +
+                           f"{['%s' % (l2vpn_by_ids[x].name, ) for x in vrf_l2vpns_by_ids[vrfid]]}" +
+                           f"; and as a WANVRF service by VRFs: {['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}!")
+
+            for vrfid in (vrf_having_wanvrf & wanvrf_vrfs_by_ids.keys()):
+                tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
+                                              any([vrf_by_ids[x] in relevant_vrfs for x in wanvrf_vrfs_by_ids[vrfid]])) else validation_warnings
+                tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as a WAN-VRF service by VRFs: " +
+                           f"{['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}" +
+                           f"; and points to a WAN-VRF `{vrf_by_ids[vrfid].custom_fields.get('Vrf_wanvrf').get('name')}`!")
 
             for svc in relevant_vrfs:
                 svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
@@ -241,24 +284,76 @@ class ActionModule(ActionBase):
                         for l2vpn_id in vrf_l2vpns_by_ids[svc.id]:
                             tgt.append(f"{svcstring} `{svc.name}` is referenced in L2VPN `{l2vpn_by_ids[l2vpn_id]}`, " +
                                        f"but it has a different location `{svc_loc.get('name', None)}`!")
-                # TODO: WANVRF stuff
 
-            for vrfid in vrf_ids_for_endpoints:
+            for vrfid in (vrf_ids_for_endpoints & vrf_l2vpns_by_ids.keys()):  # Check VRF - L2VPN associations
                 vrf = vrf_by_ids[vrfid]
                 vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
                 vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
+                vrf_tenant = vrf.tenant.name if vrf.tenant else ''
+                vrf_state = f"{vrf_comm_state or 'uncommissioned'} " if vrf_comm_state != "Commissioned" else ""
 
                 for l2vpnid in vrf_l2vpns_by_ids[vrfid]:
                     l2vpn = l2vpn_by_ids[l2vpnid]
                     l2vpn_comm_state = l2vpn.custom_fields.get("Commissioning_state", None)
-                    l2vpnsvcstring = "L2VPN" if l2vpn_comm_state == "Commissioned" else f"{str.capitalize(l2vpn_comm_state or 'uncommissioned')} L2VPN"
-                    tgt = validation_problems if l2vpn_comm_state == "Commissioned" else validation_warnings
                     l2vpn_loc = l2vpn.custom_fields.get('Service_location', None) or {}
+                    l2vpn_tenant = l2vpn.tenant.name if l2vpn.tenant else ''
+                    l2vpn_state = f"{l2vpn_comm_state or 'uncommissioned'} " if l2vpn_comm_state != "Commissioned" else ""
+
+                    # tgt = validation_problems if (vrf_comm_state == "Commissioned" or l2vpn_comm_state == "Commissioned") else validation_warnings
+                    tgt = validation_problems if l2vpn_comm_state == "Commissioned" else validation_warnings
+
+                    if l2vpn.tenant != vrf.tenant:
+                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` has a different tenant (`{l2vpn_tenant}`) than " +
+                                   f"{str.lower(vrf_state)}VRF `{vrf.name}` (`{vrf_tenant}`)!")
                     if vrf_comm_state != l2vpn_comm_state:
-                        tgt.append(f"{l2vpnsvcstring} `{l2vpn.name}` references a {str.lower(vrf_comm_state)} VRF `{vrf.name}`!")
+                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`!")
                     if vrf_loc.get("name", None) != l2vpn_loc.get("name", None):
-                        tgt.append(f"{l2vpnsvcstring} `{l2vpn.name}` references VRF `{vrf.name}`, " +
+                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`, " +
                                    f"but it has a different location `{vrf_loc.get('name', None)}`!")
+
+            for wanvrfid in (vrf_ids_for_endpoints & wanvrf_vrfs_by_ids.keys()):  # Check VRF - WANVRF associations
+                wanvrf = vrf_by_ids[wanvrfid]
+                wanvrf_comm_state = wanvrf.custom_fields.get("Commissioning_state", None)
+                wanvrf_loc = wanvrf.custom_fields.get('Service_location', None) or {}
+                wanvrf_tenant = wanvrf.tenant.name if wanvrf.tenant else ''
+                wanvrf_state = f"{wanvrf_comm_state or 'uncommissioned'} " if wanvrf_comm_state != "Commissioned" else ""
+
+                for vrfid in wanvrf_vrfs_by_ids[wanvrfid]:
+                    vrf = vrf_by_ids[vrfid]
+                    vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
+                    vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
+                    vrf_tenant = vrf.tenant.name if vrf.tenant else ''
+                    vrf_state = f"{vrf_comm_state or 'uncommissioned'} " if vrf_comm_state != "Commissioned" else ""
+
+                    tgt = validation_problems if (wanvrf_comm_state == "Commissioned" or vrf_comm_state == "Commissioned") else validation_warnings
+
+                    if vrf.tenant != wanvrf.tenant:
+                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` has a different tenant (`{vrf_tenant}`) than " +
+                                   f"{str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}` (`{wanvrf_tenant}`)!")
+                    if wanvrf_comm_state != vrf_comm_state:
+                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`!")
+                    if wanvrf_loc.get("name", None) != vrf_loc.get("name", None):
+                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`, " +
+                                   f"but it has a different location `{wanvrf_loc.get('name', None)}`!")
+
+            for svc_tenant in svc_tenants:
+                if svc_tenant.id in svctenant_ids_for_endpoints:
+                    wanvrf_export_targets = set()
+                    wanvrf_import_targets = set()
+                    connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
+                    for wanvrf in connected_wanvrfs:
+                        for rt in wanvrf.export_targets:
+                            wanvrf_export_targets.add(rt)
+                        for rt in wanvrf.import_targets:
+                            wanvrf_import_targets.add(rt)
+
+                    if len(wanvrf_export_targets) != 1:
+                        validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same export route target!\n\t" +
+                                                   str({x.name: [str(rt) for rt in x.export_targets] for x in connected_wanvrfs}))
+
+                    if len(wanvrf_import_targets) != 1:
+                        validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same import route target!\n\t" +
+                                                   str({x.name: [str(rt) for rt in x.import_targets] for x in connected_wanvrfs}))
 
         except Exception as e:
             raise AnsibleError(f"{type(e).__name__} occured: {to_native(e)}" + "\n" + f"{traceback.format_exc()}")
@@ -269,7 +364,7 @@ class ActionModule(ActionBase):
             result["msg"] = f"There {'was' if len(validation_problems) == 1 else 'were'} {len(validation_problems)} validation " + \
                             f"problem{'' if len(validation_problems) == 1 else 's'} found!"
 
-        if len(validation_warnings) > 0:
+        if display.verbosity > 0 and len(validation_warnings) > 0:
             display.display("Warnings:\n%s" % ("\n".join([f"- {x}" for x in validation_warnings]),), color=C.COLOR_WARN)
 
         return result
