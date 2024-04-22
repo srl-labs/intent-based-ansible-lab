@@ -62,13 +62,13 @@ class ActionModule(ActionBase):
         try:
             groups = task_vars.get("groups", dict())
             skip_tags = task_vars.get("ansible_skip_tags", tuple())
-            # run_tags = task_vars.get("ansible_run_tags", tuple())
+            run_tags = task_vars.get("ansible_run_tags", tuple())
 
-            # # Helper function
-            # def ansible_tag_gate(tags):
-            #     return any([x not in skip_tags for x in tags]) and ("all" in run_tags or any([x in run_tags for x in tags]))
+            # Helper function
+            def ansible_tag_gate(tags):
+                return (not any([x in skip_tags for x in tags])) and ("all" in run_tags or any([x in run_tags for x in tags]))
 
-            if "services" in skip_tags:
+            if not (ansible_tag_gate(["services", "mh_access"]) or ansible_tag_gate(["services", "l2vpn"]) or ansible_tag_gate(["services", "l3vpn"])):
                 result["skipped"] = True
                 result["msg"] = "Validation is only implemented for services."
                 return result
@@ -243,8 +243,7 @@ class ActionModule(ActionBase):
             relevant_vrfs = [x for x in vrfs if x.id in (vrf_ids_for_endpoints | vrf_ids_for_location)]
             display.vvvv(f"relevant_vrfs: {relevant_vrfs}")
 
-            # if ansible_tag_gate(["services", "mh_access"]):
-            if True:
+            if ansible_tag_gate(["services", "mh_access"]):
                 for lagname, lagifaces in lags_by_names.items():
                     mh_ids = set()
                     mh_modes = set()
@@ -271,147 +270,148 @@ class ActionModule(ActionBase):
                     if len(lagifaces) > 1 and len(mh_modes) != 1:
                         validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_mode`!")
 
-            for svc in relevant_l2vpns:
-                svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
-                display.vvvv(f"L2VPN {svc.name} has Commissioning_state {svc_comm_state}")
-                # Check commisioning field is set:
-                if svc_comm_state is None:
-                    validation_problems.append(f"L2VPN `{svc.name}` has no value for `Commissioning_state`!")
-                svcstring = "L2VPN" if svc_comm_state == "Commissioned" else f"{str.capitalize(svc_comm_state or 'uncommissioned')} L2VPN"
-                tgt = validation_problems if svc_comm_state == "Commissioned" else validation_warnings
+            if ansible_tag_gate(["services", "l2vpn"]):
+                for svc in relevant_l2vpns:
+                    svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
+                    display.vvvv(f"L2VPN {svc.name} has Commissioning_state {svc_comm_state}")
+                    # Check commisioning field is set:
+                    if svc_comm_state is None:
+                        validation_problems.append(f"L2VPN `{svc.name}` has no value for `Commissioning_state`!")
+                    svcstring = "L2VPN" if svc_comm_state == "Commissioned" else f"{str.capitalize(svc_comm_state or 'uncommissioned')} L2VPN"
+                    tgt = validation_problems if svc_comm_state == "Commissioned" else validation_warnings
 
-                if svc.custom_fields.get("L2vpn_vlan", None) is None:
-                    tgt.append(f"{svcstring} `{svc.name}` has no value for `802.1Q`!")
-                if svc.custom_fields.get("Service_location", None) is None:
-                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
-                if svc.identifier is None:
-                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
-                if len(svc.export_targets) != 1:
-                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
-                if len(svc.import_targets) != 1:
-                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
-                if (svc.custom_fields.get("L2vpn_ipvrf", None) is None) ^ (svc.custom_fields.get("L2vpn_gateway", None) is None):
-                    tgt.append(f"{svcstring} `{svc.name}` should have both or none of `IP-VRF` and `Gateway` filled in!")
-                if svc.id in l2vpn_ids_with_issues:
-                    if svc.id in l2vpn_ids_for_location:
-                        tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
-                                   f"but has no device-interfaces associated with it via tag `l2vpn:{svc.name}`!")
-                    else:
-                        svc_loc = svc.custom_fields.get('Service_location', None) or {}
-                        for ep in l2vpn_endpoints_by_ids[svc.id]:
-                            tgt.append(f"{svcstring} `{svc.name}` is defined on iterface `{ep[1].name}` of device `{ep[0].name}`, " +
-                                       f"but it has a different location `{svc_loc.get('name', None)}`!")
+                    if svc.custom_fields.get("L2vpn_vlan", None) is None:
+                        tgt.append(f"{svcstring} `{svc.name}` has no value for `802.1Q`!")
+                    if svc.custom_fields.get("Service_location", None) is None:
+                        tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
+                    if svc.identifier is None:
+                        tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
+                    if len(svc.export_targets) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
+                    if len(svc.import_targets) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
+                    if (svc.custom_fields.get("L2vpn_ipvrf", None) is None) ^ (svc.custom_fields.get("L2vpn_gateway", None) is None):
+                        tgt.append(f"{svcstring} `{svc.name}` should have both or none of `IP-VRF` and `Gateway` filled in!")
+                    if svc.id in l2vpn_ids_with_issues:
+                        if svc.id in l2vpn_ids_for_location:
+                            tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
+                                       f"but has no device-interfaces associated with it via tag `l2vpn:{svc.name}`!")
+                        else:
+                            svc_loc = svc.custom_fields.get('Service_location', None) or {}
+                            for ep in l2vpn_endpoints_by_ids[svc.id]:
+                                tgt.append(f"{svcstring} `{svc.name}` is defined on iterface `{ep[1].name}` of device `{ep[0].name}`, " +
+                                           f"but it has a different location `{svc_loc.get('name', None)}`!")
 
-            for vrfid in (vrf_l2vpns_by_ids.keys() & wanvrf_vrfs_by_ids.keys()):
-                tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
-                                              any([l2vpn_by_ids[x] in relevant_l2vpns for x in vrf_l2vpns_by_ids[vrfid]])) else validation_warnings
-                tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as an L3VPN service by L2VPNs: " +
-                           f"{['%s' % (l2vpn_by_ids[x].name, ) for x in vrf_l2vpns_by_ids[vrfid]]}" +
-                           f"; and as a WANVRF service by VRFs: {['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}!")
+            if ansible_tag_gate(["services", "l3vpn"]):
+                for vrfid in (vrf_l2vpns_by_ids.keys() & wanvrf_vrfs_by_ids.keys()):
+                    tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
+                                                  any([l2vpn_by_ids[x] in relevant_l2vpns for x in vrf_l2vpns_by_ids[vrfid]])) else validation_warnings
+                    tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as an L3VPN service by L2VPNs: " +
+                               f"{['%s' % (l2vpn_by_ids[x].name, ) for x in vrf_l2vpns_by_ids[vrfid]]}" +
+                               f"; and as a WANVRF service by VRFs: {['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}!")
 
-            for vrfid in (vrf_having_wanvrf & wanvrf_vrfs_by_ids.keys()):
-                tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
-                                              any([vrf_by_ids[x] in relevant_vrfs for x in wanvrf_vrfs_by_ids[vrfid]])) else validation_warnings
-                tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as a WAN-VRF service by VRFs: " +
-                           f"{['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}" +
-                           f"; and points to a WAN-VRF `{vrf_by_ids[vrfid].custom_fields.get('Vrf_wanvrf').get('name')}`!")
+                for vrfid in (vrf_having_wanvrf & wanvrf_vrfs_by_ids.keys()):
+                    tgt = validation_problems if (vrf_by_ids[vrfid] in relevant_vrfs or
+                                                  any([vrf_by_ids[x] in relevant_vrfs for x in wanvrf_vrfs_by_ids[vrfid]])) else validation_warnings
+                    tgt.append(f"VRF `{vrf_by_ids[vrfid].name}` is both used as a WAN-VRF service by VRFs: " +
+                               f"{['%s' % (vrf_by_ids[x].name, ) for x in wanvrf_vrfs_by_ids[vrfid]]}" +
+                               f"; and points to a WAN-VRF `{vrf_by_ids[vrfid].custom_fields.get('Vrf_wanvrf').get('name')}`!")
 
-            for svc in relevant_vrfs:
-                svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
-                display.vvvv(f"VRF {svc.name} has Commissioning_state {svc_comm_state}")
-                # Check commisioning field is set:
-                if svc_comm_state is None:
-                    validation_problems.append(f"VRF `{svc.name}` has no value for `Commissioning_state`!")
-                svcstring = "VRF" if svc_comm_state == "Commissioned" else f"{str.capitalize(svc_comm_state or 'uncommissioned')} VRF"
-                tgt = validation_problems if svc_comm_state == "Commissioned" else validation_warnings
+                for svc in relevant_vrfs:
+                    svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
+                    display.vvvv(f"VRF {svc.name} has Commissioning_state {svc_comm_state}")
+                    # Check commisioning field is set:
+                    if svc_comm_state is None:
+                        validation_problems.append(f"VRF `{svc.name}` has no value for `Commissioning_state`!")
+                    svcstring = "VRF" if svc_comm_state == "Commissioned" else f"{str.capitalize(svc_comm_state or 'uncommissioned')} VRF"
+                    tgt = validation_problems if svc_comm_state == "Commissioned" else validation_warnings
 
-                if svc.custom_fields.get("Vrf_identifier", None) is None:
-                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
-                if svc.custom_fields.get("Service_location", None) is None:
-                    tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
-                if len(svc.export_targets) != 1:
-                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
-                if len(svc.import_targets) != 1:
-                    tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
-                if svc.id in vrf_ids_with_issues:
-                    if svc.id in vrf_ids_for_location:
-                        tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
-                                   "but is not associated with any L2VPN service!")
-                    else:
-                        svc_loc = svc.custom_fields.get('Service_location', None) or {}
-                        for l2vpn_id in vrf_l2vpns_by_ids[svc.id]:
-                            tgt.append(f"{svcstring} `{svc.name}` is referenced in L2VPN `{l2vpn_by_ids[l2vpn_id]}`, " +
-                                       f"but it has a different location `{svc_loc.get('name', None)}`!")
+                    if svc.custom_fields.get("Vrf_identifier", None) is None:
+                        tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
+                    if svc.custom_fields.get("Service_location", None) is None:
+                        tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
+                    if len(svc.export_targets) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
+                    if len(svc.import_targets) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
+                    if svc.id in vrf_ids_with_issues:
+                        if svc.id in vrf_ids_for_location:
+                            tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
+                                       "but is not associated with any L2VPN service!")
+                        else:
+                            svc_loc = svc.custom_fields.get('Service_location', None) or {}
+                            for l2vpn_id in vrf_l2vpns_by_ids[svc.id]:
+                                tgt.append(f"{svcstring} `{svc.name}` is referenced in L2VPN `{l2vpn_by_ids[l2vpn_id]}`, " +
+                                           f"but it has a different location `{svc_loc.get('name', None)}`!")
 
-            for vrfid in (vrf_ids_for_endpoints & vrf_l2vpns_by_ids.keys()):  # Check VRF - L2VPN associations
-                vrf = vrf_by_ids[vrfid]
-                vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
-                vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
-                vrf_tenant = vrf.tenant.name if vrf.tenant else ''
-                vrf_state = f"{vrf_comm_state or 'uncommissioned'} " if vrf_comm_state != "Commissioned" else ""
-
-                for l2vpnid in vrf_l2vpns_by_ids[vrfid]:
-                    l2vpn = l2vpn_by_ids[l2vpnid]
-                    l2vpn_comm_state = l2vpn.custom_fields.get("Commissioning_state", None)
-                    l2vpn_loc = l2vpn.custom_fields.get('Service_location', None) or {}
-                    l2vpn_tenant = l2vpn.tenant.name if l2vpn.tenant else ''
-                    l2vpn_state = f"{l2vpn_comm_state or 'uncommissioned'} " if l2vpn_comm_state != "Commissioned" else ""
-
-                    # tgt = validation_problems if (vrf_comm_state == "Commissioned" or l2vpn_comm_state == "Commissioned") else validation_warnings
-                    tgt = validation_problems if l2vpn_comm_state == "Commissioned" else validation_warnings
-
-                    if l2vpn.tenant != vrf.tenant:
-                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` has a different tenant (`{l2vpn_tenant}`) than " +
-                                   f"{str.lower(vrf_state)}VRF `{vrf.name}` (`{vrf_tenant}`)!")
-                    if vrf_comm_state != l2vpn_comm_state:
-                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`!")
-                    if vrf_loc.get("name", None) != l2vpn_loc.get("name", None):
-                        tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`, " +
-                                   f"but it has a different location `{vrf_loc.get('name', None)}`!")
-
-            for wanvrfid in (vrf_ids_for_endpoints & wanvrf_vrfs_by_ids.keys()):  # Check VRF - WANVRF associations
-                wanvrf = vrf_by_ids[wanvrfid]
-                wanvrf_comm_state = wanvrf.custom_fields.get("Commissioning_state", None)
-                wanvrf_loc = wanvrf.custom_fields.get('Service_location', None) or {}
-                wanvrf_tenant = wanvrf.tenant.name if wanvrf.tenant else ''
-                wanvrf_state = f"{wanvrf_comm_state or 'uncommissioned'} " if wanvrf_comm_state != "Commissioned" else ""
-
-                for vrfid in wanvrf_vrfs_by_ids[wanvrfid]:
+                for vrfid in (vrf_ids_for_endpoints & vrf_l2vpns_by_ids.keys()):  # Check VRF - L2VPN associations
                     vrf = vrf_by_ids[vrfid]
                     vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
                     vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
                     vrf_tenant = vrf.tenant.name if vrf.tenant else ''
                     vrf_state = f"{vrf_comm_state or 'uncommissioned'} " if vrf_comm_state != "Commissioned" else ""
 
-                    tgt = validation_problems if (wanvrf_comm_state == "Commissioned" or vrf_comm_state == "Commissioned") else validation_warnings
+                    for l2vpnid in vrf_l2vpns_by_ids[vrfid]:
+                        l2vpn = l2vpn_by_ids[l2vpnid]
+                        l2vpn_comm_state = l2vpn.custom_fields.get("Commissioning_state", None)
+                        l2vpn_loc = l2vpn.custom_fields.get('Service_location', None) or {}
+                        l2vpn_tenant = l2vpn.tenant.name if l2vpn.tenant else ''
+                        l2vpn_state = f"{l2vpn_comm_state or 'uncommissioned'} " if l2vpn_comm_state != "Commissioned" else ""
 
-                    if vrf.tenant != wanvrf.tenant:
-                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` has a different tenant (`{vrf_tenant}`) than " +
-                                   f"{str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}` (`{wanvrf_tenant}`)!")
-                    if wanvrf_comm_state != vrf_comm_state:
-                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`!")
-                    if wanvrf_loc.get("name", None) != vrf_loc.get("name", None):
-                        tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`, " +
-                                   f"but it has a different location `{wanvrf_loc.get('name', None)}`!")
+                        tgt = validation_problems if l2vpn_comm_state == "Commissioned" else validation_warnings
 
-            for svc_tenant in svc_tenants:
-                if svc_tenant.id in svctenant_ids_for_endpoints:
-                    wanvrf_export_targets = set()
-                    wanvrf_import_targets = set()
-                    connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
-                    for wanvrf in connected_wanvrfs:
-                        for rt in wanvrf.export_targets:
-                            wanvrf_export_targets.add(rt)
-                        for rt in wanvrf.import_targets:
-                            wanvrf_import_targets.add(rt)
+                        if l2vpn.tenant != vrf.tenant:
+                            tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` has a different tenant (`{l2vpn_tenant}`) than " +
+                                       f"{str.lower(vrf_state)}VRF `{vrf.name}` (`{vrf_tenant}`)!")
+                        if vrf_comm_state != l2vpn_comm_state:
+                            tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`!")
+                        if vrf_loc.get("name", None) != l2vpn_loc.get("name", None):
+                            tgt.append(f"{str.capitalize(l2vpn_state)}L2VPN `{l2vpn.name}` references {str.lower(vrf_state)}VRF `{vrf.name}`, " +
+                                       f"but it has a different location `{vrf_loc.get('name', None)}`!")
 
-                    if len(wanvrf_export_targets) != 1:
-                        validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same export route target!\n\t" +
-                                                   str({x.name: [str(rt) for rt in x.export_targets] for x in connected_wanvrfs}))
+                for wanvrfid in (vrf_ids_for_endpoints & wanvrf_vrfs_by_ids.keys()):  # Check VRF - WANVRF associations
+                    wanvrf = vrf_by_ids[wanvrfid]
+                    wanvrf_comm_state = wanvrf.custom_fields.get("Commissioning_state", None)
+                    wanvrf_loc = wanvrf.custom_fields.get('Service_location', None) or {}
+                    wanvrf_tenant = wanvrf.tenant.name if wanvrf.tenant else ''
+                    wanvrf_state = f"{wanvrf_comm_state or 'uncommissioned'} " if wanvrf_comm_state != "Commissioned" else ""
 
-                    if len(wanvrf_import_targets) != 1:
-                        validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same import route target!\n\t" +
-                                                   str({x.name: [str(rt) for rt in x.import_targets] for x in connected_wanvrfs}))
+                    for vrfid in wanvrf_vrfs_by_ids[wanvrfid]:
+                        vrf = vrf_by_ids[vrfid]
+                        vrf_comm_state = vrf.custom_fields.get("Commissioning_state", None)
+                        vrf_loc = vrf.custom_fields.get('Service_location', None) or {}
+                        vrf_tenant = vrf.tenant.name if vrf.tenant else ''
+                        vrf_state = f"{vrf_comm_state or 'uncommissioned'} " if vrf_comm_state != "Commissioned" else ""
+
+                        tgt = validation_problems if (wanvrf_comm_state == "Commissioned" or vrf_comm_state == "Commissioned") else validation_warnings
+
+                        if vrf.tenant != wanvrf.tenant:
+                            tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` has a different tenant (`{vrf_tenant}`) than " +
+                                       f"{str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}` (`{wanvrf_tenant}`)!")
+                        if wanvrf_comm_state != vrf_comm_state:
+                            tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`!")
+                        if wanvrf_loc.get("name", None) != vrf_loc.get("name", None):
+                            tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`, " +
+                                       f"but it has a different location `{wanvrf_loc.get('name', None)}`!")
+
+                for svc_tenant in svc_tenants:
+                    if svc_tenant.id in svctenant_ids_for_endpoints:
+                        wanvrf_export_targets = set()
+                        wanvrf_import_targets = set()
+                        connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
+                        for wanvrf in connected_wanvrfs:
+                            for rt in wanvrf.export_targets:
+                                wanvrf_export_targets.add(rt)
+                            for rt in wanvrf.import_targets:
+                                wanvrf_import_targets.add(rt)
+
+                        if len(wanvrf_export_targets) != 1:
+                            validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same export route target!\n\t" +
+                                                       str({x.name: [str(rt) for rt in x.export_targets] for x in connected_wanvrfs}))
+
+                        if len(wanvrf_import_targets) != 1:
+                            validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same import route target!\n\t" +
+                                                       str({x.name: [str(rt) for rt in x.import_targets] for x in connected_wanvrfs}))
 
         except Exception as e:
             raise AnsibleError(f"{type(e).__name__} occured: {to_native(e)}" + "\n" + f"{traceback.format_exc()}")
