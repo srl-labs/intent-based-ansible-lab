@@ -133,7 +133,10 @@ class ActionModule(ActionBase):
             vrf_having_wanvrf = set()  # Stores ids of VRFs that uses a WANVRF
 
             Tenant_objects = namedtuple('Tenant_objects', ['l2vpns', 'vrfs'])
-            svctenant_objects_by_ids = dict()  # Stores mapping between id of service-tenants and set of L2VPNs/VRFs objects (via named tuple)
+            svctenant_by_ids = {x.id: x for x in svc_tenants}
+            svctenant_objects_by_ids = {x.id: Tenant_objects(set(), set()) for x in svc_tenants}
+            # Stores mapping between id of service-tenants and set of L2VPNs/VRFs objects (via named tuple)
+
             svctenant_ids_for_endpoints = set()  # Stores ids of tenants encountered on (relevant!) endpoints via L2VPNs or VRFs
 
             lags_by_names = dict()  # Stores a mapping between LAG names and LAG interface objects
@@ -145,8 +148,6 @@ class ActionModule(ActionBase):
                 l2vpn_endpoints_by_ids[l2vpn.id] = list()  # Initialize lists to be populated later
 
                 if l2vpn.tenant:
-                    if l2vpn.tenant.id not in svctenant_objects_by_ids:
-                        svctenant_objects_by_ids[l2vpn.tenant.id] = Tenant_objects(set(), set())
                     svctenant_objects_by_ids[l2vpn.tenant.id].l2vpns.add(l2vpn)
 
                 if l2vpn.custom_fields.get("L2vpn_ipvrf", None) and l2vpn.custom_fields.get("L2vpn_ipvrf").get("id", None):
@@ -159,8 +160,6 @@ class ActionModule(ActionBase):
                 vrf_by_ids[vrf.id] = vrf
 
                 if vrf.tenant:
-                    if vrf.tenant.id not in svctenant_objects_by_ids:
-                        svctenant_objects_by_ids[vrf.tenant.id] = Tenant_objects(set(), set())
                     svctenant_objects_by_ids[vrf.tenant.id].vrfs.add(vrf)
 
                 if vrf.custom_fields.get("Vrf_wanvrf", None) and vrf.custom_fields.get("Vrf_wanvrf").get("id", None):
@@ -224,6 +223,8 @@ class ActionModule(ActionBase):
             display.vvvv(f"wanvrf_vrfs_by_ids: {wanvrf_vrfs_by_ids}")
             display.vvvv(f"lags_by_names: {lags_by_names}")
             display.vvvv(f"lag_ifaces_by_ids: {lag_ifaces_by_ids}")
+            display.vvvv(f"svctenant_by_ids: {svctenant_by_ids}")
+            display.vvvv(f"svctenant_objects_by_ids: {svctenant_objects_by_ids}")
 
             l2vpn_ids_for_location = {x.id for x in l2vpns
                                       if x.custom_fields.get("Service_location", None) and
@@ -394,11 +395,28 @@ class ActionModule(ActionBase):
                             tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`, " +
                                        f"but it has a different location `{wanvrf_loc.get('name', None)}`!")
 
+                export_rt_ids_for_svctenants_by_ids = dict()
+                import_rt_ids_for_svctenants_by_ids = dict()
+                rt_by_ids = dict()
+
                 for svc_tenant in svc_tenants:
+                    connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
+
+                    for wanvrf in connected_wanvrfs:
+                        for rt in wanvrf.export_targets:
+                            rt_by_ids[rt.id] = rt
+                            if rt.id not in export_rt_ids_for_svctenants_by_ids:
+                                export_rt_ids_for_svctenants_by_ids[rt.id] = set()
+                            export_rt_ids_for_svctenants_by_ids[rt.id].add(svc_tenant.id)
+                        for rt in wanvrf.import_targets:
+                            rt_by_ids[rt.id] = rt
+                            if rt.id not in import_rt_ids_for_svctenants_by_ids:
+                                import_rt_ids_for_svctenants_by_ids[rt.id] = set()
+                            import_rt_ids_for_svctenants_by_ids[rt.id].add(svc_tenant.id)
+
                     if svc_tenant.id in svctenant_ids_for_endpoints:
                         wanvrf_export_targets = set()
                         wanvrf_import_targets = set()
-                        connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
                         for wanvrf in connected_wanvrfs:
                             for rt in wanvrf.export_targets:
                                 wanvrf_export_targets.add(rt)
@@ -412,6 +430,15 @@ class ActionModule(ActionBase):
                         if len(wanvrf_import_targets) != 1:
                             validation_problems.append(f"Not all services for tenant `{svc_tenant.name}` use the same import route target!\n\t" +
                                                        str({x.name: [str(rt) for rt in x.import_targets] for x in connected_wanvrfs}))
+
+                for rt_id, svctenant_ids in export_rt_ids_for_svctenants_by_ids.items():
+                    if len(svctenant_ids) > 1:
+                        validation_problems.append(f"Route target `{rt_by_ids[rt_id].name}` is used by multiple services as export RT: " +
+                                                   f"{[svctenant_by_ids[x].name for x in svctenant_ids]}!")
+                for rt_id, svctenant_ids in import_rt_ids_for_svctenants_by_ids.items():
+                    if len(svctenant_ids) > 1:
+                        validation_problems.append(f"Route target `{rt_by_ids[rt_id].name}` is used by multiple services as import RT: " +
+                                                   f"{[svctenant_by_ids[x].name for x in svctenant_ids]}!")
 
         except Exception as e:
             raise AnsibleError(f"{type(e).__name__} occured: {to_native(e)}" + "\n" + f"{traceback.format_exc()}")
