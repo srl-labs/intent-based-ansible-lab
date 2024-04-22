@@ -60,6 +60,19 @@ class ActionModule(ActionBase):
         validation_warnings = list()
 
         try:
+            groups = task_vars.get("groups", dict())
+            skip_tags = task_vars.get("ansible_skip_tags", tuple())
+            # run_tags = task_vars.get("ansible_run_tags", tuple())
+
+            # # Helper function
+            # def ansible_tag_gate(tags):
+            #     return any([x not in skip_tags for x in tags]) and ("all" in run_tags or any([x in run_tags for x in tags]))
+
+            if "services" in skip_tags:
+                result["skipped"] = True
+                result["msg"] = "Validation is only implemented for services."
+                return result
+
             nb = pynetbox.api(task_vars.get("netbox_url"), token=task_vars.get("netbox_token"))
 
             if version.parse(nb.version) < version.parse("3.7"):
@@ -87,8 +100,6 @@ class ActionModule(ActionBase):
                 raise AnsibleError("Unable to retrieve devices from netbox!")
 
             devnames_by_roles = {dev.role.name: [x.name for x in devices if x.role == dev.role] for dev in devices}
-
-            groups = task_vars.get("groups", {})
 
             # Validate that the Ansible inventory devices match with the Netbox objects we retrieved.
             for devgroup in ['leaf', 'spine', 'borderleaf', 'superspine', 'dcgw']:
@@ -122,12 +133,11 @@ class ActionModule(ActionBase):
             vrf_having_wanvrf = set()  # Stores ids of VRFs that uses a WANVRF
 
             Tenant_objects = namedtuple('Tenant_objects', ['l2vpns', 'vrfs'])
-            svctenant_objects_by_ids = dict()
+            svctenant_objects_by_ids = dict()  # Stores mapping between id of service-tenants and set of L2VPNs/VRFs objects (via named tuple)
             svctenant_ids_for_endpoints = set()  # Stores ids of tenants encountered on (relevant!) endpoints via L2VPNs or VRFs
 
-            lags = set()
-            lags_by_names = dict()
-            lag_ifaces_by_ids = dict()
+            lags_by_names = dict()  # Stores a mapping between LAG names and LAG interface objects
+            lag_ifaces_by_ids = dict()  # Stores a mapping between LAG iface ids and their child objects
 
             for l2vpn in l2vpns:
                 l2vpn_by_names[l2vpn.name] = l2vpn
@@ -162,13 +172,18 @@ class ActionModule(ActionBase):
 
             for iface in ifaces:
                 if iface.lag and iface.device in devices:
-                    lags.add(iface.lag)
                     if iface.lag.name not in lags_by_names:
                         lags_by_names[iface.lag.name] = set()
                     lags_by_names[iface.lag.name].add(iface.lag)
                     if iface.lag.id not in lag_ifaces_by_ids:
                         lag_ifaces_by_ids[iface.lag.id] = set()
                     lag_ifaces_by_ids[iface.lag.id].add(iface)
+                if iface.type.label == "Link Aggregation Group (LAG)" and iface.device in devices:
+                    if iface.name not in lags_by_names:
+                        lags_by_names[iface.name] = set()
+                    lags_by_names[iface.name].add(iface)
+                    if iface.id not in lag_ifaces_by_ids:
+                        lag_ifaces_by_ids[iface.id] = set()
 
                 for tag in iface.tags:
                     if tag in l2vpn_svc_tags:
@@ -207,6 +222,8 @@ class ActionModule(ActionBase):
             display.vvvv(f"vrf_ids_for_endpoints: {vrf_ids_for_endpoints}")
             display.vvvv(f"vrf_l2vpns_by_ids: {vrf_l2vpns_by_ids}")
             display.vvvv(f"wanvrf_vrfs_by_ids: {wanvrf_vrfs_by_ids}")
+            display.vvvv(f"lags_by_names: {lags_by_names}")
+            display.vvvv(f"lag_ifaces_by_ids: {lag_ifaces_by_ids}")
 
             l2vpn_ids_for_location = {x.id for x in l2vpns
                                       if x.custom_fields.get("Service_location", None) and
@@ -226,28 +243,33 @@ class ActionModule(ActionBase):
             relevant_vrfs = [x for x in vrfs if x.id in (vrf_ids_for_endpoints | vrf_ids_for_location)]
             display.vvvv(f"relevant_vrfs: {relevant_vrfs}")
 
-            for lagname, lagifaces in lags_by_names.items():
-                mh_ids = set()
-                mh_modes = set()
-                for lagiface in lagifaces:
-                    if lagiface.custom_fields.get("Iface_mh_id", None) is None:
-                        validation_problems.append(f"LAG interface `{lagiface.name}` on  `{lagiface.device.name}` has no value for `MH_ID`!")
-                    else:
-                        mh_ids.add(lagiface.custom_fields.get("Iface_mh_id"))
+            # if ansible_tag_gate(["services", "mh_access"]):
+            if True:
+                for lagname, lagifaces in lags_by_names.items():
+                    mh_ids = set()
+                    mh_modes = set()
+                    for lagiface in lagifaces:
+                        if lagiface.custom_fields.get("Iface_mh_id", None) is None:
+                            validation_problems.append(f"LAG interface `{lagiface.name}` on `{lagiface.device.name}` has no value for `MH_ID`!")
+                        else:
+                            mh_ids.add(lagiface.custom_fields.get("Iface_mh_id"))
 
-                    if lagiface.custom_fields.get("Iface_mh_mode", None) is None:
-                        validation_problems.append(f"LAG interface `{lagiface.name}` on  `{lagiface.device.name}` has no value for `MH_mode`!")
-                    else:
-                        mh_modes.add(lagiface.custom_fields.get("Iface_mh_mode"))
+                        if lagiface.custom_fields.get("Iface_mh_mode", None) is None:
+                            validation_problems.append(f"LAG interface `{lagiface.name}` on `{lagiface.device.name}` has no value for `MH_mode`!")
+                        else:
+                            mh_modes.add(lagiface.custom_fields.get("Iface_mh_mode"))
 
-                    if len(lag_ifaces_by_ids[lagiface.id]) == 0:
-                        validation_problems.append(f"LAG interface `{lagiface.name}` on  `{lagiface.device.name}` has no child interfaces!")
+                        if len(lag_ifaces_by_ids[lagiface.id]) == 0:
+                            validation_problems.append(f"LAG interface `{lagiface.name}` on `{lagiface.device.name}` has no child interfaces!")
 
-                if len(mh_ids) != 1:
-                    validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_ID`!")
+                    if len(lagifaces) == 1:
+                        validation_problems.append(f"LAG interface with name `{lagname}` is only present on 1 device!")
 
-                if len(mh_modes) != 1:
-                    validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_mode`!")
+                    if len(lagifaces) > 1 and len(mh_ids) != 1:
+                        validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_ID`!")
+
+                    if len(lagifaces) > 1 and len(mh_modes) != 1:
+                        validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_mode`!")
 
             for svc in relevant_l2vpns:
                 svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
