@@ -121,6 +121,8 @@ class ActionModule(ActionBase):
             vrfs = list(nb.ipam.vrfs.all())
             ifaces = list(nb.dcim.interfaces.all())
 
+            rt_by_ids = {x.id: x for x in nb.ipam.route_targets.all()}
+
             l2vpn_by_names = dict()  # Stores a mapping between L2VPN names and L2VPN objects
             l2vpn_by_ids = dict()  # Stores a mapping between L2VPN ids and L2VPN objects
             l2vpn_ids_for_endpoints = set()  # Stores ids of L2VPNs encountered on (relevant!) endpoints via 'l2vpn:<name>' tags
@@ -132,9 +134,9 @@ class ActionModule(ActionBase):
             wanvrf_vrfs_by_ids = dict()  # Stores a mapping between VRF ids (used as WANVRF) and the set of VRF ids where they were found
             vrf_having_wanvrf = set()  # Stores ids of VRFs that uses a WANVRF
 
-            Tenant_objects = namedtuple('Tenant_objects', ['l2vpns', 'vrfs'])
+            Service_objects = namedtuple('Service_objects', ['l2vpns', 'vrfs'])
             svctenant_by_ids = {x.id: x for x in svc_tenants}
-            svctenant_objects_by_ids = {x.id: Tenant_objects(set(), set()) for x in svc_tenants}
+            svctenant_objects_by_ids = {x.id: Service_objects(set(), set()) for x in svc_tenants}
             # Stores mapping between id of service-tenants and set of L2VPNs/VRFs objects (via named tuple)
 
             svctenant_ids_for_endpoints = set()  # Stores ids of tenants encountered on (relevant!) endpoints via L2VPNs or VRFs
@@ -271,6 +273,31 @@ class ActionModule(ActionBase):
                     if len(lagifaces) > 1 and len(mh_modes) != 1:
                         validation_problems.append(f"Not all LAG interface with name `{lagname}` share the same value for `MH_mode`!")
 
+            export_rt_ids_for_svc_by_ids = dict()  # Stores mapping between RTid and svc ID where used (via named tuple)
+            import_rt_ids_for_svc_by_ids = dict()  # Stores mapping between RTid and svc ID where used (via named tuple)
+
+            for svc in relevant_l2vpns:
+                # Store RTs used for import/export to validate no overlap
+                for rt in svc.export_targets:
+                    if rt.id not in export_rt_ids_for_svc_by_ids:
+                        export_rt_ids_for_svc_by_ids[rt.id] = Service_objects(set(), set())
+                    export_rt_ids_for_svc_by_ids[rt.id].l2vpns.add(svc.id)
+                for rt in svc.import_targets:
+                    if rt.id not in import_rt_ids_for_svc_by_ids:
+                        import_rt_ids_for_svc_by_ids[rt.id] = Service_objects(set(), set())
+                    import_rt_ids_for_svc_by_ids[rt.id].l2vpns.add(svc.id)
+
+            for svc in relevant_vrfs:
+                # Store RTs used for import/export to validate no overlap
+                for rt in svc.export_targets:
+                    if rt.id not in export_rt_ids_for_svc_by_ids:
+                        export_rt_ids_for_svc_by_ids[rt.id] = Service_objects(set(), set())
+                    export_rt_ids_for_svc_by_ids[rt.id].vrfs.add(svc.id)
+                for rt in svc.import_targets:
+                    if rt.id not in import_rt_ids_for_svc_by_ids:
+                        import_rt_ids_for_svc_by_ids[rt.id] = Service_objects(set(), set())
+                    import_rt_ids_for_svc_by_ids[rt.id].vrfs.add(svc.id)
+
             if ansible_tag_gate(["services", "l2vpn"]):
                 for svc in relevant_l2vpns:
                     svc_comm_state = svc.custom_fields.get("Commissioning_state", None)
@@ -287,10 +314,25 @@ class ActionModule(ActionBase):
                         tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
                     if svc.identifier is None:
                         tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
+
                     if len(svc.export_targets) != 1:
                         tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
+                    elif (len(export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].l2vpns) +
+                          len(export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].vrfs)) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` uses an export route target `{rt_by_ids[svc.export_targets[0].id].name}` " +
+                                   "also used by another service!\n\t" +
+                                   str([f"L2VPN `{l2vpn_by_ids[x].name}`" for x in export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].l2vpns] +
+                                       [f"VRF `{vrf_by_ids[x].name}`" for x in export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].vrfs]))
+
                     if len(svc.import_targets) != 1:
                         tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
+                    elif (len(import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].l2vpns) +
+                          len(import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].vrfs)) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` uses an import route target `{rt_by_ids[svc.import_targets[0].id].name}` " +
+                                   "also used by another service!\n\t" +
+                                   str([f"L2VPN `{l2vpn_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].l2vpns] +
+                                       [f"VRF `{vrf_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].vrfs]))
+
                     if (svc.custom_fields.get("L2vpn_ipvrf", None) is None) ^ (svc.custom_fields.get("L2vpn_gateway", None) is None):
                         tgt.append(f"{svcstring} `{svc.name}` should have both or none of `IP-VRF` and `Gateway` filled in!")
                     if svc.id in l2vpn_ids_with_issues:
@@ -331,10 +373,25 @@ class ActionModule(ActionBase):
                         tgt.append(f"{svcstring} `{svc.name}` has no value for `Identifier`!")
                     if svc.custom_fields.get("Service_location", None) is None:
                         tgt.append(f"{svcstring} `{svc.name}` has no value for `Location`!")
+
                     if len(svc.export_targets) != 1:
                         tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Export targets`, but has {len(svc.export_targets)}!")
+                    elif (len(export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].l2vpns) +
+                          len(export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].vrfs)) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` uses an export route target `{rt_by_ids[svc.export_targets[0].id].name}` " +
+                                   "also used by another service!\n\t" +
+                                   str([f"L2VPN `{l2vpn_by_ids[x].name}`" for x in export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].l2vpns] +
+                                       [f"VRF `{vrf_by_ids[x].name}`" for x in export_rt_ids_for_svc_by_ids[svc.export_targets[0].id].vrfs]))
+
                     if len(svc.import_targets) != 1:
                         tgt.append(f"{svcstring} `{svc.name}` should have exactly 1 `Import targets`, but has {len(svc.import_targets)}!")
+                    elif (len(import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].l2vpns) +
+                          len(import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].vrfs)) != 1:
+                        tgt.append(f"{svcstring} `{svc.name}` uses an import route target `{rt_by_ids[svc.import_targets[0].id].name}` " +
+                                   "also used by another service!\n\t" +
+                                   str([f"L2VPN `{l2vpn_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].l2vpns] +
+                                       [f"VRF `{vrf_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].vrfs]))
+
                     if svc.id in vrf_ids_with_issues:
                         if svc.id in vrf_ids_for_location:
                             tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
@@ -395,25 +452,25 @@ class ActionModule(ActionBase):
                             tgt.append(f"{str.capitalize(vrf_state)}VRF `{vrf.name}` references {str.lower(wanvrf_state)}WAN-VRF `{wanvrf.name}`, " +
                                        f"but it has a different location `{wanvrf_loc.get('name', None)}`!")
 
-                export_rt_ids_for_svctenants_by_ids = dict()
-                import_rt_ids_for_svctenants_by_ids = dict()
-                rt_by_ids = dict()
+                export_rt_ids_for_svctenants_by_ids = dict()  # Stores mapping between RTid and svctenant ID where used
+                import_rt_ids_for_svctenants_by_ids = dict()  # Stores mapping between RTid and svctenant ID where used
 
                 for svc_tenant in svc_tenants:
+                    # All WANVRFs that use a specific svc_tenant
                     connected_wanvrfs = {x for x in svctenant_objects_by_ids[svc_tenant.id].vrfs if x.id in wanvrf_vrfs_by_ids.keys()}
 
+                    # Group svc_tenant ids by the RT they use; there should be only one!
                     for wanvrf in connected_wanvrfs:
                         for rt in wanvrf.export_targets:
-                            rt_by_ids[rt.id] = rt
                             if rt.id not in export_rt_ids_for_svctenants_by_ids:
                                 export_rt_ids_for_svctenants_by_ids[rt.id] = set()
                             export_rt_ids_for_svctenants_by_ids[rt.id].add(svc_tenant.id)
                         for rt in wanvrf.import_targets:
-                            rt_by_ids[rt.id] = rt
                             if rt.id not in import_rt_ids_for_svctenants_by_ids:
                                 import_rt_ids_for_svctenants_by_ids[rt.id] = set()
                             import_rt_ids_for_svctenants_by_ids[rt.id].add(svc_tenant.id)
 
+                    # If the svc_tenant is in use by any of our endpoints, then validate same RT is used on all
                     if svc_tenant.id in svctenant_ids_for_endpoints:
                         wanvrf_export_targets = set()
                         wanvrf_import_targets = set()
