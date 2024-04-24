@@ -392,7 +392,7 @@ class ActionModule(ActionBase):
                                    str([f"L2VPN `{l2vpn_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].l2vpns] +
                                        [f"VRF `{vrf_by_ids[x].name}`" for x in import_rt_ids_for_svc_by_ids[svc.import_targets[0].id].vrfs]))
 
-                    if svc.id in vrf_ids_with_issues:
+                    if svc.id in (vrf_ids_with_issues & vrf_l2vpns_by_ids.keys()):
                         if svc.id in vrf_ids_for_location:
                             tgt.append(f"{svcstring} `{svc.name}` is defined for location `{location.name}`, " +
                                        "but is not associated with any L2VPN service!")
