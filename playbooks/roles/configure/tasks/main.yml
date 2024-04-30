@@ -131,7 +131,7 @@
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   when:
-    - netbox_discovered
+    - netbox_discovered and not(skip_netbox | default(False) | bool)
     - not ansible_check_mode
   with_items:
     - netbox_l2vpn_service_update.yml
