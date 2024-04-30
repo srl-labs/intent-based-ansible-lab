@@ -14,7 +14,7 @@
 - name: Crosscheck netbox
   ansible.builtin.include_tasks:
     file: netbox_l2vpn_service_check.yml
-  when: netbox_discovered
+  when: netbox_discovered and not(skip_netbox | default(False) | bool)
 
 - name: Generate low-level intent for L2VPN
   delegate_to: localhost
