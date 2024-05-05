@@ -1,0 +1,57 @@
+#jinja2: lstrip_blocks: "True"
+{% for acl, acl_spec in acl_filters.items() %}
+  {% if acl_spec.type == "ipv4" %}
+- path: /acl/ipv4-filter[name={{ acl }}]
+  operation: replace
+  value:
+    description: {{ acl_spec.description | default('') }}
+    {% if acl_spec['acl-entries'] is defined and acl_spec['acl-entries'] | length > 0 %}
+    entry:
+    {% endif %}
+    {% for entry_id, entry_spec in acl_spec['acl-entries'].items() %}
+      - sequence-id: {{ entry_id }}
+      {% if 'match' in entry_spec and entry_spec.match | length > 0 %}      
+        match:
+          {% if 'destination-ip' in entry_spec.match %}
+          destination-ip:
+            {% if 'prefix' in entry_spec.match['destination-ip'] %}
+            prefix: {{ entry_spec.match['destination-ip']['prefix'] }}
+            {% endif %}
+          {% endif %}
+          {% if 'source-ip' in entry_spec.match %}
+          source-ip:
+            {% if 'prefix' in entry_spec.match['source-ip'] %}
+              prefix: {{ entry_spec.match['source-ip']['prefix'] }}
+            {% endif %}
+          {% endif %}
+          {% if 'destination-port' in entry_spec.match %}
+          destination-port:
+            {% if 'port' in entry_spec.match['destination-port'] %}
+            port: {{ entry_spec.match['destination-port']['port'] }}
+            {% elif 'range' in entry_spec.match['destination-port'] %}
+              {% set start_port, end_port = entry_spec.match['destination-port']['range'].split('..') %}
+            range:
+              start: {{ start_port | int }}
+              end: {{ end_port | int }}
+            {% endif %}
+          {% endif %}
+          {% if 'source-port' in entry_spec.match %}
+          source-port:
+            {% if 'port' in entry_spec.match['source-port'] %}
+            port: {{ entry_spec.match['source-port']['port'] }}
+           {% elif 'range' in entry_spec.match['source-port'] %}
+              {% set start_port, end_port = entry_spec.match['source-port']['range'].split('..') %}
+            range:
+              start: {{ start_port | int }}
+              end: {{ end_port | int }} 
+            {% endif %}
+          {% endif %}
+          {% if 'protocol' in entry_spec.match %}
+          protocol: {{ entry_spec.match['protocol'] }}
+          {% endif %}
+      {% endif %}
+        action:
+          {{ entry_spec.action | default('drop') }}: {}
+    {% endfor %}
+  {% endif %}
+{% endfor %}

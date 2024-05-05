@@ -1,0 +1,41 @@
+#jinja2: lstrip_blocks: "True"
+{%- for itf, prop in interfaces.items() %}
+  {% if prop._state | default('present') == 'present' %}
+- path: /interface[name={{ itf }}]
+  operation: update
+  value:
+    admin-state: {{ prop.admin_state | default('enable') }}
+    description: {{ prop.description|default('no description')}}
+    {% if prop.vlan_tagging is defined %}
+    vlan-tagging: true
+    {% endif %}
+    {% if prop.lag_id is defined or prop.stby_signaling is defined %}
+    ethernet:
+      {% if prop.lag_id is defined %}
+      aggregate-id: {{ prop.lag_id }}
+      {% endif %}
+      {% if prop.stby_signaling is defined %}
+      standby-signaling: {{ prop.stby_signaling }}
+      {% endif %}
+      {% if prop.reload_delay is defined %}
+      reload-delay: {{ prop.reload_delay }}
+      {% endif %}
+      {% if prop.port_speed is defined %}
+      port-speed: {{ prop.port_speed }}
+      {% endif %}
+    {% endif %}
+    {% if itf.startswith("lag") %}
+    lag:
+      lag-type: {{ prop.lag_type | default('lacp') }}
+      min-links: {{ prop.min_links | default(1) }}
+      lacp:
+        {% set lagid = itf.split('lag')[1] | int %}
+        admin-key: {{ prop.lacp.admin_key | default(lagid) }}
+        interval: {{ prop.lacp.interval | default('SLOW') }}
+        lacp-mode: {{ prop.lacp.mode | default('ACTIVE') }}
+        {% set sfx = "%02d" | format(lagid) %}
+        system-id-mac: {{ prop.lacp.system_id | default('00:ba:db:ee:f0:' + sfx) }}
+        system-priority: {{ prop.lacp.system_priority | default(1) }}
+    {% endif %}
+  {% endif %}
+{% endfor %}
