@@ -1,4 +1,4 @@
-/clab*
+/*clab*
 .venv
 *log
 *sav
@@ -9,3 +9,4 @@ startup
 /vault*
 __pycache__/
 *.py[cod]
+config*
