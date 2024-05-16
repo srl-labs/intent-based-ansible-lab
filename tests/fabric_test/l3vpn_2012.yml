@@ -1,0 +1,7 @@
+ipvrf-2012:
+  id: 2012
+  type: ip-vrf
+  description: IPVRF12
+  snet_list:
+    - macvrf: macvrf-312
+      gw: 10.12.1.254/24

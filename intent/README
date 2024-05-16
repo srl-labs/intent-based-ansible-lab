@@ -1,0 +1,3 @@
+This is the main `intent_dir` that will hold all the intent files to describe the desired state of the fabric.
+
+During the lab we'll copy in intent files and run the `cf_fabric.yml` playbook against this dir.

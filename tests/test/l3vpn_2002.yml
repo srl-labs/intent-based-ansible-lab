@@ -1,0 +1,9 @@
+ipvrf-2002:
+  id: 2002
+  type: ip-vrf
+  description: IPVRF1
+  snet_list:
+    - macvrf: macvrf-302
+      gw: 10.1.1.254/24
+    - macvrf: macvrf-303
+      gw: 10.1.2.254/24
