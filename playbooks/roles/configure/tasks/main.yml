@@ -52,6 +52,7 @@
     purge_exclude:
       network_instance:
         - mgmt # never purge mgmt network-instance
+          #        - default
       interfaces:
         - mgmt0
       subinterface:
@@ -77,9 +78,9 @@
 #  ansible.builtin.debug:
 #    var: update
 
-#- name: DEBUG print replace
-#  ansible.builtin.debug:
-#    var: replace
+- name: DEBUG print replace
+  ansible.builtin.debug:
+    var: replace
 
 #- name: DEBUG print delete
 #  ansible.builtin.debug:

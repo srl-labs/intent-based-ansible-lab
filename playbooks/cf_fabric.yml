@@ -48,7 +48,7 @@
           - subinterface
           - network-instance
           - tunnel-interface
-          - bfd
+            # - bfd
           - es
       tags: [always]
 - name: Commit changes when confirm_timeout is set

@@ -27,6 +27,9 @@
     intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname] | expand_ranges, recursive=True) }}"
   when: inventory_hostname in host_intent|default({}, true)
 
+- debug:
+    var: intent
+
 - name: Validate infra intent
   delegate_to: localhost
   ansible.utils.validate:

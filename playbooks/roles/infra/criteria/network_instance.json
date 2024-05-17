@@ -4,6 +4,12 @@
         "^.*" : {
             "type": "object",
             "properties": {
+		"receive-ipv4-check": {
+	            "type": "boolean"
+		},
+		"receive-ipv6-check": {
+	            "type": "boolean"
+		},
                 "mac_learning": {
                     "type": "object",
                     "properties": {
@@ -107,18 +113,53 @@
                                         }
                                     }
                                 },
+				"ebgp-import-reject": {
+					"type": "boolean"
+				},
+				"ebgp-export-reject": {
+					"type": "boolean"
+				},
                                 "ipv4": {
                                     "type": "object",
                                     "properties": {
+					"multipath": {
+				            "type": "number"
+					},
                                         "admin_state": {
                                             "type": "string",
                                             "enum": ["enable", "disable"]
                                         }
                                     }
                                 },
+                                "ipv6": {
+                                    "type": "object",
+                                    "properties": {
+					"multipath": {
+				            "type": "number"
+					},
+                                        "admin_state": {
+                                            "type": "string",
+                                            "enum": ["enable", "disable"]
+                                        },
+					"ipv4": {
+					     "type": "object",
+					     "properties": {
+						     "advertise-ipv6-next-hops": {
+							     "type": "boolean"
+						     	},
+						     "receive-ipv6-next-hops": {
+							     "type": "boolean"
+						     	}
+					     }
+					}
+				    }
+                                },
                                 "evpn": {
                                     "type": "object",
                                     "properties": {
+					"multipath": {
+				            "type": "number"
+					},
                                         "rapid-update": {
                                             "type": "boolean"
                                         }
@@ -149,6 +190,12 @@
                                                 },
                                                 "local_as": {
                                                     "type": "number"
+                                                },
+                                                "prepend_global_as": {
+                                                    "type": "boolean"
+                                                },
+                                                "next_hop_self": {
+                                                    "type": "boolean"
                                                 },
                                                 "cluster_id": {
                                                     "type": "string"

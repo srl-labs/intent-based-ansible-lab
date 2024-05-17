@@ -4,11 +4,19 @@
         "^.+" : {
             "type": "object",
             "properties": {
+		"ip-mtu": {
+		    "type": "number"
+		},
                 "ipv4_address": {
                     "type": "string",
                     "pattern": "^(([0-9]{1,3}\\.){3}[0-9]{1,3})/[0-9]{1,2}$",
                     "description": "IPv4 address with prefix"
                 },
+                "ipv6_address": {
+                    "type": "string",
+                    "description": "IPv6 address with prefix"
+                },
+
                 "acl": {
                     "type": "object",
                     "properties": {
