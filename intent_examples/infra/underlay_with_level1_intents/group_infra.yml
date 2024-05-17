@@ -4,8 +4,6 @@ leaf:
       admin_state: enable
     ethernet-1/{1..4,10}:
       vlan_tagging: yes
-    ethernet-1/{48..49}:
-      _tag: isl
     irb1:
     system0:
       admin_state: enable
