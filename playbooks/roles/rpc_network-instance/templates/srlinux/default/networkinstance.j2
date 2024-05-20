@@ -5,13 +5,16 @@
   operation: replace
   value:
     admin-state: enable
-    description: {{prop.description|default('no description')}}
+    {% if prop.description is defined %}
+    description: {{ prop.description }}
+    {% endif %}
     {% if prop.type is defined %}
     type: {{ prop.type }}
     {% endif %}
     {% if prop.type|default('default') == 'default' %}
     ip-forwarding:
       receive-ipv4-check: {{ prop["receive-ipv4-check"] | default(True) }}
+      receive-ipv6-check: {{ prop["receive-ipv6-check"] | default(True) }}
     {% endif %}
     {% if prop.interfaces is defined and prop.interfaces is not none %}
     interface:
@@ -82,6 +85,9 @@
         autonomous-system: {{ prop["autonomous-system"] }}
         router-id: {{ prop["router-id"] }}
         {% endif %}
+        ebgp-default-policy:
+          export-reject-all: {{ prop.protocols.bgp["ebgp-export-reject"] | default(False) }}
+          import-reject-all: {{ prop.protocols.bgp["ebgp-import-reject"] | default(False) }}
         route-advertisement:
           rapid-withdrawal: {{ prop.protocols.bgp["route-advertisement"]["rapid-withdrawal"] | default (true) }}
         {% if prop.protocols.bgp.dynamic is defined %}
@@ -99,36 +105,81 @@
             admin-state: {{ prop.protocols.bgp.ipv4.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(2) }}
-              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(2) }}
+              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
         {% endif %}
-          - afi-safi-name: evpn
-            admin-state: enable
+        {% if prop.protocols.bgp.ipv6 is defined %}
+          - afi-safi-name: "ipv6-unicast"
+            admin-state: {{ prop.protocols.bgp.ipv6.admin_state|default('disable') }}
             multipath:
-              max-paths-level-1: 2
-              max-paths-level-2: 2
+              allow-multiple-as: true
+              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+           {% if prop.protocols.bgp.ipv6.ipv4 is defined %}
+            ipv4-unicast:
+               advertise-ipv6-next-hops: {{ prop.protocols.bgp.ipv6.ipv4["advertise-ipv6-next-hops"] | default(false) }}
+               receive-ipv6-next-hops: {{ prop.protocols.bgp.ipv6.ipv4["receive-ipv6-next-hops"] | default(false) }}
+           {% endif %}
+        {% endif %}
+        {% if prop.protocols.bgp.evpn is defined %}
+          - afi-safi-name: evpn
+            {% if prop.protocols.bgp.evpn.admin_state is defined %}
+            admin-state: enable
+            {% endif %}
+            multipath:
+              max-paths-level-1: {{prop.protocols.bgp.evpn.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.evpn.multipath|default(64) }}
             evpn:
               rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
+        {% endif %}
+        send-community:
+          large: {{ prop.protocols.bgp["large-community"] | default(true) }}
+        transport:
+           mtu-discovery: {{ prop.protocols.bgp["mtu-discovery"] | default(true) }}
         group:
         {% for group, group_spec in prop.protocols.bgp.group.items() %}
         - group-name: {{ group }}
-          description: {{ group_spec.description|default('no description') }}
+          {% if group_spec.description is defined %}
+          description: {{ group_spec.description }}
+          {% endif %}
           {% if group_spec.peer_as is defined %}
           peer-as: {{ group_spec.peer_as }}
+          {% endif %}
+          {% if group_spec.next_hop_self is defined %}
+          next-hop-self: {{ group_spec.next_hop_self }}
           {% endif %}
           failure-detection:
             enable-bfd: {{ group_spec.enable_bfd | default(False) }}
             fast-failover: {{ group_spec.fast_failover | default(False) }}
+          {% if group_spec.export_policy is defined %}
           export-policy: {{ group_spec.export_policy }}
+          {% endif %}
+          {% if group_spec.import_policy is defined %}
           import-policy: {{ group_spec.import_policy }}
+          {% endif %}
+          send-community:
+            large: {{ group_spec["large-community"] | default(true) }}
+          {% if 'ipv4' in group_spec or 'ipv6' in group_spec or 'evpn' in group_spec %}
           afi-safi:
+            {% if 'ipv4' in group_spec %}
             - afi-safi-name: "ipv4-unicast" 
               admin-state: {{ group_spec.ipv4.admin_state|default('disable') }}
+            {% endif %}
+            {% if 'ipv6' in group_spec %}
+            - afi-safi-name: "ipv6-unicast" 
+              admin-state: {{ group_spec.ipv6.admin_state|default('disable') }}
+            {% endif %}
+            {% if 'evpn' in group_spec %}
             - afi-safi-name: "evpn" 
               admin-state: {{ group_spec.evpn.admin_state|default('disable') }}
+            {% endif %}
+          {% endif %}
           {% if group_spec.local_as is defined %}
           local-as:
             as-number: {{ group_spec.local_as }}
+             {% if group_spec.prepend_global_as is defined %}
+            prepend-global-as: {{ group_spec.prepend_global_as }}
+             {% endif %}
           {% endif %}
           {% if group_spec.local_address is defined %}
           transport:
@@ -145,16 +196,18 @@
             keepalive-interval: {{ group_spec.timers["keepalive-interval"] | default(1) }}
             minimum-advertisement-interval: {{ group_spec.timers["minimum-advertisement-interval"] | default(1) }}
         {% endfor %}
+        {% if prop.protocols.bgp.neighbor is defined %}
         neighbor:
-        {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
+           {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
         - peer-address: {{ nbr }}
           peer-group: {{ nbr_spec.peer_group }}
-          {% if nbr_spec.peer_as is defined %}
+             {% if nbr_spec.peer_as is defined %}
           peer-as: {{ nbr_spec.peer_as }}
-          {% endif %}
-        {% else %}
+             {% endif %}
+           {% else %}
           []
-        {% endfor %}
+           {% endfor %}
+         {% endif %}
       {% endif %}
       {% if prop.protocols.ospf is defined %}
       ospf:
