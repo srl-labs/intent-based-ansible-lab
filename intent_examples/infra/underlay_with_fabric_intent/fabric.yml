@@ -42,14 +42,14 @@ fabric:
 
   # Physical cabling layout between network devices
   fabric_cabling:
-    - endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s1:e1-1"]
-    - endpoints: ["clab-4l2s-l1:e1-48", "clab-4l2s-s2:e1-1"]
-    - endpoints: ["clab-4l2s-l2:e1-49", "clab-4l2s-s1:e1-2"]
-    - endpoints: ["clab-4l2s-l2:e1-48", "clab-4l2s-s2:e1-2"]
-    - endpoints: ["clab-4l2s-l3:e1-49", "clab-4l2s-s1:e1-3"]
-    - endpoints: ["clab-4l2s-l3:e1-48", "clab-4l2s-s2:e1-3"]
-    - endpoints: ["clab-4l2s-l4:e1-49", "clab-4l2s-s1:e1-4"]
-    - endpoints: ["clab-4l2s-l4:e1-48", "clab-4l2s-s2:e1-4"]
+    - endpoints: ["clab-4l2s-l1:e1-50", "clab-4l2s-s1:e1-1"]
+    - endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s2:e1-1"]
+    - endpoints: ["clab-4l2s-l2:e1-50", "clab-4l2s-s1:e1-2"]
+    - endpoints: ["clab-4l2s-l2:e1-49", "clab-4l2s-s2:e1-2"]
+    - endpoints: ["clab-4l2s-l3:e1-50", "clab-4l2s-s1:e1-3"]
+    - endpoints: ["clab-4l2s-l3:e1-49", "clab-4l2s-s2:e1-3"]
+    - endpoints: ["clab-4l2s-l4:e1-50", "clab-4l2s-s1:e1-4"]
+    - endpoints: ["clab-4l2s-l4:e1-49", "clab-4l2s-s2:e1-4"]
 
   # Override settings for specific devices
   # Overrides can be 'asn', 'loopback' or 'id'

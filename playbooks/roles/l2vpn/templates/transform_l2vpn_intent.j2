@@ -2,6 +2,7 @@
 {% set macvrf = namespace()                                             %}
 {% set macvrf.svc = {}                                                  %}
 {% for svc, svc_spec in l2vpn.items()                                   %}
+{%   if svc_spec._state | default("present") == "present"               %}
 {%      set itf_list = []                                               %}
 {%      set macvrf.node_rejected = False                                            %}
 {%      for htag in svc_spec.node_tags | default([], True)                    %}
@@ -28,6 +29,7 @@
 {%      if itf_list | length > 0                                        %}
 {%          set macvrf.svc = macvrf.svc | combine( { svc: {'itfs': itf_list}}, recursive=True) %}
 {%      endif                                                           %}
+{%   endif                                                              %}
 {% endfor                                                               %}
 
 {% if macvrf.svc | length > 0                                           %} 
@@ -100,7 +102,6 @@ interfaces:
 {%      set svc_spec = l2vpn[svc]                                       %}
 {%          for itf in macvrf.svc[svc]['itfs']                          %}
     {{ itf }}:
-        _state: {{ svc_spec._state|default('present') }}
         vlan_tagging: true
 {%          endfor                                                      %}
 {%      endfor                                                          %}

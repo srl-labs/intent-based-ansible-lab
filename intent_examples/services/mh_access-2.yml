@@ -1,0 +1,20 @@
+mh-2: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id farbic wide 
+  lag_id: lag2
+  mh_mode: all-active # all-active or single-active
+  description: mh-2:LAG1
+  lacp_interval: FAST
+  interface_tags: # interfaces must be tagged with ANY tags specified in interface_tags
+    - mh-2
+  lacp: true
+  vlan_tagging: true
+  min_links: 1
+mh-3: # ID used to construct ESI <prefix>:<id>:<lag_id>, lag_id per rack, id farbic wide 
+  lag_id: lag1
+  mh_mode: all-active # all-active or single-active
+  description: mh-3:LAG1
+  lacp_interval: FAST
+  interface_tags: # interfaces must be tagged with ANY tags specified in interface_tags
+    - mh-3
+  lacp: true
+  vlan_tagging: true
+  min_links: 1

@@ -1,0 +1,10 @@
+subnet-1:
+  id: 101
+  type: mac-vrf
+  description: subnet-1
+  proxy_arp: true
+  interface_tags:
+    - _mh-1     # interfaces created by mh_access intent 'mh-1' are tagged with '_mh-1'
+  export_rt: 100:101
+  import_rt: 100:101
+  vlan: 100

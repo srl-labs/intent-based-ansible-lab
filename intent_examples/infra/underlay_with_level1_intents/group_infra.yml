@@ -1,6 +1,6 @@
 leaf:
   interfaces:
-    ethernet-1/{1..4,10,48..49}:
+    ethernet-1/{1..4,10,49..50}:
       admin_state: enable
     ethernet-1/{1..4,10}:
       vlan_tagging: yes
@@ -14,7 +14,7 @@ leaf:
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
-      ethernet-1/{48..49}.0:
+      ethernet-1/{49..50}.0:
         admin_state: enable
         desired_min_tx_interval: 100000
         detection_multiplier: 3
@@ -23,7 +23,7 @@ leaf:
     default:
       interfaces:
         - system0.0
-        - ethernet-1/{48..49}.0
+        - ethernet-1/{49..50}.0
       autonomous-system: "{{ asn }}"
       router-id: "{{ router_id }}"
       protocols:

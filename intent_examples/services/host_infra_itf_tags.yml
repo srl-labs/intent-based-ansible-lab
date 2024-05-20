@@ -1,0 +1,38 @@
+clab-4l2s-l1:
+  interfaces:
+    ethernet-1/20:
+      TAGS:
+        - mh-1
+    ethernet-1/30:
+      TAGS:
+        - mh-2
+    ethernet-1/21:
+      TAGS:
+        - mh-4
+clab-4l2s-l2:
+  interfaces:
+    ethernet-1/20:
+      TAGS:
+        - mh-1
+    ethernet-1/30:
+      TAGS:
+        - mh-2
+    ethernet-1/21:
+      TAGS:
+        - mh-4
+clab-4l2s-l3:
+  interfaces:
+    ethernet-1/30:
+      TAGS:
+        - mh-3
+    ethernet-1/20:
+      TAGS:
+        - mh-5
+clab-4l2s-l4:
+  interfaces:
+    ethernet-1/30:
+      TAGS:
+        - mh-3
+    ethernet-1/20:
+      TAGS:
+        - mh-5
