@@ -1,8 +1,8 @@
 clab-4l2s-l1:
   subinterface:
-    ethernet-1/48.0:
-      ipv4_address: 192.168.1.1/31
     ethernet-1/49.0:
+      ipv4_address: 192.168.1.1/31
+    ethernet-1/50.0:
       ipv4_address: 192.168.0.1/31
     system0.0:
       ipv4_address: 192.168.255.1/32
@@ -18,9 +18,9 @@ clab-4l2s-l1:
 #
 clab-4l2s-l2:
   subinterface:
-    ethernet-1/48.0:
-      ipv4_address: 192.168.1.3/31
     ethernet-1/49.0:
+      ipv4_address: 192.168.1.3/31
+    ethernet-1/50.0:
       ipv4_address: 192.168.0.3/31
     system0.0:
       ipv4_address: 192.168.255.2/32
@@ -54,9 +54,9 @@ clab-4l2s-l2:
 ##
 clab-4l2s-l3:
   subinterface:
-    ethernet-1/48.0:
-      ipv4_address: 192.168.1.5/31
     ethernet-1/49.0:
+      ipv4_address: 192.168.1.5/31
+    ethernet-1/50.0:
       ipv4_address: 192.168.0.5/31
     system0.0:
       ipv4_address: 192.168.255.3/32
@@ -72,9 +72,9 @@ clab-4l2s-l3:
 #
 clab-4l2s-l4:
   subinterface:
-    ethernet-1/48.0:
-      ipv4_address: 192.168.1.7/31
     ethernet-1/49.0:
+      ipv4_address: 192.168.1.7/31
+    ethernet-1/50.0:
       ipv4_address: 192.168.0.7/31
     system0.0:
       ipv4_address: 192.168.255.4/32

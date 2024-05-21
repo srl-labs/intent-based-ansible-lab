@@ -15,10 +15,10 @@ leaf:
     ethernet-1/10:
       admin_state: enable
       vlan_tagging: yes
-    ethernet-1/48:
+    ethernet-1/49:
       admin_state: enable
       _tag: isl
-    ethernet-1/49:
+    ethernet-1/50:
       admin_state: enable
       _tag: isl
     irb1:
@@ -31,12 +31,12 @@ leaf:
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
-      ethernet-1/48.0:
+      ethernet-1/49.0:
         admin_state: enable
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
-      ethernet-1/49.0:
+      ethernet-1/50.0:
         admin_state: enable
         desired_min_tx_interval: 100000
         detection_multiplier: 3
@@ -45,8 +45,8 @@ leaf:
     default:
       interfaces:
         - system0.0
-        - ethernet-1/48.0
         - ethernet-1/49.0
+        - ethernet-1/50.0
       autonomous-system: "{{ asn }}"
       router-id: "{{ router_id }}"
       protocols:
@@ -58,11 +58,11 @@ leaf:
             area:
               0.0.0.1:
                 interfaces:
-                  ethernet-1/48.0:
+                  ethernet-1/49.0:
                     interface-type: point-to-point
                     hello-interval: 10
                     enable-bfd: false
-                  ethernet-1/49.0:
+                  ethernet-1/50.0:
                     interface-type: point-to-point
                   system0.0:
                     passive: true
