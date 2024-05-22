@@ -7,7 +7,7 @@ mgmt:
 topology:
   kinds:
     srl:
-      image: ghcr.io/nokia/srlinux:24.3.1
+      image: ghcr.io/nokia/srlinux:24.3.2
       #image: ghcr.io/nokia/srlinux:23.10.2
     linux:
       image: ghcr.io/hellt/network-multitool
@@ -67,7 +67,7 @@ topology:
     s2:
       kind: srl
       type: ixrd3l
-      #type: ixrh2
+#      type: ixrh2
       mgmt-ipv4: 172.20.21.102
       labels:
         role: spine
@@ -152,18 +152,18 @@ topology:
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.3.254
   links:
-    - endpoints: ["s1:e1-57", "d1:eth3"]
-    - endpoints: ["s1:e1-121", "d2:eth3"]
-    - endpoints: ["s2:e1-57", "d1:eth2"]
-    - endpoints: ["s2:e1-121", "d2:eth2"]
-    - endpoints: ["l1:e1-49", "s1:e1-1"]
-    - endpoints: ["l1:e1-48", "s2:e1-1"]
-    - endpoints: ["l2:e1-49", "s1:e1-2"]
-    - endpoints: ["l2:e1-48", "s2:e1-2"]
-    - endpoints: ["l3:e1-49", "s1:e1-3"]
-    - endpoints: ["l3:e1-48", "s2:e1-3"]
-    - endpoints: ["l4:e1-49", "s1:e1-4"]
-    - endpoints: ["l4:e1-48", "s2:e1-4"]
+    - endpoints: ["s1:e1-32", "d1:eth3"]
+    - endpoints: ["s1:e1-31", "d2:eth3"]
+    - endpoints: ["s2:e1-32", "d1:eth2"]
+    - endpoints: ["s2:e1-31", "d2:eth2"]
+    - endpoints: ["l1:e1-50", "s1:e1-1"]
+    - endpoints: ["l1:e1-49", "s2:e1-1"]
+    - endpoints: ["l2:e1-50", "s1:e1-2"]
+    - endpoints: ["l2:e1-49", "s2:e1-2"]
+    - endpoints: ["l3:e1-50", "s1:e1-3"]
+    - endpoints: ["l3:e1-49", "s2:e1-3"]
+    - endpoints: ["l4:e1-50", "s1:e1-4"]
+    - endpoints: ["l4:e1-49", "s2:e1-4"]
     - endpoints: ["cl121:eth1", "l1:e1-20"]
     - endpoints: ["cl121:eth2", "l2:e1-20"]
     - endpoints: ["cl122:eth1", "l1:e1-21"]

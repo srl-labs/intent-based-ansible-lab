@@ -44,14 +44,14 @@ fabric:
   # Spine specific configuration, defines which ports can be used for ISLs
   spine:
     clab-4l2s-s[1-2]:
-      isl-ports: ethernet-1/[1-128]
+      isl-ports: ethernet-1/[1-32]
 
   # Physical cabling layout between network devices
   fabric_cabling:
-    - endpoints: ["clab-4l2s-s1:e1-57", "clab-4l2s-d1:1/1/c3/1"]
-    - endpoints: ["clab-4l2s-s1:e1-121", "clab-4l2s-d2:1/1/c3/1"]
-    - endpoints: ["clab-4l2s-s2:e1-57", "clab-4l2s-d1:1/1/c2/1"]
-    - endpoints: ["clab-4l2s-s2:e1-121", "clab-4l2s-d2:1/1/c2/1"]
+    - endpoints: ["clab-4l2s-s1:e1-32", "clab-4l2s-d1:1/1/c3/1"]
+    - endpoints: ["clab-4l2s-s1:e1-31", "clab-4l2s-d2:1/1/c3/1"]
+    - endpoints: ["clab-4l2s-s2:e1-32", "clab-4l2s-d1:1/1/c2/1"]
+    - endpoints: ["clab-4l2s-s2:e1-31", "clab-4l2s-d2:1/1/c2/1"]
     - endpoints: ["clab-4l2s-l1:e1-50", "clab-4l2s-s1:e1-1"]
     - endpoints: ["clab-4l2s-l1:e1-49", "clab-4l2s-s2:e1-1"]
     - endpoints: ["clab-4l2s-l2:e1-50", "clab-4l2s-s1:e1-2"]

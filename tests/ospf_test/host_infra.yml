@@ -98,9 +98,9 @@ clab-4l2s-s1:
       ipv4_address: 192.168.0.4/31
     ethernet-1/4.0:
       ipv4_address: 192.168.0.6/31
-    ethernet-1/57.0:
+    ethernet-1/32.0:
       ipv4_address: 192.168.0.8/31
-    ethernet-1/121.0:
+    ethernet-1/31.0:
       ipv4_address: 192.168.0.10/31
     system0.0:
       ipv4_address: 192.168.255.101/32
@@ -132,9 +132,9 @@ clab-4l2s-s2:
       ipv4_address: 192.168.1.4/31
     ethernet-1/4.0:
       ipv4_address: 192.168.1.6/31
-    ethernet-1/57.0:
+    ethernet-1/32.0:
       ipv4_address: 192.168.1.8/31
-    ethernet-1/121.0:
+    ethernet-1/31.0:
       ipv4_address: 192.168.1.10/31
     system0.0:
       ipv4_address: 192.168.255.102/32

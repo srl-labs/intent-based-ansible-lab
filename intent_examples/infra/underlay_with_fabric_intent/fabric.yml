@@ -38,7 +38,7 @@ fabric:
   # Spine specific configuration, defines which ports can be used for ISLs
   spine:
     clab-4l2s-s[1-2]:
-      isl-ports: ethernet-1/[1-128]
+      isl-ports: ethernet-1/[1-32]
 
   # Physical cabling layout between network devices
   fabric_cabling:

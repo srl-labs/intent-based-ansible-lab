@@ -72,8 +72,8 @@ leaf:
               peer_group: overlay
             192.168.255.102:
               peer_group: overlay
-#          ipv4:
-#            admin_state: enable
+          ipv4:
+            admin_state: enable
           group:
             overlay:
               peer_as: "{{ overlay_asn }}"
@@ -112,10 +112,10 @@ spine:
     ethernet-1/4:
       admin_state: enable
       _tag: isl
-    ethernet-1/57:
+    ethernet-1/31:
       admin_state: enable
       _tag: isl
-    ethernet-1/121:
+    ethernet-1/32:
       admin_state: enable
       _tag: isl
     system0:
@@ -147,12 +147,12 @@ spine:
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
-      ethernet-1/57.0:
+      ethernet-1/31.0:
         admin_state: enable
         desired_min_tx_interval: 100000
         detection_multiplier: 3
         required_min_rx_interval: 100000
-      ethernet-1/121.0:
+      ethernet-1/32.0:
         admin_state: enable
         desired_min_tx_interval: 100000
         detection_multiplier: 3
@@ -165,8 +165,8 @@ spine:
         - ethernet-1/2.0
         - ethernet-1/3.0
         - ethernet-1/4.0
-        - ethernet-1/57.0
-        - ethernet-1/121.0
+        - ethernet-1/31.0
+        - ethernet-1/32.0
       autonomous-system: "{{ asn }}"
       router-id: "{{ router_id }}"
       protocols:
@@ -186,15 +186,15 @@ spine:
                     interface-type: point-to-point
                   ethernet-1/4.0:
                     interface-type: point-to-point
-                  ethernet-1/57.0:
+                  ethernet-1/31.0:
                     interface-type: point-to-point
-                  ethernet-1/121.0:
+                  ethernet-1/32.0:
                     interface-type: point-to-point
                   system0.0:
                     passive: true
         bgp:
-#          ipv4:
-#            admin_state: enable
+          ipv4:
+            admin_state: enable
           neighbor:
             192.168.255.1:
               peer_group: overlay

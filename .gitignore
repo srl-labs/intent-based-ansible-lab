@@ -10,4 +10,4 @@ startup
 __pycache__/
 *.py[cod]
 config*
-intent
+intent/

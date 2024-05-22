@@ -55,6 +55,7 @@ srl:
               protocol: bgp-evpn
             action:
               policy-result: accept
+leaf:
   acl_filters:
     ipv4-filter1:
       description: "ACL for loopbacks"
