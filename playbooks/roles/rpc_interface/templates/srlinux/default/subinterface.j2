@@ -1,0 +1,72 @@
+#jinja2: lstrip_blocks: "True"
+{%- for subif, prop in subinterface.items() %}
+{% if prop._state|default('present') != 'deleted' %}
+{% set l = subif.split('.') %}
+- path: /interface[name={{l[0]}}]/subinterface[index={{l[1]}}]
+  operation: replace
+  value:
+    admin-state: {{ prop.admin_state | default("enable") }}
+    {% if prop.type is defined %}
+    type: {{ prop.type }}
+    {% endif %}
+    {% if "ip-mtu" in prop %}
+    ip-mtu: {{ prop["ip-mtu"] }}
+    {% endif %}
+    {% if prop.vlan is defined %}
+    vlan:
+      encap:
+        {% if prop.vlan == 'untagged' %}
+        untagged: {}
+        {% else %}
+        single-tagged:
+          vlan-id: {{ prop.vlan }}
+        {% endif %}
+    {% endif %}
+    {% if prop.ipv4_address is defined %}
+    ipv4:
+      admin-state: enable
+      address:
+      - ip-prefix: {{prop.ipv4_address }}
+      {% if prop.anycast_gw is defined %}
+        anycast-gw: true
+        primary: []
+      {% endif %}
+    {% endif %}
+    {% if prop.ipv6_address is defined %}
+    ipv6:
+      admin-state: enable
+      address:
+      - ip-prefix: {{prop.ipv6_address }}
+      {% if prop.anycast_gw is defined %}
+        anycast-gw: true
+        primary: []
+      {% endif %}
+    {% endif %}
+    {% if prop.arp | default(false) %}
+      arp:
+        learn-unsolicited: true
+        host-route:
+          populate:
+          - route-type: dynamic
+        evpn:
+          advertise:
+          - route-type: dynamic
+        timeout: {{ prop.arp_timeout | default(14400) }}
+    {% endif %}
+    {% if prop.ipv6 is defined %}
+    ipv6:
+      admin-state: enable
+      {% if prop.ipv6.ra is defined %}
+         {% if prop.ipv6.ra == 'enable' %}
+      router-advertisement:
+        router-role: 
+          admin-state: enable
+         {% endif %}
+      {% endif %}
+    {% endif %}
+    {% if prop.anycast_gw is defined %}
+    anycast-gw: {}
+    {% endif %}
+
+{% endif %}
+{% endfor %}

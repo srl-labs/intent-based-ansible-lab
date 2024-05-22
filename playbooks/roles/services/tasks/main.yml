@@ -1,0 +1,23 @@
+- name: "Load multi-homed access intent for ENV:{{ env }}"
+  vars:
+    look_in: "{{ intent_dir }}"
+    files_matching: mh_access
+    varname: mh_access
+  ansible.builtin.include_role:
+    name: utils_load_intent
+
+- name: "Load l2vpn intents for ENV:{{ env }}"
+  vars:
+    look_in: "{{ intent_dir }}"
+    files_matching: l2vpn
+    varname: l2vpn
+  ansible.builtin.include_role:
+    name: utils_load_intent
+
+- name: "Load l3vpn intents for ENV:{{ env }}"
+  vars:
+    look_in: "{{ intent_dir }}"
+    files_matching: l3vpn
+    varname: l3vpn
+  ansible.builtin.include_role:
+    name: utils_load_intent

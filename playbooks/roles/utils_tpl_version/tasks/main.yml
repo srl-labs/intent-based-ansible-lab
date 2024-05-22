@@ -1,0 +1,19 @@
+- name: Check available template versions
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ calling_path + '/templates/' + platform + '/' + item }}"
+  register: dirs
+  loop:
+    - "{{ sw_version }}"
+    - "{{ sw_version | regex_replace('(\\.R?\\d+$)', '') }}"
+    - "{{ sw_version | regex_replace('(\\.\\d+\\.R?\\d+$)', '') }}"
+    - "default"
+
+- name: Set template version
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    tpl_base: "{{ dirs.results[3].stat | combine(dirs.results[2].stat, dirs.results[1].stat, dirs.results[0].stat) }}"
+  failed_when: not tpl_base.isdir
+
+# - debug:
+#     msg: "Using template {{ tpl_base.path }}"

@@ -1,0 +1,10 @@
+#jinja2: lstrip_blocks: "True"
+{% if network_instance is defined and network_instance is not none %}
+{% for ni in running_config['srl_nokia-network-instance:network-instance'] %}
+{% if ni.name not in purge_exclude['network_instance'] %}
+{% if ni.name not in network_instance %}
+- path: /network-instance[name={{ ni.name }}]
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}

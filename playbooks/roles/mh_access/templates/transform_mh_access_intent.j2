@@ -1,0 +1,75 @@
+#jinja2: lstrip_blocks: "True"
+{% set mh = namespace()     %}
+{% set mh.access = {} %}
+{% for mh_id, mh_spec in mh_access.items()                                   %}
+{%      set itf_list = []                                                    %}
+{%      set mh.node_rejected = False                                            %}
+{%      for htag in mh_spec.node_tags | default([], True)                    %}
+{%          if not htag in TAGS | default([], True) %}
+{%              set mh.node_rejected = True                                     %}
+{%          endif                                                            %}
+{%      endfor                                                               %}
+{%      if not mh.node_rejected                                                 %}
+{%          if 'interface_list' in mh_spec                                       %}
+{%              if inventory_hostname in mh_spec.interface_list | default({}, True) %}
+{%                  for itf in mh_spec.interface_list[inventory_hostname]           %}
+{%                      set _ = itf_list.append(itf)                                %}
+{%                  endfor                                                          %}
+{%              endif                                                               %}
+{%          endif                                                               %}
+{%          for tag in mh_spec.interface_tags | default([], True)               %}
+{%              for itf, itf_spec in interfaces.items()                         %}
+{%                  if tag in itf_spec.TAGS | default([], True)                %}
+{%                      set _ = itf_list.append(itf)                            %}
+{%                  endif                                                       %}
+{%              endfor                                                          %}
+{%          endfor                                                              %}
+{%      endif                                                               %}
+{%      if itf_list | length > 0                                            %}
+{%          set mh.access = mh.access | combine( {mh_id: {'itfs': itf_list}}, recursive=True) %}
+{%      endif                                                               %}
+{%  endfor                                                                  %}
+
+{% if mh.access | length > 0                                                %} 
+interfaces: 
+{%      for mh_id in mh.access                                              %}
+{%          set mh_spec = mh_access[mh_id]                                  %}    
+    {{ mh_spec.lag_id }}:
+        _state: {{ mh_spec._state|default('present') }}
+        vlan_tagging: {{ mh_spec.vlan_tagging | default('false') }}
+        min_links: {{ mh_spec.min_links | default(1) }}
+        TAGS: {{ "_" + mh_id }}
+        admin_state: enable
+        description: {{ mh_spec.description | default('') }}
+        lacp:
+            mode: ACTIVE
+            interval: {{ mh_spec.lacp_interval | default('SLOW') }}
+            system_priority: {{ mh_spec.system_priority | default(32768) }}
+{%          set def_sysid = "00:1a:60:00:00:%02d" | format(mh_spec.lag_id.split('lag')[1] | int ) %}
+            system_id: {{ mh_spec.system_id | default(def_sysid) }}
+{%          if mh_spec.mh_mode | default('all-active') == 'single-active'       %}
+        stby_signaling: {{ mh_spec.stby_signaling | default('lacp') }}
+{%          endif                                                               %}
+{%          for itf in mh.access[mh_id].itfs                                    %}
+    {{ itf }}:
+        _state: {{ mh_spec._state|default('present') }}
+        admin_state: enable
+        description: {{ mh_spec.description | default('') }}
+        lag_id: {{ mh_spec.lag_id }}
+        reload_delay: {{ mh_spec.reload_delay | default(30) }}
+{%          endfor                                                              %}
+{%      endfor                                                                  %}
+system:
+    ethernet_segments:
+{%      for mh_id in mh.access                                                  %}
+{%          set mh_spec = mh_access[mh_id]                                      %}
+{%          set sfx_1 = "%02d" | format(mh_spec.lag_id.split('lag')[1]|int )    %}
+{%          set sfx_2 = "%02d" | format(mh_id.split('-')[1]|int )               %}
+        ES-{{ sfx_2 }}:
+            admin_state: enable
+            esi: {{ "00:" + sfx_1 + ":" + sfx_2 + ":00:00:00:66:00:" + sfx_1 + ":" + sfx_2 }}
+            interface: {{ mh_spec.lag_id }}
+            _state: {{ mh_spec._state|default('present') }}
+            mh_mode: {{mh_spec.mh_mode | default('all-active') }}
+{%      endfor                                                                  %}
+{% endif                                                                        %}

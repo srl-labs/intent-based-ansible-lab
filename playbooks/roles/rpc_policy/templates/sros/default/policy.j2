@@ -1,0 +1,77 @@
+#jinja2: lstrip_blocks: "True"
+{% for pfx_set, pfx_spec in (routing_policy.prefix_set | default({})).items() %}
+- path: /policy-options/prefix-list[name={{pfx_set}}]
+  operation: replace
+  value:
+    prefix:
+    {% for pfx_entry in pfx_spec.prefix %}
+      - ip-prefix: {{ pfx_entry['ip-prefix'] }}
+      {% if pfx_entry['mask-length-range'] is defined %}
+        type: range
+        start-length: {{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\1') }}
+        end-length: {{ pfx_entry['mask-length-range'] | ansible.builtin.regex_replace('^(\\d+)\\.\\.(\\d+)$', '\\2') }}
+      {% else %}
+        type: exact
+      {% endif %}
+    {% else %}
+      []
+    {% endfor %}
+{% endfor %}
+{% for community_name, community_spec in (routing_policy.community_set | default({})).items() %}
+- path: /policy-options/community[name={{community_name}}]
+  operation: replace
+  value:
+    member:
+      {% for member in community_spec.member %}
+      - member: "{{ member }}"
+      {% endfor %}
+{% endfor %}
+{% for r_pol, pol_spec in (routing_policy.policy | default({})).items() %}
+- path: /policy-options/policy-statement[name={{r_pol}}]
+  operation: replace
+  value:
+    entry:
+    {% for stmt in pol_spec.statement | default([]) %}
+      - entry-id: {{ stmt.name }}
+      {% if stmt.match['prefix-set'] is defined or stmt.match.protocol is defined or stmt.match.bgp['community-set'] is defined %}
+        from:
+        {%if stmt.match['prefix-set'] is defined %}
+          prefix-list: {{ stmt.match['prefix-set'] }}
+        {% endif %}
+        {%if stmt.match.protocol is defined %}
+          protocol:
+            name: {{ stmt.match.protocol }}
+        {% endif %}
+        {%if stmt.match.bgp['community-set'] is defined %}
+          community:
+            name: {{ stmt.match.bgp['community-set'] }}
+        {% endif %}
+      {% endif %}
+      {% if stmt.action['policy-result'] is defined or stmt.action.bgp.communities is defined %}
+        action:
+        {% if stmt.action['policy-result'] is defined %}
+          action-type: {{ stmt.action['policy-result'] }}
+        {% endif %}
+        {% if stmt.action.bgp.communities is defined %}
+          community:
+          {% for k, v in stmt.action.bgp.communities.items() %}
+            {{k}}: {{v}}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    {% else %}
+      []
+    {% endfor %}
+    {% if pol_spec['default-action'] is defined %}
+    default-action:
+      {% if pol_spec['default-action']['policy-result'] is defined %}
+      action-type: {{ pol_spec['default-action']['policy-result'] }}
+      {% endif %}
+      {% if pol_spec['default-action'].bgp.communities is defined %}
+      community:
+        {% for k, v in pol_spec['default-action'].bgp.communities.items() %}
+        {{k}}: {{v}}
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+{% endfor %}

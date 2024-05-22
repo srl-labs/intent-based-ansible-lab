@@ -1,0 +1,139 @@
+#- name: DEBUG print intent
+#  ansible.builtin.debug:
+#    var: intent
+
+#- name: DEBUG save intent
+#  ansible.builtin.copy:
+#    content: "{{ intent | to_yaml  }}"
+#    dest: "/tmp/{{ inventory_hostname }}_intent.yml"
+#  delegate_to: localhost
+#  changed_when: false
+#  check_mode: false
+
+- name: "Generate config for /system"
+  ansible.builtin.include_role:
+    name: rpc_system
+  when: intent.system is defined and intent.system is not none
+
+- name: "Generate config for /interface"
+  ansible.builtin.include_role:
+    name: rpc_interface
+  when: intent.subinterface is defined
+
+- name: "Generate config for /network-instance"
+  ansible.builtin.include_role:
+    name: rpc_network-instance
+  when: intent.network_instance | type_debug == 'dict'
+
+- name: "Generate config for /routing-policy"
+  ansible.builtin.include_role:
+    name: rpc_policy
+  when: intent.routing_policy is defined
+
+- name: "Generate config for /bfd"
+  ansible.builtin.include_role:
+    name: rpc_bfd
+  when: intent.bfd is defined
+
+- name: "Generate config for /acl"
+  ansible.builtin.include_role:
+    name: rpc_acl
+  when: intent.acl_filters is defined and intent.acl_filters | length > 0
+
+- name: Initialize intent var
+  ansible.builtin.set_fact:
+    intent: {}
+  when: intent is undefined # this may happen if a pb-run is partial, e.g. l2vpn only, and no services are defined, e.g. spines
+
+## this task is pruning resources from the device that are not in the intent
+- name: Generate Delete sets for implicit pruning
+  delegate_to: localhost
+  vars:
+    purge_exclude:
+      network_instance:
+        - mgmt # never purge mgmt network-instance
+      interfaces:
+        - mgmt0
+      subinterface:
+        - mgmt0.0
+  ansible.builtin.set_fact:
+    delete: "{{ delete + lookup('template', '{{platform}}/{{item}}_purge.j2', template_vars=intent) | from_yaml | default([], true) }}"
+    cacheable: true
+  loop: "{{ purgeable }}"
+  when:
+    - purge | default(true) | bool
+    - ansible_run_tags == ["all"] # need full intent to prune resources
+    #  - intent[item] is mapping
+
+## this task deletes resources that are explicitly tagged with '_state: deleted' in the intent
+- name: Generate Delete sets for explicit pruning
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    delete: "{{ delete + lookup('template', '{{platform}}/{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
+    cacheable: true
+  loop: "{{ purgeable }}"
+
+#- name: DEBUG print update
+#  ansible.builtin.debug:
+#    var: update
+
+#- name: DEBUG print replace
+#  ansible.builtin.debug:
+#    var: replace
+
+#- name: DEBUG print delete
+#  ansible.builtin.debug:
+#    var: delete
+
+- name: Build XML
+  delegate_to: localhost
+  build_sros_netconf_editconfig_xml:
+    update: "{{ update }}"
+    replace: "{{ replace }}"
+    delete: "{{ delete }}"
+  register: output
+  when: platform == 'sros'
+
+#- name: Pretty format
+#  community.general.xml:
+#    xmlstring: "{{ output.xmlstring }}"
+#    pretty_print: yes
+#  register: pretty
+#  when: platform == 'sros'
+#  changed_when: false
+
+#- name: DEBUG print XML
+#  ansible.builtin.debug:
+#    msg: "{{ pretty.xmlstring.split('\n') }}"
+#  when: platform == 'sros'
+
+- name: Deploy configuration to device (SRLinux)
+  nokia.srlinux.config:
+    update: "{{ update }}"
+    replace: "{{ replace }}"
+    delete: "{{ delete }}"
+    save_when: "{% if save_startup | default(false) | bool %}always{% else %}never{% endif %}"
+    confirm_timeout: "{{ commit_confirm_timeout }}"
+  when: platform == 'srlinux'
+  register: config_push
+
+- ansible.builtin.set_fact:
+    config_changed: "{{ config_push.changed }}"
+  when: platform == 'srlinux'
+
+- name: Deploy configuration to device (SROS)
+  ansible.netcommon.netconf_config: 
+    content: "{{ output.xmlstring }}"
+    save: "{% if save_startup | default(false) | bool %}true{% else %}false{% endif %}"
+  when: platform == 'sros'
+
+- name: Show playbook stats
+  ansible.builtin.set_stats:
+    data:
+      network_instance: "{{ intent.network_instance | default({}, true) | length }}"
+      subinterface: "{{ intent.subinterface | default({}, true) | length }}"
+      routing_policy: "{{ intent.routing_policy | default({}, true) | length }}"
+      sw_version: "{{ sw_version }}"
+    per_host: true
+  when:
+    - ansible_run_tags == ["all"]

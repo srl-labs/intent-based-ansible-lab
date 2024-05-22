@@ -1,0 +1,248 @@
+{
+    "type": "object",
+    "required": ["fabric", "sizing"],
+    "additionalProperties": false,
+    "properties": {
+        "fabric": {
+            "type": "object",
+            "required": ["fabric_cabling", "overlay_asn", "underlay_routing", "rr", "loopback"],
+            "additionalProperties": false,
+            "properties": {
+                "underlay_routing": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "bgp": {
+                            "type": "object",
+                            "required": ["asn"],
+                            "properties": {
+                                "bgp-unnumbered": {
+                                    "type": "boolean"
+                                },
+                                "asn": {
+                                    "oneOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "pattern": "^\\d+(-|\\.\\.)\\d+$"
+                                            }
+                                        },
+                                        {
+                                            "type": "string",
+                                            "pattern": "^\\d+(-|\\.\\.)\\d+$"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "ospf": {
+                            "type": "object",
+                            "required": ["version", "area"],
+                            "properties": {
+                                "version": {
+                                    "type": "string",
+                                    "enum": ["v2"]
+                                },
+                                "area": {
+                                    "type": "string",
+                                    "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"
+                                }
+                            }
+                        }
+                    },
+                    "oneOf": [
+                        {
+                            "required": ["bgp"]
+                        },
+                        {
+                            "required": ["ospf"]
+                        }
+                    ]
+                },
+                "overlay_asn": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 4294967294
+                },
+                "rr": {
+                    "type": "object",
+                    "required": ["location"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "enum": ["superspine", "spine", "borderleaf", "external"]
+                        },
+                        "neighbor_list": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "ipv4"
+                            }
+                        }
+                    },
+                    "if": {
+                        "properties": {
+                            "location": { "const": "external" }
+                        },
+                        "required": ["location"]
+                    },
+                    "then": {"required": ["neighbor_list"]}
+                },
+                "p2p": {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "ipv4network"
+                            }
+                        },
+                        {
+                            "type": "string",
+                            "format": "ipv4network"
+                        }
+                    ]
+                },
+                "loopback": {
+                    "type": "string",
+                    "format": "ipv4network"
+                },
+                "fabric_cabling": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["endpoints"],
+                        "properties": {
+                            "endpoints": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "pattern": "^.*:(e?\\d+[/-]\\d+|\\d+[/-]\\d+[/-]c?\\d+([/-]\\d+)?)$"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                            }
+                        }
+                    }
+                },
+                "spine": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*" : {
+                            "type": "object",
+                            "required": ["isl-ports"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "isl-ports": {
+                                    "oneOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "pattern": "^ethernet-\\d+/(\\d+|\\[\\d+-\\d+\\])$"
+                                            }
+                                        },
+                                        {
+                                            "type": "string",
+                                            "pattern": "^ethernet-\\d+/(\\d+|\\[\\d+-\\d+\\])$"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "overrides": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*" : {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "asn": {
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "maximum": 4294967294
+                                },
+                                "loopback": {
+                                    "type": "string",
+                                    "format": "ipv4"
+                                },
+                                "id": {
+                                    "type": "number",
+                                    "minimum": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "underlay_routing": {
+                                "required": ["bgp"],
+                                "properties": {
+                                    "bgp": {
+                                        "required": ["bgp-unnumbered"],
+                                        "properties": {
+                                            "bgp-unnumbered": { "const": true }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "then": {
+                        "not": {"required": ["p2p"]}
+                    },
+                    "else": {
+                        "required": ["p2p", "spine"]
+                    }
+                }
+            ]
+        },
+        "sizing": {
+            "type": "object",
+            "required": ["max_pod", "max_dcgw", "max_superspine", "max_spine_in_pod", "max_borderleaf_in_pod", "max_leaf_in_pod", "max_isl_per_spine", "max_isl_per_dcgw"],
+            "additionalProperties": false,
+            "properties": {
+                "max_pod": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_dcgw": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_superspine": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_spine_in_pod": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_borderleaf_in_pod": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_leaf_in_pod": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_isl_per_spine": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "max_isl_per_dcgw": {
+                    "type": "number",
+                    "minimum": 0
+                }
+            }
+        }
+    }
+}

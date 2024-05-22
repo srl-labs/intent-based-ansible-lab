@@ -1,0 +1,12 @@
+ipvrf-1:
+  id: 2001
+  type: ip-vrf
+  arp_timeout: 280
+  description: ipvrf-1::cust:Acme
+  snet_list:
+    - macvrf: subnet-1
+      gw: 10.0.1.254/24
+    - macvrf: subnet-2
+      gw: 10.0.2.254/24
+  export_rt: 100:2001
+  import_rt: 100:2001

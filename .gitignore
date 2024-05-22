@@ -1,9 +1,13 @@
-/clab*
+/*clab*
 .venv
 *log
 *sav
 license*
 *.bak
-filter*
 startup
 .vscode
+/vault*
+__pycache__/
+*.py[cod]
+config*
+intent/

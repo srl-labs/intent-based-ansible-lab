@@ -1,0 +1,11 @@
+subnet-2:
+  id: 102
+  type: mac-vrf
+  description: subnet-2
+  proxy_arp: true
+  interface_tags:
+    - _mh-4
+    - _mh-5
+  export_rt: 100:102
+  import_rt: 100:102
+  vlan: 200

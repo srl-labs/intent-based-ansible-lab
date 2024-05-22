@@ -1,0 +1,172 @@
+#jinja2: lstrip_blocks: "True"
+routing_policy:
+  prefix_set:
+    loopbacks:
+      prefix:
+      {% for prefix in preprocessed_fabric.fabric.loopback %}
+        - ip-prefix: {{ prefix }}
+          mask-length-range: "32..32"
+      {% else %}
+        []
+      {% endfor %}
+
+bfd:
+  interfaces:
+    system0.0:
+      admin_state: enable
+      desired_min_tx_interval: 100000
+      detection_multiplier: 3
+      required_min_rx_interval: 100000
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+    {{ iface }}.0:
+      admin_state: enable
+      desired_min_tx_interval: 100000
+      detection_multiplier: 3
+      required_min_rx_interval: 100000
+  {% endfor %}
+interfaces:
+  {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] %}
+  irb1:
+  {% endif %}
+  system0:
+    admin_state: enable
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+  {{iface}}:
+    admin_state: enable
+    _tag: isl
+  {% endfor %}
+
+subinterface:
+  system0.0:
+    ipv4_address: {{ preprocessed_fabric[inventory_hostname].loopback }}/32
+  {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+  {{ iface }}.0:
+    {% if preprocessed_fabric.fabric.underlay_routing == "bgp" and preprocessed_fabric.fabric.bgp_unnumbered %}
+    ipv6:
+      ra: enable
+    {% else %}
+    ipv4_address: {{ preprocessed_fabric[inventory_hostname].isls[iface].p2p_address }}/31
+    {% endif %}
+  {% endfor %}
+
+network_instance:
+  default:
+    {% if preprocessed_fabric.fabric.underlay_routing == "bgp" and preprocessed_fabric.fabric.bgp_unnumbered %}
+    receive-ipv4-check: false
+    {% endif %}
+    interfaces:
+      - system0.0
+      {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+      - {{iface}}.0
+      {% endfor %}
+    {% if preprocessed_fabric.fabric.underlay_routing == "bgp" %}
+    autonomous-system: {{ preprocessed_fabric[inventory_hostname].asn }}
+    {% else %}
+    autonomous-system: {{ preprocessed_fabric.fabric.overlay_asn }}
+    {% endif %}
+    router-id: {{ preprocessed_fabric[inventory_hostname].loopback }}
+    protocols:
+      bgp:
+        ipv4:
+          admin_state: enable
+          {% if preprocessed_fabric.fabric.underlay_routing == "bgp" and preprocessed_fabric.fabric.bgp_unnumbered %}
+          multipath: 8
+          {% endif %}
+        {% if preprocessed_fabric.fabric.underlay_routing == "bgp" and preprocessed_fabric.fabric.bgp_unnumbered %}
+        dynamic:
+          interfaces:
+            {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+            {% for iface in preprocessed_fabric[inventory_hostname].bgp.groups[group].dynamic %}
+            {{ iface }}.0:
+              allow-as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group].dynamic[iface]["allow-as"] }}
+              peer-group: {{ group }}
+            {% endfor %}
+            {% endfor %}
+        {% endif %}
+        neighbor:
+          {% set NEIGHBORS = namespace(found = false) %}
+          {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+          {% for neighbor in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors %}
+          {% set NEIGHBORS.found = true %}
+          {{ neighbor }}:
+            peer_group: {{ group }}
+            {% if "peer_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors[neighbor] %}
+            peer_as: {{preprocessed_fabric[inventory_hostname].bgp.groups[group].neighbors[neighbor]["peer_as"]}}
+            {%endif%}
+          {% endfor %}
+          {% endfor %}
+          {% if not NEIGHBORS.found %}
+            {}
+          {% endif %}
+        group:
+          {% for group in preprocessed_fabric[inventory_hostname].bgp.groups %}
+          {{ group }}:
+            enable_bfd: true
+            fast_failover: true
+            {% if "local_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            local_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_as"] }}
+            {% elif preprocessed_fabric[inventory_hostname]["role"] == 'dcgw' and preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "underlay" %}
+            local_as: {{ preprocessed_fabric[inventory_hostname].asn }}
+            {% endif %}
+            {% if "local_address" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            local_address: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["local_address"] }}
+            {% endif %}
+            {% if "peer_as" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            peer_as: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["peer_as"] }}
+            {% endif %}
+            {% if "cluster_id" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            cluster_id: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["cluster_id"] }}
+            {% endif %}
+            {% if "description" in preprocessed_fabric[inventory_hostname].bgp.groups[group] %}
+            description: {{ preprocessed_fabric[inventory_hostname].bgp.groups[group]["description"] }}
+            {% endif %}
+            {% if preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "overlay" %}
+            {% if preprocessed_fabric[inventory_hostname]["role"] != 'dcgw' %}
+            export_policy: pass-evpn
+            import_policy: pass-evpn
+            {% else %}
+            vpn_apply_import: true
+            vpn_apply_export: true
+            {% endif %}
+            ipv4:
+              admin_state: disable
+            evpn:
+              admin_state: enable
+            {% elif preprocessed_fabric[inventory_hostname].bgp.groups[group]["type"] == "underlay" %}
+            {% if preprocessed_fabric[inventory_hostname]["role"] in ["leaf", "borderleaf"] %}
+            export_policy: lo-and-servers
+            import_policy: pass-all
+            {% elif preprocessed_fabric[inventory_hostname]["role"] == 'dcgw' %}
+            export_policy: export-to-underlay
+            {% else %}
+            export_policy: pass-all
+            import_policy: pass-all
+            {% endif %}
+            ipv4:
+              admin_state: enable
+            evpn:
+              admin_state: disable
+            {% endif %}
+          {% endfor %}
+      {% if preprocessed_fabric.fabric.underlay_routing == "ospf" %}
+      ospf:
+        default:
+          {% if preprocessed_fabric.fabric.ospf_version == "v2" %}
+          version: ospf-v2
+          {% endif %}
+          {% if preprocessed_fabric[inventory_hostname]["role"] == 'dcgw' %}
+          export_policy: export-to-underlay
+          {% else %}
+          export_policy: export-loopbacks
+          {% endif %}
+          area:
+            {{ preprocessed_fabric.fabric.ospf_area }}:
+              interfaces:
+                system0.0:
+                  passive: true
+                {% for iface in preprocessed_fabric[inventory_hostname].isls %}
+                {{iface}}.0:
+                  enable-bfd: true
+                  interface-type: point-to-point
+                {% endfor %}
+      {% endif %}

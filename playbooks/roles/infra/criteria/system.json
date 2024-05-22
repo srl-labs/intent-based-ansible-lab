@@ -1,0 +1,45 @@
+{
+    "type": "object",
+    "properties": {
+        "mtu": {
+            "type": "object",
+            "properties": {
+                "default-ip-mtu": {
+                    "type": "number",
+                    "minimum": 1280,
+                    "maximum": 9486
+                },
+                "default-l2-mtu": {
+                    "type": "number",
+                    "minimum": 1500,
+                    "maximum": 9500
+                },
+                "default-port-mtu": {
+                    "type": "number",
+                    "minimum": 1500,
+                    "maximum": 9500
+                }
+            }
+        },
+        "lldp": {
+            "type": "object",
+            "properties": {
+                "admin-state": {
+                    "type": "string",
+                    "enum": ["enable", "disable"]
+                }
+            }
+        },
+        "information": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "contact": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

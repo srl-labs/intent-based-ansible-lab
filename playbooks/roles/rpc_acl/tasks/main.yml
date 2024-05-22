@@ -1,0 +1,19 @@
+- name: Get role path
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    my_dir: "{{ role_path }}"
+
+- name: Get template version
+  vars:
+    calling_path: "{{ my_dir }}" # noqa: var-naming[no-role-prefix]
+  ansible.builtin.include_role:
+    name: utils_tpl_version
+
+- name: Generate JSON-RPC data for /acl
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    update: "{{ update + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'update') | ansible.utils.remove_keys(target=['operation']) }}"
+    replace: "{{ replace + lookup('template', template_file, template_vars=intent) | from_yaml | default([], true) | selectattr('operation', 'defined') | selectattr('operation', 'eq', 'replace') | ansible.utils.remove_keys(target=['operation']) }}"
+    cacheable: true
+  vars:
+    template_file: "{{ tpl_base.path + '/acl.j2' }}"

@@ -1,0 +1,63 @@
+- name: "Load host vars for ENV:{{ env }}"
+  vars:
+    look_in: "{{ intent_dir }}"
+    files_matching: host_infra
+    varname: host_intent
+  ansible.builtin.include_role:
+    name: utils_load_intent
+
+- name: "Load group vars for ENV:{{ env }}"
+  vars:
+    look_in: "{{ intent_dir }}"
+    files_matching: group_infra
+    varname: group_intent
+  ansible.builtin.include_role:
+    name: utils_load_intent
+
+- name: Load group intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine(group_intent[item] | expand_ranges, recursive=True) }}"
+  loop: "{{ group_names }}"
+  when: item in group_intent|default({}, true)
+
+- name: Load nodal intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}, true) | combine(host_intent[inventory_hostname] | expand_ranges, recursive=True) }}"
+  when: inventory_hostname in host_intent|default({}, true)
+
+- name: Validate infra intent
+  delegate_to: localhost
+  ansible.utils.validate:
+    data: "{{ intent[item] }}"
+    criteria:
+      - "{{ lookup('file', 'criteria/' + item + '.json') | from_json }}"
+    engine: ansible.utils.jsonschema
+  vars:
+    ansible_jsonschema_draft: draft7
+  loop:
+    - interfaces
+    - subinterface
+    - network_instance
+    - routing_policy
+    - acl_filters
+    - bfd
+    - system
+  when: intent is defined and item in intent
+
+- name: Generate itf descriptions
+  when:
+    - lldp_nbrs is defined
+    - intent._features is defined and intent._features is not none
+    - intent._features.auto_itf_desc is true
+  block:
+    - name: Generate itf descriptions from LLDP state
+      ansible.builtin.set_fact:
+        itf_desc: "{{ lookup('template', template_file, template_vars=intent) | from_yaml }}"
+      vars:
+        template_file: 'set_itf_desc.j2'
+
+    - name: Update intent with generated itf descriptions
+      ansible.builtin.set_fact:
+        intent: "{{ intent | combine(itf_desc, recursive=true) }}"

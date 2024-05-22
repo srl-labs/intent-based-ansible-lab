@@ -1,0 +1,319 @@
+#jinja2: lstrip_blocks: "True"
+{% set NETWORK_INSTANCE = namespace(found = false) %}
+{% set DCGW_BHVPLS_OFFSET = hostvars[inventory_hostname]['dcgw_bhvpls_offset'] | default(10000) | int %}
+{% set ROUTERBASEIFACE = namespace(instances=[]) %}
+{% if running_config.router.interface | type_debug == "list" %}
+{% set ROUTERBASEIFACE.instances = running_config.router.interface %}
+{% elif running_config.router.interface is mapping %}
+{% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
+{% endif %}
+{% set ROUTERBASEOSPF = namespace(instances=[]) %}
+{% if running_config.router.ospf | type_debug == "list" %}
+{% set ROUTERBASEOSPF.instances = running_config.router.ospf %}
+{% elif running_config.router.ospf is mapping %}
+{% set ROUTERBASEOSPF.instances = [running_config.router.ospf] %}
+{% endif %}
+{% for ni, prop in network_instance.items() %}
+  {% if prop._state|default('present') != 'deleted' %}
+    {% if ni == "default" %}
+      {% set NETWORK_INSTANCE.found = true %}
+- path: /router[router-name=Base]
+  operation: update
+  value:
+      {% if (dcgw_unsafe_updates | default(false) | bool) or running_config.router['router-id'] is not defined %}
+    router-id: {{ prop['router-id'] }}
+      {% endif %}
+      {% if running_config.router['autonomous-system'] is not defined %}
+    autonomous-system: 65144
+      {% elif (dcgw_unsafe_updates | default(false) | bool) and running_config.router['autonomous-system'] != 65144 %}{#DIRTY HACK! 65144 is our magic value for it was not managed! If that was the case we forever stick with it...#}
+    autonomous-system: {{ prop['autonomous-system'] }}
+      {% endif %}
+      {% if prop.protocols is defined and prop.protocols is not none %}
+        {% if prop.protocols.ospf is defined %}
+    ospf:
+          {% for instance, instance_spec in prop.protocols.ospf.items() %}
+            {% set running_ospf_instance=(ROUTERBASEOSPF.instances | selectattr('ospf-instance', 'eq', loop.index0 | string) | first | default({})) %}
+      - ospf-instance: {{ loop.index0 }}
+        admin-state: enable
+            {% if (dcgw_unsafe_updates | default(false) | bool) or running_ospf_instance["export-policy"] is not defined %}
+        export-policy: {{ instance_spec.export_policy }}
+            {% endif %}
+            {% if (dcgw_unsafe_updates | default(false) | bool) or running_ospf_instance.timers is not defined %}
+              {% if instance_spec.timers is defined %}
+        timers:
+          incremental-spf-wait: {{ instance_spec.timers["incremental-spf-wait"] | default(200) }}
+                {% if 'lsa-generate' in instance_spec.timers %}
+          lsa-generate:
+            lsa-initial-wait: {{ instance_spec.timers["lsa-generate"]["lsa-initial-wait"] | default(100) }}
+            lsa-second-wait: {{ instance_spec.timers["lsa-generate"]["lsa-second-wait"] | default(200) }}
+            max-lsa-wait: {{ instance_spec.timers["lsa-generate"]["max-lsa-wait"] | default(1000) }}
+                {% endif %}
+                {% if 'spf-wait' in instance_spec.timers %}
+          spf-wait:
+            spf-initial-wait: {{ instance_spec.timers["spf-wait"]["spf-initial-wait"] | default(100) }}
+            spf-second-wait: {{ instance_spec.timers["spf-wait"]["spf-second-wait"] | default(200) }}
+            spf-max-wait: {{ instance_spec.timers["spf-wait"]["spf-max-wait"] | default(1000) }}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% else %}
+      []
+          {% endfor %}
+        {% endif %}
+        {% if prop.protocols.bgp is defined %}
+    bgp:
+      admin-state: enable
+      rapid-withdrawal: true
+      rapid-update:
+        evpn: true
+        {% endif %}
+        {% if prop.protocols.bgp is defined %}
+          {% for group, group_spec in prop.protocols.bgp.group.items() %}
+- path: /router[router-name=Base]/bgp/group[group-name={{ group }}]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    min-route-advertisement: 1
+    peer-ip-tracking: true
+    split-horizon: true
+    ebgp-default-reject-policy:
+      import: false
+    description: {{ group_spec.description|default('no description') }}
+            {% if group_spec.vpn_apply_import is defined %}
+    vpn-apply-import: {{ group_spec.vpn_apply_import }}
+            {% endif %}
+            {% if group_spec.vpn_apply_export is defined %}
+    vpn-apply-export: {{ group_spec.vpn_apply_export }}
+            {% endif %}
+            {% if group_spec.enable_bfd | default(false) %}
+    bfd-liveness: true
+            {% endif %}
+            {% if group_spec.peer_as is defined %}
+    peer-as: {{ group_spec.peer_as }}
+            {% endif %}
+            {% if group_spec.local_as is defined %}
+    local-as:
+      as-number: {{ group_spec.local_as }}
+      prepend-global-as: false
+            {% endif %}
+            {% if group_spec.export_policy is defined %}
+    export:
+      policy: {{ group_spec.export_policy }}
+            {% endif %}
+            {% if group_spec.import_policy is defined %}
+    import:
+      policy: {{ group_spec.import_policy }}
+            {% endif %}
+            {% if group_spec.local_address is defined %}
+    local-address: {{ group_spec.local_address }}
+            {% endif %}
+    family:
+            {% if group_spec.ipv4 is defined %}
+              {% if group_spec.ipv4.admin_state | default('disable') == 'enable' %}
+      ipv4: true
+              {% endif %}
+            {% endif %}
+            {% if group_spec.evpn is defined %}
+              {% if group_spec.evpn.admin_state | default('disable') == 'enable' %}
+      evpn: true
+              {% endif %}
+            {% endif %}
+            {% if prop.protocols.bgp.dynamic is defined %}
+              {% set DYNAMIC = namespace(found=false) %}
+              {% for nbr_itf, nbr_prop in prop.protocols.bgp.dynamic.interfaces.items() %}
+                {% if nbr_prop["peer-group"] == group %}
+                  {% set DYNAMIC.found = true %}
+                {% endif %}
+              {% endfor %}
+              {% if DYNAMIC.found %}
+    dynamic-neighbor:
+      interface:
+                {% for nbr_itf, nbr_prop in prop.protocols.bgp.dynamic.interfaces.items() %}
+                  {% if nbr_prop["peer-group"] == group %}
+                    {% set PORT = nbr_itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+        - interface-name: I{{ PORT }}
+          _tag: true
+          allowed-peer-as:
+                    {% for as in nbr_prop['allow-as'] %}
+            - {{ as }}
+                    {% else %}
+            []
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% for nbr, nbr_spec in prop.protocols.bgp.neighbor.items() %}
+- path: /router[router-name=Base]/bgp/neighbor[ip-address={{ nbr }}]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    group: {{ nbr_spec.peer_group }}
+            {% if nbr_spec.peer_as is defined %}
+    peer-as: {{ nbr_spec.peer_as }}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if prop.protocols.ospf is defined %}
+          {% for instance, instance_spec in prop.protocols.ospf.items() %}
+            {% set OSPFINSTANCE=loop.index0 %}
+            {% for area, area_spec in instance_spec.area.items() %}
+              {% for iface, iface_spec in area_spec.interfaces.items() %}
+                {% set PORT = iface | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+                {% if iface is ansible.builtin.regex('^system0') %}
+                  {% set IFACENAME="system" %}
+                {% else %}
+                  {% set IFACENAME="I" + PORT %}
+                {% endif %}
+- path: /router[router-name=Base]/ospf[ospf-instance={{ OSPFINSTANCE }}]/area[area-id={{ area }}]/interface[interface-name={{ IFACENAME }}]
+  operation: replace
+  value:
+    _tag: {{ IFACENAME != "system" }}
+                {% if iface_spec['interface-type'] is defined %}
+    interface-type: {{ iface_spec['interface-type'] }}
+                {% endif %}
+                {% if iface_spec.passive is defined and iface_spec.passive %}
+    passive: true
+                {% else %}
+    hello-interval: {{ iface_spec['hello-interval']|default(10) }}
+    dead-interval: {{ iface_spec['dead-interval']|default(40) }}
+                {% endif %}
+                {% if iface_spec['enable-bfd']|default(False) %}
+    bfd-liveness: ""
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+      {% if prop.interfaces is defined and prop.interfaces is not none %}
+        {% for itf in prop.interfaces %}
+          {% set PORT = itf | ansible.builtin.regex_replace('^(.*)\\.\\d+$', '\\1') %}
+          {% if itf is ansible.builtin.regex('^system0') %}
+            {% set IFACENAME = 'system' %}
+          {% else %}
+            {% set IFACENAME = 'I' + PORT %}
+          {% endif %}
+- path: /router[router-name=Base]/interface[interface-name={{ IFACENAME }}]
+          {% if IFACENAME == 'system' %}
+            {% if (dcgw_unsafe_updates | default(false) | bool) or ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | length == 0 %}
+  operation: update
+            {% else %}
+  operation: ignore
+            {% endif %}
+          {% else %}
+  operation: replace
+          {% endif %}
+  value:
+          {% if IFACENAME != 'system' %}
+    _tag: true
+    port: {{ PORT }}:0
+          {% endif %}
+    admin-state: enable
+          {% if subinterface[itf].ipv4_address is defined %}
+    ipv4:
+            {% if bfd.interfaces[itf].admin_state | default("disable") == "enable" %}
+      bfd:
+        admin-state: enable
+              {% if bfd.interfaces[itf].desired_min_tx_interval is defined %}
+        transmit-interval: {{ bfd.interfaces[itf].desired_min_tx_interval | int // 1000 }}
+              {% endif %}
+              {% if bfd.interfaces[itf].required_min_rx_interval is defined %}
+        receive: {{ bfd.interfaces[itf].required_min_rx_interval | int // 1000 }}
+              {% endif %}
+              {% if bfd.interfaces[itf].detection_multiplier is defined %}
+        multiplier: {{ bfd.interfaces[itf].detection_multiplier }}
+              {% endif %}
+              {% if bfd.interfaces[itf].max_hop_count is defined %}
+              {% endif %}
+            {% endif %}
+      primary:
+        address: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('address') | string }}
+        prefix-length: {{ subinterface[itf].ipv4_address | ansible.utils.ipv4('prefix') | string }}
+          {% endif %}
+          {% if subinterface[itf].ipv6 is defined %}
+    ipv6:
+      forward-ipv4-packets: true
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% else %}
+      {% if prop.type == 'ip-vrf' %}
+        {% set NETWORK_INSTANCE.found = true %}
+- path: /service/vprn[service-name={{ ni }}]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    customer: 1
+    description: {{ prop.description }}
+    service-id: {{ prop.id }}
+    interface:
+      interface-name: bhvpls
+      admin-state: enable
+      vpls:
+        vpls-name: {{ ni }}-bhvpls
+        evpn-tunnel: ""
+        {% if prop.protocols.bgp_ipvpn is defined %}
+    bgp-ipvpn:
+      mpls:
+        admin-state: enable
+        auto-bind-tunnel:
+          resolution: any
+        route-distinguisher: {{ prop.protocols.bgp_ipvpn.route_distinguisher }}
+        vrf-target:
+          {% if prop.protocols.bgp_ipvpn.export_rt is defined and prop.protocols.bgp_ipvpn.import_rt is defined %}
+          export-community: "target:{{ prop.protocols.bgp_ipvpn.export_rt }}"
+          import-community: "target:{{ prop.protocols.bgp_ipvpn.import_rt }}"
+          {% elif prop.protocols.bgp_ipvpn.community_rt is defined %}
+          community: "target:{{ prop.protocols.bgp_ipvpn.community_rt }}"
+          {% else %}
+          {}
+          {% endif %}
+        {% endif %}
+- path: /service/vpls[service-name={{ ni }}-bhvpls]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    customer: 1
+    description: "{{ prop.description }} BHVPLS"
+    service-id: {{ DCGW_BHVPLS_OFFSET + prop.id }}
+    routed-vpls:
+      vxlan-ipv4-tep-ecmp: true
+        {% if 'bgp_vpn' in prop.protocols %}
+    bgp:
+      bgp-instance: 1
+      route-target:
+        export: "target:{{ prop.protocols.bgp_vpn.export_rt }}"
+        import: "target:{{ prop.protocols.bgp_vpn.import_rt }}"
+        {% endif %}
+        {% if 'bgp_evpn' in prop.protocols %}
+        {% set vxlan_instance = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^vxlan(\\d+)\\.\\d+$', '\\1') %}
+        {% set tunnel_instance = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^(vxlan\\d+)\\.\\d+$', '\\1') %}
+        {% set tunnel_instance_id = prop.protocols.bgp_evpn.vxlan_interface | ansible.builtin.regex_replace('^vxlan\\d+\\.(\\d+)$', '\\1') | int %}
+    vxlan:
+      instance:
+        vxlan-instance: {{ vxlan_instance }}
+        vni: {{ tunnel_interface[tunnel_instance][tunnel_instance_id].ingress_vni }}
+    bgp-evpn:
+      evi: {{ prop.protocols.bgp_evpn.evi }}
+      routes:
+        ip-prefix:
+           advertise: true
+      vxlan:
+        bgp-instance: 1
+        admin-state: enable
+        vxlan-instance: {{ vxlan_instance }}
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if not NETWORK_INSTANCE.found %}
+[]
+{% endif %}

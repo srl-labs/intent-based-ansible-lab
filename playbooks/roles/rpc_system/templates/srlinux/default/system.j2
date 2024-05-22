@@ -1,0 +1,67 @@
+#jinja2: lstrip_blocks: "True"
+- path: /system/lldp
+  operation: replace
+  value:
+    admin-state: {{ system.lldp["admin-state"] | default('enable') }}
+- path: /system/information
+  operation: replace
+  value:
+    location: {{ system.information.location | default('n/a') }}
+    contact: {{ system.information.contact | default('n/a') }}
+- path: /system/network-instance/protocols/bgp-vpn
+  operation: replace
+  value:
+    bgp-instance:
+      - id: 1
+- path: /system/mtu
+  operation: replace
+  value:
+    default-ip-mtu: {{ system.mtu["default-ip-mtu"] | default(9214) }}
+{% if system.mtu is defined and "default-l2-mtu" in system.mtu %}
+    default-l2-mtu: {{ system.mtu["default-l2-mtu"] }}
+{% endif %}
+    default-port-mtu: {{ system.mtu["default-port-mtu"] | default(9232) }}
+{% set ES = namespace(found = false) %}
+{% if system.ethernet_segments is defined and system.ethernet_segments is not none %}
+  {% for es, es_prop in system.ethernet_segments.items() %}
+    {% if es_prop._state | default('present') == 'present' %}
+      {% set ES.found = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% if ES.found %}
+- path: /system/network-instance/protocols/evpn/ethernet-segments/timers
+  operation: replace
+  value:
+    activation-timer: 0
+- path: /system/network-instance/protocols/evpn/ethernet-segments/bgp-instance[id=1]
+  operation: replace
+  value:
+    ethernet-segment:
+  {% for es, es_prop in system.ethernet_segments.items() %}
+    {% if es_prop._state | default('present') == 'present' %}
+      - name: {{ es }}
+        admin-state: {{ es_prop.admin_state|default("enable") }}
+        esi: {{ es_prop.esi }}
+        multi-homing-mode: {{ es_prop.mh_mode|default("all-active") }}
+        df-election:
+        {% if es_prop.mh_mode|default("all-active") == "single-active" %}
+          algorithm:
+            preference-alg:
+              preference-value: 100
+              capabilities:
+                ac-df: exclude
+                non-revertive: true
+            type: preference
+          interface-standby-signaling-on-non-df: {}
+        {% elif es_prop.mh_mode|default("all-active") == "all-active" %}
+          timers:
+            activation-timer: 0
+        {% else %}
+          {}
+        {% endif %}
+        interface:
+          - ethernet-interface: {{ es_prop.interface }}
+    {% endif %}
+  {% endfor %}
+{% endif %}

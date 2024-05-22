@@ -1,0 +1,85 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^.*" : {
+            "type": "object",
+            "required": ["id", "vlan"],
+            "properties": {
+                "id": {
+                    "type": "number"
+                },
+                "_state": {
+                    "type": "string",
+                    "enum": ["deleted", "present"]
+                },
+                "type": {
+                    "type": "string",
+                    "const": "mac-vrf"
+                },
+                "acl_v4_in": {
+                    "type": "array",
+                    "description": "List of ingress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "proxy_arp": {
+                    "type": "boolean"
+                },
+                "proxy_arp_age_time": {
+                    "type": "number"
+                },
+                "mac_limit": {
+                    "type": "number"
+                },
+                "mac_age_time": {
+                    "type": "number",
+                    "minimum": 60,
+                    "maximum": 86400
+                },
+                "acl_v4_out": {
+                    "type": "array",
+                    "description": "List of egress IPv4 ACLs applied to all ports of the mac-vrf. Platform may only allow one ACL to be applied to an interface",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "interface_list": {
+                    "type": "object",
+                    "patternProperties" : {
+                        ".+": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "pattern": "^(ethernet-[^\\.]+)$|^(lag\\d+)$"
+                            }
+                        }
+                    }
+                },
+                "interface_tags": {
+                    "type": "array",
+                    "items" : {
+                        "type": "string"
+                    }
+                },
+                "export_rt": {
+                    "type": "string",
+                    "pattern": "^\\d+:\\d+"
+                },
+                "vlan": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "const": "untagged"
+                        },
+                        {
+                            "type": "number",
+                            "miminum": 1,
+                            "maximum": 4094
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

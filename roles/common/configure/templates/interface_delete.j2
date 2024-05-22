@@ -1,9 +1,0 @@
-#jinja2: lstrip_blocks: "True"
-{% for itf in running_config['srl_nokia-interfaces:interface'] %}
-{% if interfaces is defined %}
-{% if itf.name in interfaces and interfaces[itf.name]._state | default("present") == "deleted" %}
-- path: /interface[name={{ itf.name }}]
-{% endif %}
-{% endif %}
-{% endfor %}
-

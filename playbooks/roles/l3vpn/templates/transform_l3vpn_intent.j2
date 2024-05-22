@@ -1,0 +1,158 @@
+#jinja2: lstrip_blocks: "True"
+{% set ipvrf_ns = namespace() %}
+{% set ipvrf_ns.itfs = {} %}
+{% set ipvrf_ns.macvrfs = {} %}
+{% set ipvrf_ns.tunnels = {} %}
+
+{% if l3vpn is mapping %}
+{%      for svc, svc_spec in l3vpn.items() %}
+{%          set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( { svc: {} }) %}
+{%          for snet in svc_spec.snet_list|default([]) %}
+{%              if snet.macvrf in network_instance | default({}, True)  %}
+{%                  set irb_itf = 'irb1.' + l2vpn[snet.macvrf].id | string %}
+{%                  set ipvrf_ns.itfs = ipvrf_ns.itfs | combine( 
+                    {
+                        svc:
+                        {
+                            irb_itf:
+                                {
+                                    'gw': snet.gw,
+                                    '_state': svc_spec._state | default('present'),
+                                    'acl_v4_in': snet.acl_v4_in | default(''),
+                                    'acl_v4_out': snet.acl_v4_out | default('')
+                                }
+                        }
+                    }
+                , recursive=True)                                                  %}
+{%                  set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
+                    {
+                        svc_spec.id:
+                        {
+                            '_state': svc_spec._state | default('present')
+                        }
+                    }
+                )                                                                   %}
+{%                  if svc_spec._state|default('present') != 'deleted'              %}
+{%                      set ipvrf_ns.macvrfs = ipvrf_ns.macvrfs | combine( 
+                        { snet.macvrf: { 
+                            'irb': irb_itf, 
+                            'state': svc_spec.state|default('present')
+                            } 
+                        }
+                        )                                                           %}
+{%                  endif                                                           %}
+{%              elif 'dcgw' in group_names and (svc_spec.external | default(False)) %}
+{%                  set ipvrf_ns.tunnels = ipvrf_ns.tunnels | combine(
+                        {
+                            svc_spec.id:
+                            {
+                                '_state': svc_spec._state | default('present')
+                            }
+                        }
+                    )                                                               %}
+{%              endif                                                               %}
+{%          endfor                                                                  %}
+{%      endfor %}
+
+network_instance:
+{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+    {% if ipvrf_spec | length > 0 or ('dcgw' in group_names and l3vpn[ipvrf].external | default(False)) %}
+    {{ ipvrf }}:
+        {% if l3vpn[ipvrf]._state|default('present') == 'deleted' %}
+        _state: deleted
+        {% else %}
+            {% if ipvrf_spec | length > 0 %}
+        interfaces:
+                {% for itf in ipvrf_spec|default({}, true) %}
+            - {{ itf }}
+                {% endfor %}
+            {% endif %}
+        description: {{ l3vpn[ipvrf].description | default("VRF" + l3vpn[ipvrf].id|string) }}
+        type: ip-vrf
+            {% if 'dcgw' not in group_names %}
+        vxlan_interface:
+            - vxlan1.{{ l3vpn[ipvrf].id }}
+            {% endif %}
+        protocols:
+            bgp_evpn:
+                vxlan_interface: vxlan1.{{ l3vpn[ipvrf].id }}
+                evi: {{ l3vpn[ipvrf].id }}
+            bgp_vpn:
+                export_rt: {{ l3vpn[ipvrf].export_rt | default("100:" + l3vpn[ipvrf].id|string) }}
+                import_rt: {{ l3vpn[ipvrf].import_rt | default("100:" + l3vpn[ipvrf].id|string) }}
+            {% if 'dcgw' in group_names %}
+              {% set ROUTERBASEIFACE = namespace(instances=[]) %}
+              {% if running_config.router.interface | type_debug == "list" %}
+                {% set ROUTERBASEIFACE.instances = running_config.router.interface %}
+              {% elif running_config.router.interface is mapping %}
+                {% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
+              {% endif %}
+              {% if ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | length == 0 %}
+                {% set system_ip=intent.subinterface["system0.0"].ipv4_address | ansible.utils.ipaddr("address") %}
+              {% else %}
+                {% set system_ip=(ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | first).ipv4.primary.address %}
+              {% endif %}
+              {% set DCGW_SERVICEID_OFFSET = hostvars[inventory_hostname]['dcgw_serviceid_offset'] | default(0) | int %}
+              {% set service_id=l3vpn[ipvrf].external_id | default(DCGW_SERVICEID_OFFSET + l3vpn[ipvrf].id) | int %}
+              {% if l3vpn[ipvrf].external | default(False) %}
+            bgp_ipvpn:
+                route_distinguisher: {{ l3vpn[ipvrf].external_rd | default(system_ip + ":" + l3vpn[ipvrf].id|string) }}
+                {% if l3vpn[ipvrf].external_import_rt is defined and l3vpn[ipvrf].external_export_rt is defined %}
+                export_rt: {{ l3vpn[ipvrf].external_export_rt }}
+                import_rt: {{ l3vpn[ipvrf].external_import_rt }}
+                {% elif l3vpn[ipvrf].external_community_rt is defined %}
+                community_rt: {{ l3vpn[ipvrf].external_community_rt }}
+                {% else %}
+                {% set system_asn=running_config.router['autonomous-system'] | default(65144) %}
+                export_rt: "{{ system_asn }}:{{ service_id }}"
+                import_rt: "{{ system_asn }}:{{ service_id }}"
+                {% endif %}
+              {% endif %}
+        id: {{ service_id }}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+{% for macvrf, macvrf_spec in ipvrf_ns.macvrfs.items() %}
+    {{ macvrf }}:
+        interfaces:
+           - {{ macvrf_spec.irb }}
+{% endfor %}
+
+{% if 'dcgw' not in group_names %}
+subinterface:
+{% for ipvrf, ipvrf_spec in ipvrf_ns.itfs.items() %}
+    {% for itf, itf_spec in ipvrf_spec.items() %}
+    {{ itf }}:
+        _state: {{ itf_spec._state }}
+        ipv4_address: {{ itf_spec.gw }}
+        {% if itf_spec.acl_v4_in | length + itf_spec.acl_v4_out | length > 0 %}
+        acl:
+            {% if itf_spec.acl_v4_in | length > 0 %}
+            in: 
+                ipv4: {{ itf_spec.acl_v4_in }}
+            {% endif %}
+            {% if itf_spec.acl_v4_out | length > 0 %}
+            out:
+                ipv4: {{ itf_spec.acl_v4_out }}
+            {% endif %}
+        {% endif %}
+        arp: true
+        {% if l3vpn[ipvrf].arp_timeout is defined %}
+        arp_timeout: {{ l3vpn[ipvrf].arp_timeout }}
+        {% endif %}
+        anycast_gw: true
+    {% endfor %}
+{% endfor %}
+{% endif %}
+{% if ipvrf_ns.tunnels | length > 0 %}
+tunnel_interface:
+    vxlan1:
+    {% for id, tunnel_spec in ipvrf_ns.tunnels.items() %}
+        {{ id }}:
+            _state: {{ tunnel_spec._state }}
+            type: routed
+            ingress_vni: {{ id }}
+    {% endfor %}
+{% endif %}
+{% endif %}

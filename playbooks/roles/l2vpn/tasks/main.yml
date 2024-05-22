@@ -1,0 +1,43 @@
+- name: Reset var 'my_intent'
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    my_intent: {}
+
+- name: "Validate l2vpn intent"
+  delegate_to: localhost
+  ansible.utils.validate:
+    data: "{{ l2vpn }}"
+    criteria:
+      - "{{ lookup('file', 'criteria/l2vpn.json') | from_json }}"
+    engine: ansible.utils.jsonschema
+
+- name: Generate low-level intent for L2VPN
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2', template_vars=intent) | from_yaml }}"
+  when: l2vpn is defined and l2vpn is not none and intent is defined and intent is not none
+
+- name: Update 'network_instance' in intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
+  when: my_intent.network_instance | type_debug == 'dict'
+
+- name: Update 'interfaces' in intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
+  when: my_intent.interfaces is defined
+
+- name: Update 'subinterface' in intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
+  #  when: my_intent.subinterface is defined
+  when: my_intent.subinterface is defined
+
+- name: Update 'tunnel_interface' in intent
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: "{{ intent | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface}, recursive=true) }}"
+  when: my_intent.tunnel_interface is defined

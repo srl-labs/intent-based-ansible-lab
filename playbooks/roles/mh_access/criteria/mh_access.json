@@ -1,0 +1,70 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^\\w+\\-\\d+" : {
+            "type": "object",
+            "required": ["lag_id", "mh_mode" ],
+            "properties": {
+                "lag_id": {
+                    "type": "string",
+                    "pattern": "^lag\\d+$"
+                },
+                "_state": {
+                    "type": "string",
+                    "enum": ["deleted", "present"]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "mh_mode": {
+                    "type": "string",
+                    "enum": ["all-active", "single-active"]
+                },
+                "stby_signaling": {
+                    "type": "string",
+                    "enum": ["lacp", "power-off"]
+                },
+                "reload_delay": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 86400
+                },
+                "lacp_interval": {
+                    "type": "string",
+                    "enum": ["FAST", "SLOW"]
+                },
+                "interface_list": {
+                    "type": "object",
+                    "patternProperties" : {
+                        "^.*": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "string",
+                                "pattern": "^ethernet\\-.+"
+                            }
+                        }
+                    }
+                },
+                "interface_tags": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lacp": {
+                    "type": "boolean"
+                },
+                "vlan_tagging": {
+                    "type": "boolean"
+                },
+                "min_links": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 8
+                }
+            }
+        }
+    }
+}

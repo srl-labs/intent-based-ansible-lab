@@ -1,0 +1,158 @@
+#jinja2: lstrip_blocks: "True"
+{% for acl, acl_spec in acl_filters.items() %}
+  {% if acl_spec.type == "ipv4" or acl_spec.type == "ipv6" %}
+- path: /acl/acl-filter[name={{ acl }}][type={{ acl_spec.type }}]
+  operation: replace
+  value:
+    description: {{ acl_spec.description | default('') }}
+    {% if acl_spec['acl-entries'] is defined and acl_spec['acl-entries'] | length > 0 %}
+    entry:
+    {% endif %}
+    {% for entry_id, entry_spec in acl_spec['acl-entries'].items() %}
+      - sequence-id: {{ entry_id }}
+      {% if 'match' in entry_spec and entry_spec.match | length > 0 %}      
+        match:
+          {{ acl_spec.type }}:
+          {% if 'destination-ip' in entry_spec.match %}
+            destination-ip:
+            {% if 'prefix' in entry_spec.match['destination-ip'] %}
+              prefix: {{ entry_spec.match['destination-ip']['prefix'] }}
+            {% endif %}
+          {% endif %}
+          {% if 'source-ip' in entry_spec.match %}
+            source-ip:
+            {% if 'prefix' in entry_spec.match['source-ip'] %}
+                prefix: {{ entry_spec.match['source-ip']['prefix'] }}
+            {% endif %}
+          {% endif %}
+          {% if 'protocol' in entry_spec.match %}
+            protocol: {{ entry_spec.match['protocol'] }}
+          {% endif %}          
+          {% if 'destination-port' in entry_spec.match or 'source-port' in entry_spec.match %}
+          transport:
+            {% if 'destination-port' in entry_spec.match %}
+            destination-port:
+              {% if 'port' in entry_spec.match['destination-port'] %}
+              port: {{ entry_spec.match['destination-port']['port'] }}
+              {% elif 'range' in entry_spec.match['destination-port'] %}
+                {% set start_port, end_port = entry_spec.match['destination-port']['range'].split('..') %}
+              range:
+                start: {{ start_port | int }}
+                end: {{ end_port | int }}
+              {% endif %}
+            {% endif %}
+            {% if 'source-port' in entry_spec.match %}
+            source-port:
+              {% if 'port' in entry_spec.match['source-port'] %}
+              port: {{ entry_spec.match['source-port']['port'] }}
+              {% elif 'range' in entry_spec.match['source-port'] %}
+                {% set start_port, end_port = entry_spec.match['source-port']['range'].split('..') %}
+              range:
+                start: {{ start_port | int }}
+                end: {{ end_port | int }} 
+              {% endif %}
+            {% endif %}
+          {% endif %}
+      {% endif %}
+        action:
+          {{ entry_spec.action | default('drop') }}: {}
+    {% endfor %}
+  {% elif acl_spec.type == "mac" %}
+- path: /acl/acl-filter[name={{ acl }}][type=mac]
+  operation: replace
+  value:
+    description: {{ acl_spec.description | default('') }}
+    {% if acl_spec['acl-entries'] is defined and acl_spec['acl-entries'] | length > 0 %}
+    entry:
+    {% endif %}
+    {% for entry_id, entry_spec in acl_spec['acl-entries'].items() %}
+      - sequence-id: {{ entry_id }}
+      {% if 'match' in entry_spec and entry_spec.match | length > 0 %}
+        match:
+          l2:
+          {% if 'destination-mac' in entry_spec.match %}
+            destination-mac: {{ entry_spec.match['destination-mac'] }}
+          {% endif %}
+          {% if 'source-mac' in entry_spec.match %}
+            source-mac: {{ entry_spec.match['source-mac'] }}
+          {% endif %}
+      {% endif %}
+        action:
+          {{ entry_spec.action | default('drop') }}: {}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+{% for subif,subif_spec in subinterface.items() %}
+  {% set ACL = namespace(is_filtered = False) %}
+  {% if subif_spec.acl is defined %}
+    {% if "in" in subif_spec.acl %}
+      {% if subif_spec.acl.in.ipv4 | default([]) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% endif %}
+      {% if subif_spec.acl.in.ipv6 | default([]) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% endif %}
+      {% if subif_spec.acl.in.mac | default({}) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% endif %}
+    {% endif %}
+    {% if "out" in subif_spec.acl %}
+      {% if subif_spec.acl.out.ipv4 | default([]) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% elif subif_spec.acl.out.ipv6 | default([]) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% elif subif_spec.acl.out.mac | default({}) | length > 0 %}
+        {% set ACL.is_filtered = True %}
+      {% endif %}
+    {% endif %}
+    {% if ACL.is_filtered %}
+- path: /acl/interface[interface-id={{ subif }}]
+  operation: replace
+  value:
+    interface-ref: 
+      interface: {{ subif.split('.')[0] }}
+      subinterface: {{ subif.split('.')[1] }}
+    {% endif %}
+  {% endif %}
+  {% if "in" in subif_spec.acl | default({}) %}
+    {% set ACL.in_filter = false %}
+    {% for type in subif_spec.acl.in %}
+      {% if subif_spec.acl.in[type] | length > 0 %}
+        {% set ACL.in_filter = true %}
+      {% endif %}
+    {% endfor %}
+    {% if ACL.in_filter %}
+    input:
+      acl-filter:
+    {% endif %}
+    {% for type in subif_spec.acl.in %}
+      {% if subif_spec.acl.in[type] | length > 0 %}    
+        {% for acl in subif_spec.acl.in[type] %}
+        - name: {{ acl }}
+          type: {{ type }}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% if "out" in subif_spec.acl | default({}) %}
+    {% set out_filter = false %}
+    {% for type, type_spec in subif_spec.acl.out.items() %}
+      {% if type_spec | default([], true) | length > 0 %}
+        {% set out_filter = true %}
+      {% endif %}
+    {% endfor %}
+    {% if out_filter %}
+    output:
+      acl-filter:
+    {% endif %}
+    {% for type in subif_spec.acl.out %}
+      {% if subif_spec.acl.out[type] | length > 0 %}
+        {% for acl in subif_spec.acl.out[type] %}
+        - name: {{ acl }}
+          type: {{ type }}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}

@@ -1,0 +1,2 @@
+alias fcli="docker run -t --rm --network intent-lab -v /etc/hosts:/etc/hosts:ro -v ${PWD}/topo.yml:/topo.yml ghcr.io/srl-labs/nornir-srl -t /topo.yml"
+

@@ -1,0 +1,19 @@
+{
+    "type": "object",
+    "patternProperties": {
+        "^ethernet.*" : {
+            "type": "object",
+            "properties": {
+                "admin_state": {
+                    "type": "string",
+                    "enum": ["enable", "disable"]
+                },
+                "vlan_tagging": { "type": "boolean" },
+                "port_speed": {
+                    "type": "string",
+                    "enum": ["1G", "10G", "25G", "40G", "100G"]
+                }
+            }
+        }
+    }
+}

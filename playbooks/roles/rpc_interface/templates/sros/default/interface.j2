@@ -1,0 +1,36 @@
+#jinja2: lstrip_blocks: "True"
+{% set IFACE = namespace(found = false) %}
+{%- for itf, prop in interfaces.items() %}
+  {% if prop._state | default('present') == 'present' %}
+    {% if itf is regex('^\\d+/\\d+/c\\d+') %}
+      {% set IFACE.found = true %}
+      {% if itf is regex('^\\d+/\\d+/c\\d+/\\d+$') %}
+- path: /port[port-id={{ itf | regex_replace('^(\\d+/\\d+/c\\d+)/\\d+$', '\\1') }}]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    connector:
+      breakout: c1-100g
+      {% endif %}
+- path: /port[port-id={{ itf }}]
+  operation: replace
+  value:
+    _tag: true
+    admin-state: enable
+    ethernet:
+      mode: hybrid
+      encap-type: dot1q
+      {% if system.mtu["default-port-mtu"] is defined %}
+      mtu: {{ system.mtu['default-port-mtu'] }}
+      {% elif system.mtu["default-l2-mtu"] is defined %}
+      mtu: {{ system.mtu['default-l2-mtu'] }}
+      {% else %}
+      mtu: 9232
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if not IFACE.found %}
+[]
+{% endif %}
