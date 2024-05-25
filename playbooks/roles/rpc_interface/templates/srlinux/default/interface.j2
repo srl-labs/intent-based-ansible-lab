@@ -5,9 +5,11 @@
   operation: update
   value:
     admin-state: {{ prop.admin_state | default('enable') }}
-    description: {{ prop.description|default('no description')}}
+    {% if prop.description is defined %}
+    description: {{ prop.description }}
+    {% endif %}
     {% if prop.vlan_tagging is defined %}
-    vlan-tagging: true
+    vlan-tagging: {{ prop.vlan_tagging }}
     {% endif %}
     {% if prop.lag_id is defined or prop.stby_signaling is defined %}
     ethernet:

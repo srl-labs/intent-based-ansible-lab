@@ -1,0 +1,7 @@
+srl:
+  interfaces: {}
+  subinterface: {}
+  bfd:
+    interfaces: {}
+  network_instance: {}
+  acl_filters: {}
