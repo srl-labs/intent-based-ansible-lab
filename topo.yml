@@ -60,6 +60,7 @@ topology:
       kind: linux
       mgmt-ipv4: 172.20.21.141
       exec:
+        - ip addr add 10.66.66.66/32 dev lo
         - ip link add eth1
         - ip link set addr 00:c1:ab:00:00:11 dev eth1
         - ip addr add 10.5.0.1/31 dev eth1
