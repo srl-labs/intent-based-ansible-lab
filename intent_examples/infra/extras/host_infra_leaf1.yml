@@ -10,7 +10,7 @@ clab-4l2s-l1:
       interfaces:
         - ethernet-1/22.0
       static-routes:
-        10.6.6.6/32:
+        10.66.66.66/32:
           admin-state: enable
           preference: 5
           next-hop-group: cl011
