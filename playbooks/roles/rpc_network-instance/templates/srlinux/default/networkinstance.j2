@@ -53,7 +53,45 @@
           monitoring-window: {{ prop["ip_duplication"]["mon_window"] | default((3)) }}
           num-moves: {{ prop["ip_duplication"]["num_moves"] | default((5)) }}
       {% endif %}
-    {% endif %}    
+    {% endif %}
+    {% if "next-hop-groups" in prop %}
+    next-hop-groups:
+      group:
+      {% for nhg_name, nhg_prop in prop["next-hop-groups"].items() %}
+        - name: {{ nhg_name }}
+          admin-state: {{ nhg_prop["admin-state"] | default("enable") }}
+          {% if nhg_prop.blackhole | default(false) %}
+          blackhole:
+            generate-icmp: false
+          {% elif nhg_prop.nexthops is defined %} 
+          nexthop:
+            {% for nh in nhg_prop.nexthops %}
+            - index: {{ loop.index }}
+              admin-state: {{ nh["admin-state"] | default("enable") }}
+              {% if "ip-address" in nh %}
+              ip-address: {{ nh["ip-address"] }}
+              {% endif %}
+              {% if "resolve" in nh %}
+              resolve: {{ nh.resolve }}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if "static-routes" in prop %}
+    static-routes:
+      route:
+      {% for nh, nh_prop in prop["static-routes"].items() %}
+        prefix: {{ nh }}
+        admin-state: {{ nh_prop["admin-state"] | default("enable") }}
+        {% if nh_prop.preference is defined %}
+        preference: {{ nh_prop.preference }}
+        {% endif %}
+        {% if "next-hop-group" in nh_prop %}
+        next-hop-group: {{ nh_prop["next-hop-group"] }}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
     {% if prop.protocols is defined and prop.protocols is not none %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}

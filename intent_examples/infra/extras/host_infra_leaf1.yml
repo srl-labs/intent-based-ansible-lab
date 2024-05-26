@@ -1,0 +1,29 @@
+clab-4l2s-l1:
+  interfaces:
+    ethernet-1/22:
+      admin_state: enable
+  subinterface:
+    ethernet-1/22.0:
+      ipv4_address: 10.5.0.0/31
+  network_instance:
+    ipvrf-1:
+      interfaces:
+        - ethernet-1/22.0
+      static-routes:
+        10.6.6.6/32:
+          admin-state: enable
+          preference: 5
+          next-hop-group: cl011
+          tag-set: 1
+          metric: 1
+      next-hop-groups:
+        cl011:
+          nexthops:
+          - ip-address: 10.5.0.1
+            resolve: false
+            admin-state: enable
+            enable-bfd: false
+        bh:
+          blackhole: true
+          
+

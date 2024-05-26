@@ -82,6 +82,72 @@
                     "type": "string",
                     "format": "ipv4"
                     },
+                "static-routes": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*": {
+                            "type": "object",
+                            "required": ["next-hop-group"],
+                            "properties": {
+                                "admin-state": {
+                                    "type": "string",
+                                    "enum": ["enable", "disable"]
+                                },
+                                "enable-bfd": {
+                                    "type": "boolean"
+                                },
+                                "next-hop-group": {
+                                    "type": "string"
+                                },
+                                "metric": {
+                                    "type": "number"
+                                },
+                                "preference": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                },
+                "next-hop-groups": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*": {
+                            "type": "object",
+                            "oneOf": [
+                                {"required": ["blackhole"] },
+                                {"required": ["nexthops"] }
+                            ],
+                            "properties": {
+                                "blackhole": {
+                                    "type": "boolean"
+                                },
+                                "nexthops": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required": ["ip-address"],
+                                        "properties": {
+                                            "ip-address": {
+                                                "type": "string"
+                                            },
+                                            "admin-state": {
+                                                "type": "string",
+                                                "enum": ["enable", "disable"]
+                                            },
+                                            "enable-bfd": {
+                                                "type": "boolean"
+                                            },
+                                            "resolve": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "protocols": {
                     "type": "object",
                     "properties": {
