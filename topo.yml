@@ -56,6 +56,16 @@ topology:
       labels:
         role: spine
         fabric: yes
+    cl011:
+      kind: linux
+      mgmt-ipv4: 172.20.21.141
+      exec:
+        - ip addr add 10.66.66.66/32 dev lo
+        - ip link add eth1
+        - ip link set addr 00:c1:ab:00:00:11 dev eth1
+        - ip addr add 10.5.0.1/31 dev eth1
+        - ip link set eth1 up
+        - ip route add 10.0.0.0/8 via 10.5.0.0
     cl121:
       kind: linux
       mgmt-ipv4: 172.20.21.133
@@ -209,3 +219,5 @@ topology:
     - endpoints: ["cl343:eth2", "l4:e1-30"]
     - endpoints: ["cl344:eth1", "l3:e1-31"]
     - endpoints: ["cl344:eth2", "l4:e1-31"]
+    - endpoints: ["cl011:eth1", "l1:e1-22"]
+

@@ -1,4 +1,5 @@
 #jinja2: lstrip_blocks: "True"
+{% if interfaces is defined %}
 {% for itf in running_config['srl_nokia-interfaces:interface'] %}
 {% if itf.name not in purge_exclude.interfaces %}
 {% if itf.name not in interfaces %}
@@ -6,4 +7,4 @@
 {% endif %}
 {% endif %}
 {% endfor %}
-
+{% endif %}
