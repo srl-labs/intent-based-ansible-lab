@@ -20,6 +20,7 @@
   ansible.builtin.set_fact:
     is_upgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '<') }}"
     is_downgrade: "{{ pre_version is ansible.builtin.version(binfile_version, '>') }}"
+    wa_required: "{{ pre_version is ansible.builtin.version('23.10', '>=') and pre_version is ansible.builtin.version('24.7', '<') }}"
 
 - name: Print current version
   ansible.builtin.debug:
@@ -110,6 +111,23 @@
     nokia.srlinux.cli:
       commands:
         - "tools system deploy-image {% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
+    when: not wa_required
+
+  - name: Deploy new software version - WorkAround
+    vars:
+      ansible_command_timeout: 900
+      ansible_connection: ssh
+      ansible_user: linuxadmin
+      ansible_ssh_args: -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=false
+    ansible.builtin.command:
+      argv:
+        - sr_cli
+        - --no-bottom-toolbar
+        - tools
+        - system
+        - deploy-image
+        - "{% if binfile is ansible.builtin.regex('^https?://') %}{{ binfile }}{% else %}/tmp/{{ binfile | ansible.builtin.basename }}{% endif %}"
+    when: wa_required
 
   - name: Reboot
     nokia.srlinux.cli:
