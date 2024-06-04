@@ -4,6 +4,14 @@
         "^.*" : {
             "type": "object",
             "required": ["id", "vlan"],
+            "oneOf": [
+                {
+                    "required": [ "interface_list"]
+                },
+                {
+                    "required": [ "interface_tags"]
+                }
+            ],
             "properties": {
                 "id": {
                     "type": "number"

@@ -4,6 +4,14 @@
         "^\\w+\\-\\d+" : {
             "type": "object",
             "required": ["lag_id", "mh_mode" ],
+            "oneOf" : [
+                {
+                    "required": ["interface_list"]
+                },
+                {
+                    "required": ["interface_tags"]
+                }
+            ],
             "properties": {
                 "lag_id": {
                     "type": "string",
