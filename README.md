@@ -24,5 +24,5 @@ sudo clab deploy -t topo.yml
 ``` 
 2. Run the Ansible playbook:
 ```
-ansible-playbook -i inv/ -e intent_dir=/workspaces/codespacetest/intent-based-ansible-lab/intent_examples/infra/underlay_with_fabric_intent --diff playbooks/cf_fabric.yml
+ansible-playbook -i inv/ -e intent_dir=/workspaces/intent-based-ansible-lab/intent_examples/infra/underlay_with_fabric_intent --diff playbooks/cf_fabric.yml
 ``` 
