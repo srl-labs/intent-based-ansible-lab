@@ -11,9 +11,10 @@
             "extensions": [
                 "ms-azuretools.vscode-docker",
                 "ms-python.python",
-                "redhat.ansible"
+                "redhat.ansible",
+                "hediet.vscode-drawio"
             ]
         }
     },
-    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y python3 python3-pip git && pip3 install --upgrade pip && pip3 install -r requirements.txt && ansible-galaxy collection install nokia.srlinux && ansible --version"
+    "onCreateCommand": "sudo apt-get update && sudo apt-get install -y python3 python3-pip git && pip3 install --upgrade pip && pip3 install -r requirements.txt && ansible-galaxy collection install nokia.srlinux"
 }
