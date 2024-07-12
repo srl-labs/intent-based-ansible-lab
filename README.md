@@ -15,3 +15,14 @@ A practical example of using Ansible to manage the configuration of an SR Linux 
 </div>
 
 ---
+
+## Quick Start Guide to run in codespaces
+
+1. Deploy the lab topology:
+```
+sudo clab deploy -t topo.yml
+``` 
+2. Run the Ansible playbook:
+```
+ansible-playbook -i inv/ -e intent_dir=/workspaces/codespacetest/intent-based-ansible-lab/intent_examples/infra/underlay_with_fabric_intent --diff playbooks/cf_fabric.yml
+``` 
