@@ -1,0 +1,20 @@
+{
+    "name": "Containerlab and Ansible Dev Environment",
+    "image": "ghcr.io/srl-labs/containerlab/clab-devcontainer:0.56.0",
+    "hostRequirements": {
+        "cpus": 4,
+        "memory": "16gb",
+        "storage": "32gb"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-azuretools.vscode-docker",
+                "ms-python.python",
+                "redhat.ansible",
+                "hediet.vscode-drawio"
+            ]
+        }
+    },
+    "onCreateCommand": "sudo apt-get update && sudo apt-get install --no-install-recommends -y python3 python3-pip git && pip3 install --upgrade pip && pip3 install -r requirements.txt && ansible-galaxy collection install nokia.srlinux"
+}
