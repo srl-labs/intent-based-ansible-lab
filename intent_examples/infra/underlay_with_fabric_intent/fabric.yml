@@ -23,7 +23,11 @@ fabric:
   #   - 100.64.128.0/24
   p2p: 100.64.0.0/16
 
-  # AS number for overlay network
+  # Flag to disable overlay network config. Defaults to false.
+  # Needs to be false if overlay_asn or rr is defined.
+  # omit_overlay: false
+
+  # AS number for overlay network.
   overlay_asn: 65501
 
   # Configuration for Route Reflectors (RR)
