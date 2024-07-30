@@ -105,14 +105,16 @@
             admin-state: {{ prop.protocols.bgp.ipv4.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
         {% endif %}
         {% if prop.protocols.bgp.ipv6 is defined %}
           - afi-safi-name: "ipv6-unicast"
             admin-state: {{ prop.protocols.bgp.ipv6.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
            {% if prop.protocols.bgp.ipv6.ipv4 is defined %}
             ipv4-unicast:
                advertise-ipv6-next-hops: {{ prop.protocols.bgp.ipv6.ipv4["advertise-ipv6-next-hops"] | default(false) }}
@@ -125,7 +127,8 @@
             admin-state: enable
             {% endif %}
             multipath:
-              maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-1: {{prop.protocols.bgp.evpn.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.evpn.multipath|default(64) }}
             evpn:
               rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
         {% endif %}
@@ -149,10 +152,10 @@
             enable-bfd: {{ group_spec.enable_bfd | default(False) }}
             fast-failover: {{ group_spec.fast_failover | default(False) }}
           {% if group_spec.export_policy is defined %}
-          export-policy: [{{ group_spec.export_policy }}]
+          export-policy: {{ group_spec.export_policy }}
           {% endif %}
           {% if group_spec.import_policy is defined %}
-          import-policy: [{{ group_spec.import_policy }}]
+          import-policy: {{ group_spec.import_policy }}
           {% endif %}
           send-community:
             large: {{ group_spec["large-community"] | default(true) }}
@@ -215,7 +218,7 @@
           router-id: {{ prop["router-id"] }}
           version: {{ instance_spec.version }}
           max-ecmp-paths: {{ instance_spec["max-ecmp-paths"] | default(8) }}
-          export-policy: [{{ instance_spec.export_policy }}]
+          export-policy: {{ instance_spec.export_policy }}
           {% if instance_spec.timers is defined %}
           timers:
             incremental-spf-wait: {{ instance_spec.timers["incremental-spf-wait"] | default(200) }}
