@@ -223,7 +223,8 @@ class IpFabricParser:
         shortport_re = re.compile(r"^e?([\d]+)[-/]([\d]+)$")
 
         self._topo = nx.MultiGraph()
-        if self._fabric_data.get("omit_overlay", False):
+        self._topo.graph["omit_overlay"] = self._fabric_data.get("omit_overlay", False)
+        if self._topo.graph["omit_overlay"]:
             pass
         else:
             self._topo.graph["overlay_asn"] = int(self._fabric_data["overlay_asn"])
@@ -447,9 +448,9 @@ class IpFabricParser:
                 if nodeid >= self.max_dcgw:
                     raise Exception(f"DCGW {node} exceeds maximum # DCGWs!")
 
-                # Verify not using bgp-unnumbered as this is not supported due to SROS problem
-                if self._topo.graph["underlay_routing"] == "bgp" and self._topo.graph["bgp_unnumbered"]:
-                    raise Exception("Using BGP-unnumbered is not supported in combination with DCGW integration.")
+                # # Verify not using bgp-unnumbered as this is not supported due to SROS problem
+                # if self._topo.graph["underlay_routing"] == "bgp" and self._topo.graph["bgp_unnumbered"]:
+                #     raise Exception("Using BGP-unnumbered is not supported in combination with DCGW integration.")
 
             # Validate podid
             if 'podid' in properties:
@@ -705,9 +706,8 @@ class IpFabricParser:
                             self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface] = dict()
                             self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
 
-
             # Overlay
-            if self._fabric_data.get("omit_overlay", False):
+            if self._topo.graph["omit_overlay"]:
                 pass
             else:
                 neighbor_addresses = list()
