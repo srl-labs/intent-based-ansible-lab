@@ -57,11 +57,15 @@
     ipv6:
       admin-state: enable
       {% if prop.ipv6.ra is defined %}
-         {% if prop.ipv6.ra == 'enable' %}
+        {% if prop.ipv6.ra == 'enable' %}
       router-advertisement:
         router-role: 
           admin-state: enable
-         {% endif %}
+          {% if prop.ipv6.ra_prefix is defined %}
+          prefix:
+            - ipv6-prefix: {{ prop.ipv6.ra_prefix }}
+          {% endif %}
+        {% endif %}
       {% endif %}
     {% endif %}
     {% if prop.anycast_gw is defined %}

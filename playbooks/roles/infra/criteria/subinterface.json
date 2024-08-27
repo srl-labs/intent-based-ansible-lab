@@ -51,6 +51,10 @@
                             "type": "string",
                             "description": "IPv6 Router Advertisement",
                             "enum": ["enable", "disable"]
+                        },
+                        "ra_prefix": {
+                            "type": "string",
+                            "description": "IPv6 Router Advertisement Prefix"
                         }
                     }
                 }
