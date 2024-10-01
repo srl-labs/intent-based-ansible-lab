@@ -63,6 +63,8 @@
         {% if prop.protocols.bgp is defined %}
     bgp:
       admin-state: enable
+      multipath:
+        ebgp: 4
       rapid-withdrawal: true
       rapid-update:
         evpn: true
@@ -112,6 +114,11 @@
             {% if group_spec.ipv4 is defined %}
               {% if group_spec.ipv4.admin_state | default('disable') == 'enable' %}
       ipv4: true
+              {% endif %}
+            {% endif %}
+            {% if group_spec.vpn_ipv4 is defined %}
+              {% if group_spec.vpn_ipv4.admin_state | default('disable') == 'enable' %}
+      vpn-ipv4: true
               {% endif %}
             {% endif %}
             {% if group_spec.evpn is defined %}
@@ -238,6 +245,12 @@
           {% if subinterface[itf].ipv6 is defined %}
     ipv6:
       forward-ipv4-packets: true
+            {% if subinterface[itf].ipv6.ra | default("disable") == "enable" %}
+- path: /router[router-name=Base]/ipv6/router-advertisement/interface[ip-int-name={{ IFACENAME }}]
+  operation: replace
+  value:
+    admin-state: enable
+            {% endif %}
           {% endif %}
         {% endfor %}
       {% endif %}
@@ -250,6 +263,7 @@
     _tag: true
     admin-state: enable
     customer: 1
+    ecmp: 4
     description: {{ prop.description }}
     service-id: {{ prop.id }}
     interface:
@@ -262,6 +276,11 @@
     bgp-ipvpn:
       mpls:
         admin-state: enable
+          {% if prop.protocols.bgp_ipvpn.export_rt is defined %}
+        domain-id: "{{ prop.protocols.bgp_ipvpn.export_rt }}"
+          {% elif prop.protocols.bgp_ipvpn.community_rt is defined %}
+        domain-id: "{{ prop.protocols.bgp_ipvpn.community_rt }}"
+          {% endif %}
         auto-bind-tunnel:
           resolution: any
         route-distinguisher: {{ prop.protocols.bgp_ipvpn.route_distinguisher }}
@@ -305,10 +324,12 @@
       routes:
         ip-prefix:
            advertise: true
+           domain-id: "{{ prop.protocols.bgp_vpn.export_rt }}"
       vxlan:
         bgp-instance: 1
         admin-state: enable
         vxlan-instance: {{ vxlan_instance }}
+        ecmp: 4
         {% endif %}
       {% endif %}
     {% endif %}
