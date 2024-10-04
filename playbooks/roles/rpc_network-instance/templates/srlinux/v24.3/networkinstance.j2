@@ -113,8 +113,8 @@
             admin-state: {{ prop.protocols.bgp.ipv6.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              max-paths-level-1: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
-              max-paths-level-2: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              max-paths-level-1: {{prop.protocols.bgp.ipv6.multipath|default(64) }}
+              max-paths-level-2: {{prop.protocols.bgp.ipv6.multipath|default(64) }}
            {% if prop.protocols.bgp.ipv6.ipv4 is defined %}
             ipv4-unicast:
                advertise-ipv6-next-hops: {{ prop.protocols.bgp.ipv6.ipv4["advertise-ipv6-next-hops"] | default(false) }}
