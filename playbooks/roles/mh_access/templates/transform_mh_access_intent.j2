@@ -50,6 +50,12 @@ interfaces:
 {%          if mh_spec.mh_mode | default('all-active') == 'single-active'       %}
         stby_signaling: {{ mh_spec.stby_signaling | default('lacp') }}
 {%          endif                                                               %}
+{%          if mh_spec.lacp_fallback_mode is defined                            %}
+        lacp_fallback_mode: {{ mh_spec.lacp_fallback_mode }}
+{%          endif                                                               %}
+{%          if mh_spec.lacp_fallback_timeout is defined                         %}
+        lacp_fallback_timeout: {{ mh_spec.lacp_fallback_timeout }}
+{%          endif                                                               %}
 {%          for itf in mh.access[mh_id].itfs                                    %}
     {{ itf }}:
         _state: {{ mh_spec._state|default('present') }}

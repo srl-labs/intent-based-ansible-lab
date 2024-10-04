@@ -25,7 +25,7 @@ bfd:
       required_min_rx_interval: 100000
   {% endfor %}
 interfaces:
-  {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] %}
+  {% if preprocessed_fabric[inventory_hostname].role in ["leaf", "borderleaf"] and not preprocessed_fabric.fabric.omit_overlay %}
   irb1:
   {% endif %}
   system0:

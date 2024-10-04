@@ -33,7 +33,7 @@ def expand_ranges(a):
                     if isinstance(v, dict):
                         filter(v)
                     elif isinstance(v, list):
-                        for e in v:
+                        for e in copy.deepcopy(v):
                             if isinstance(e, dict):
                                 filter(e)
                             else:

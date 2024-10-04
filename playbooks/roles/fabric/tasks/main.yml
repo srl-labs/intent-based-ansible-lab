@@ -36,6 +36,7 @@
   #    dest: /tmp/preprocessed_fabric.yml
   #  delegate_to: localhost
   #  run_once: true
+  #  changed_when: false
 
   #- name: DEBUG fabric pre-processing
   #  ansible.builtin.debug:
@@ -50,6 +51,7 @@
   #    content: "{{ my_intent | to_yaml  }}"
   #    dest: "/tmp/{{ inventory_hostname }}.yml"
   #  delegate_to: localhost
+  #  changed_when: false
 
   #- name: DEBUG fabric pre-processing
   #  ansible.builtin.debug:

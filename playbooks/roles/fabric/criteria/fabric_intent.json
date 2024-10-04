@@ -5,7 +5,7 @@
     "properties": {
         "fabric": {
             "type": "object",
-            "required": ["fabric_cabling", "overlay_asn", "underlay_routing", "rr", "loopback"],
+            "required": ["fabric_cabling", "underlay_routing", "loopback"],
             "additionalProperties": false,
             "properties": {
                 "underlay_routing": {
@@ -64,6 +64,9 @@
                     "type": "number",
                     "minimum": 1,
                     "maximum": 4294967294
+                },
+                "omit_overlay": {
+                    "type": "boolean"
                 },
                 "rr": {
                     "type": "object",
@@ -201,6 +204,27 @@
                     },
                     "else": {
                         "required": ["p2p", "spine"]
+                    }
+                },
+                {
+                    "if": {
+                        "required": ["omit_overlay"],
+                        "properties": {
+                            "omit_overlay": { "const": true }
+                        }
+                    },
+                    "then": {
+                        "allOf": [
+                            {
+                                "not": {"required": ["overlay_asn"]}
+                            },
+                            {
+                                "not": {"required": ["rr"]}
+                            }
+                        ]
+                    },
+                    "else": {
+                        "required": ["overlay_asn", "rr"]
                     }
                 }
             ]

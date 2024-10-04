@@ -16,6 +16,9 @@
       {% if prop.lag_id is defined %}
       aggregate-id: {{ prop.lag_id }}
       {% endif %}
+      {% if prop.lacp_port_priority is defined %}
+      lacp-port-priority: {{ prop.lacp_port_priority }}
+      {% endif %}
       {% if prop.stby_signaling is defined %}
       standby-signaling: {{ prop.stby_signaling }}
       {% endif %}
@@ -38,6 +41,12 @@
         {% set sfx = "%02d" | format(lagid) %}
         system-id-mac: {{ prop.lacp.system_id | default('00:ba:db:ee:f0:' + sfx) }}
         system-priority: {{ prop.lacp.system_priority | default(1) }}
+      {% if prop.lacp_fallback_mode is defined %}
+      lacp-fallback-mode: {{ prop.lacp_fallback_mode }}
+      {% endif %}
+      {% if prop.lacp_fallback_timeout is defined %}
+      lacp-fallback-timeout: {{ prop.lacp_fallback_timeout }}
+      {% endif %}
     {% endif %}
   {% endif %}
 {% endfor %}

@@ -32,14 +32,27 @@
         primary: []
       {% endif %}
     {% endif %}
-    {% if prop.ipv6_address is defined %}
+    {% if prop.ipv6 is defined or prop.ipv6_address is defined %}
     ipv6:
       admin-state: enable
+      {% if prop.ipv6_address is defined %}
       address:
       - ip-prefix: {{prop.ipv6_address }}
-      {% if prop.anycast_gw is defined %}
+        {% if prop.anycast_gw is defined %}
         anycast-gw: true
         primary: []
+        {% endif %}
+      {% endif %}
+      {% if prop.ipv6.ra is defined %}
+        {% if prop.ipv6.ra == 'enable' %}
+      router-advertisement:
+        router-role: 
+          admin-state: enable
+          {% if prop.ipv6.ra_prefix is defined %}
+          prefix:
+            - ipv6-prefix: {{ prop.ipv6.ra_prefix }}
+          {% endif %}
+        {% endif %}
       {% endif %}
     {% endif %}
     {% if prop.arp | default(false) %}
@@ -52,17 +65,6 @@
           advertise:
           - route-type: dynamic
         timeout: {{ prop.arp_timeout | default(14400) }}
-    {% endif %}
-    {% if prop.ipv6 is defined %}
-    ipv6:
-      admin-state: enable
-      {% if prop.ipv6.ra is defined %}
-         {% if prop.ipv6.ra == 'enable' %}
-      router-advertisement:
-        router-role: 
-          admin-state: enable
-         {% endif %}
-      {% endif %}
     {% endif %}
     {% if prop.anycast_gw is defined %}
     anycast-gw: {}
