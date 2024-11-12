@@ -1,0 +1,36 @@
+clab-4l2s-l1:
+  TAGS:
+    - RACK1
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.1/32
+#
+clab-4l2s-l2:
+  TAGS:
+    - RACK1
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.2/32
+clab-4l2s-l3:
+  TAGS:
+    - RACK2
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.3/32
+#
+clab-4l2s-l4:
+  TAGS:
+    - RACK2
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.4/32
+#
+clab-4l2s-s1:
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.101/32
+#
+clab-4l2s-s2:
+  subinterface:
+    system0.0:
+      ipv4_address: 192.168.255.102/32

@@ -113,18 +113,18 @@
                                         }
                                     }
                                 },
-				"ebgp-import-reject": {
-					"type": "boolean"
-				},
-				"ebgp-export-reject": {
-					"type": "boolean"
-				},
+                                "ebgp-import-reject": {
+                                    "type": "boolean"
+                                },
+                                "ebgp-export-reject": {
+                                    "type": "boolean"
+                                },
                                 "ipv4": {
                                     "type": "object",
                                     "properties": {
-					"multipath": {
-				            "type": "number"
-					},
+                                        "multipath": {
+                                                "type": "number"
+                                        },
                                         "admin_state": {
                                             "type": "string",
                                             "enum": ["enable", "disable"]
@@ -134,33 +134,36 @@
                                 "ipv6": {
                                     "type": "object",
                                     "properties": {
-					"multipath": {
-				            "type": "number"
-					},
+                                        "multipath": {
+                                                "type": "number"
+                                        },
                                         "admin_state": {
                                             "type": "string",
                                             "enum": ["enable", "disable"]
                                         },
-					"ipv4": {
-					     "type": "object",
-					     "properties": {
-						     "advertise-ipv6-next-hops": {
-							     "type": "boolean"
-						     	},
-						     "receive-ipv6-next-hops": {
-							     "type": "boolean"
-						     	}
-					     }
-					}
-				    }
+                                        "ipv4": {
+                                            "type": "object",
+                                            "properties": {
+                                                "advertise-ipv6-next-hops": {
+                                                    "type": "boolean"
+                                                    },
+                                                "receive-ipv6-next-hops": {
+                                                    "type": "boolean"
+                                                    }
+                                            }
+                    					}
+                				    }
                                 },
                                 "evpn": {
                                     "type": "object",
                                     "properties": {
-					"multipath": {
-				            "type": "number"
-					},
+                                        "multipath": {
+                                                "type": "number"
+                                        },
                                         "rapid-update": {
+                                            "type": "boolean"
+                                        },
+                                        "inter-as-vpn": {
                                             "type": "boolean"
                                         }
                                     }

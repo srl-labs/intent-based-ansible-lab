@@ -48,6 +48,12 @@
       router-advertisement:
         router-role: 
           admin-state: enable
+          {% if prop.ipv6.ra_min_interval is defined %}
+          min-advertisement-interval: {{ prop.ipv6.ra_min_interval }}
+          {% endif %}
+          {% if prop.ipv6.ra_max_interval is defined %}
+          max-advertisement-interval: {{ prop.ipv6.ra_max_interval }}
+          {% endif %}
           {% if prop.ipv6.ra_prefix is defined %}
           prefix:
             - ipv6-prefix: {{ prop.ipv6.ra_prefix }}

@@ -128,6 +128,7 @@
               maximum-paths: {{prop.protocols.bgp.evpn.multipath|default(64) }}
             evpn:
               rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
+              inter-as-vpn: {{ prop.protocols.bgp.evpn["inter-as-vpn"] | default (false) }}
         {% endif %}
         send-community:
           large: {{ prop.protocols.bgp["large-community"] | default(true) }}

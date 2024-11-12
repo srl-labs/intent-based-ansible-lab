@@ -73,17 +73,17 @@
     cacheable: true
   loop: "{{ purgeable }}"
 
-#- name: DEBUG print update
-#  ansible.builtin.debug:
-#    var: update
+- name: DEBUG print update
+  ansible.builtin.debug:
+    var: update
 
-#- name: DEBUG print replace
-#  ansible.builtin.debug:
-#    var: replace
+- name: DEBUG print replace
+  ansible.builtin.debug:
+    var: replace
 
-#- name: DEBUG print delete
-#  ansible.builtin.debug:
-#    var: delete
+- name: DEBUG print delete
+  ansible.builtin.debug:
+    var: delete
 
 - name: Build XML
   delegate_to: localhost
