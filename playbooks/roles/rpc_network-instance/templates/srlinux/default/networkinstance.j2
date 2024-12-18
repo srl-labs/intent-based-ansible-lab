@@ -53,7 +53,13 @@
           monitoring-window: {{ prop["ip_duplication"]["mon_window"] | default((3)) }}
           num-moves: {{ prop["ip_duplication"]["num_moves"] | default((5)) }}
       {% endif %}
-    {% endif %}    
+    {% endif %}
+    {% if prop.inter_instance_policies is defined and prop.inter_instance_policies is not none %}
+    inter-instance-policies:
+      apply-policy:
+        import-policy: {{ prop.inter_instance_policies.import_policy }} 
+        export-policy: {{ prop.inter_instance_policies.export_policy }} 
+    {% endif %}
     {% if prop.protocols is defined and prop.protocols is not none %}
     protocols:
       {% if prop.protocols.bgp_evpn is defined %}
