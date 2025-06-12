@@ -5,7 +5,7 @@
     "properties": {
         "fabric": {
             "type": "object",
-            "required": ["fabric_cabling", "underlay_routing", "loopback"],
+            "required": ["fabric_cabling", "underlay_routing", "overlay", "loopback"],
             "additionalProperties": false,
             "properties": {
                 "underlay_routing": {
@@ -60,38 +60,64 @@
                         }
                     ]
                 },
-                "overlay_asn": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 4294967294
-                },
-                "omit_overlay": {
-                    "type": "boolean"
-                },
-                "rr": {
+                "overlay" : {
                     "type": "object",
-                    "required": ["location"],
                     "additionalProperties": false,
+                    "required": ["type"],
                     "properties": {
-                        "location": {
+                        "type": {
                             "type": "string",
-                            "enum": ["superspine", "spine", "borderleaf", "external"]
+                            "enum": ["ibgp", "ebgp", "omit" ]
                         },
-                        "neighbor_list": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "format": "ipv4"
-                            }
+                        "overlay_asn": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 4294967294
+                        },
+                        "rr": {
+                            "type": "object",
+                            "required": ["location"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "enum": ["superspine", "spine", "borderleaf", "external"]
+                                },
+                                "neighbor_list": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "ipv4"
+                                    }
+                                }
+                            },
+                            "if": {
+                                "properties": {
+                                    "location": { "const": "external" }
+                                },
+                                "required": ["location"]
+                            },
+                            "then": {"required": ["neighbor_list"]}
                         }
                     },
                     "if": {
                         "properties": {
-                            "location": { "const": "external" }
-                        },
-                        "required": ["location"]
+                            "type": { "const": "ibgp" }
+                        }
                     },
-                    "then": {"required": ["neighbor_list"]}
+                    "then": {
+                        "required": ["overlay_asn", "rr"]
+                    },
+                    "else": {
+                        "allOf": [
+                            {
+                                "not": {"required": ["overlay_asn"]}
+                            },
+                            {
+                                "not": {"required": ["rr"]}
+                            }
+                        ]
+                    }
                 },
                 "p2p": {
                     "oneOf": [
@@ -182,52 +208,27 @@
                     }
                 }
             },
-            "allOf": [
-                {
-                    "if": {
+            "if": {
+                "properties": {
+                    "underlay_routing": {
+                        "required": ["bgp"],
                         "properties": {
-                            "underlay_routing": {
-                                "required": ["bgp"],
+                            "bgp": {
+                                "required": ["bgp-unnumbered"],
                                 "properties": {
-                                    "bgp": {
-                                        "required": ["bgp-unnumbered"],
-                                        "properties": {
-                                            "bgp-unnumbered": { "const": true }
-                                        }
-                                    }
+                                    "bgp-unnumbered": { "const": true }
                                 }
                             }
                         }
-                    },
-                    "then": {
-                        "not": {"required": ["p2p"]}
-                    },
-                    "else": {
-                        "required": ["p2p", "spine"]
-                    }
-                },
-                {
-                    "if": {
-                        "required": ["omit_overlay"],
-                        "properties": {
-                            "omit_overlay": { "const": true }
-                        }
-                    },
-                    "then": {
-                        "allOf": [
-                            {
-                                "not": {"required": ["overlay_asn"]}
-                            },
-                            {
-                                "not": {"required": ["rr"]}
-                            }
-                        ]
-                    },
-                    "else": {
-                        "required": ["overlay_asn", "rr"]
                     }
                 }
-            ]
+            },
+            "then": {
+                "not": {"required": ["p2p"]}
+            },
+            "else": {
+                "required": ["p2p", "spine"]
+            }
         },
         "sizing": {
             "type": "object",

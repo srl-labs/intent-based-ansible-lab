@@ -223,11 +223,9 @@ class IpFabricParser:
         shortport_re = re.compile(r"^e?([\d]+)[-/]([\d]+)$")
 
         self._topo = nx.MultiGraph()
-        self._topo.graph["omit_overlay"] = self._fabric_data.get("omit_overlay", False)
-        if self._topo.graph["omit_overlay"]:
-            pass
-        else:
-            self._topo.graph["overlay_asn"] = int(self._fabric_data["overlay_asn"])
+        self._topo.graph["overlay_type"] = str.lower(self._fabric_data["overlay"]["type"])
+        if self._topo.graph["overlay_type"] == "ibgp":
+            self._topo.graph["overlay_asn"] = int(self._fabric_data["overlay"]["overlay_asn"])
         if len(self._fabric_data["underlay_routing"].keys()) != 1:
             raise Exception("Unable to determine underlay routing protocol!")
         self._topo.graph["underlay_routing"] = list(self._fabric_data["underlay_routing"].keys())[0]
@@ -707,9 +705,7 @@ class IpFabricParser:
                             self._topo.nodes[node]["bgp"]["groups"][f"{peergroup}s"]["dynamic"][interface]["allow-as"] = [asn]
 
             # Overlay
-            if self._topo.graph["omit_overlay"]:
-                pass
-            else:
+            if self._topo.graph["overlay_type"] == "ibgp":
                 neighbor_addresses = list()
                 neighborset = set()
                 is_rr = False
@@ -719,7 +715,7 @@ class IpFabricParser:
                     neighborset.update(self._topo.graph["pods"][properties["podid"]]["leaf"])
 
                 # RR on spine:
-                elif self._fabric_data["rr"]["location"] == 'spine':
+                elif self._fabric_data["overlay"]["rr"]["location"] == 'spine':
                     if properties['role'] == 'spine':
                         # Set RR
                         is_rr = True
@@ -741,12 +737,12 @@ class IpFabricParser:
                         neighborset.update(self.spines)
 
                 # External RR:
-                elif self._fabric_data["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["rr"]:
+                elif self._fabric_data["overlay"]["rr"]["location"] == 'external' and "neighbor_list" in self._fabric_data["overlay"]["rr"]:
                     if properties['role'] in ['leaf', 'borderleaf', 'dcgw']:
-                        neighbor_addresses = self._fabric_data["rr"]["neighbor_list"]
+                        neighbor_addresses = self._fabric_data["overlay"]["rr"]["neighbor_list"]
 
                 # RR on borderleaf:
-                elif self._fabric_data["rr"]["location"] == 'borderleaf':
+                elif self._fabric_data["overlay"]["rr"]["location"] == 'borderleaf':
                     neighborset = set()
                     if properties['role'] == 'borderleaf':
                         # Set RR
@@ -768,7 +764,7 @@ class IpFabricParser:
                         neighborset.update(self.borderleafs)
 
                 # RR on superspine:
-                elif self._fabric_data["rr"]["location"] == 'superspine':
+                elif self._fabric_data["overlay"]["rr"]["location"] == 'superspine':
                     if properties['role'] == 'superspine':
                         # Set RR
                         is_rr = True
