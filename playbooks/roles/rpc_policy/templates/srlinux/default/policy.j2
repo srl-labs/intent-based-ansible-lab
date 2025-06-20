@@ -11,9 +11,29 @@
 - path: /routing-policy/policy[name={{r_pol}}]
   operation: replace
   value:
-    {% for k, v in pol_spec.items() %}
-    {{k}}: {{v}}
-    {% endfor %}
+    {% if pol_spec["default-action"] is defined %}
+    default-action: {{ pol_spec["default-action"] }}
+    {% endif %}
+    {% if pol_spec["statement"] is defined %}
+    statement:
+      {% for stmt in pol_spec.statement %}
+      - name: {{ stmt.name }}
+        {% if stmt.action is defined %}
+        action: {{ stmt.action }}
+        {% endif %}
+        {% if stmt.match is defined %}
+        match:
+          {% for k, v in stmt.match.items() %}
+            {% if k == "prefix-set" %}
+          prefix:
+            prefix-set: {{v}}
+            {% else %}
+          {{k}}: {{v}}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
 {% endfor %}
 {% for comm_set, comm_set_spec in (routing_policy.community_set | default({})).items() %}
 - path: /routing-policy/community-set[name={{comm_set}}]
