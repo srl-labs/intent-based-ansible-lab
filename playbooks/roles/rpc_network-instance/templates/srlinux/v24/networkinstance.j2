@@ -115,20 +115,14 @@
             admin-state: {{ prop.protocols.bgp.ipv4.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              ebgp:
-                maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
-              ibgp:
-                maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
+              maximum-paths: {{prop.protocols.bgp.ipv4.multipath|default(64) }}
         {% endif %}
         {% if prop.protocols.bgp.ipv6 is defined %}
           - afi-safi-name: "ipv6-unicast"
             admin-state: {{ prop.protocols.bgp.ipv6.admin_state|default('disable') }}
             multipath:
               allow-multiple-as: true
-              ebgp:
-                maximum-paths: {{prop.protocols.bgp.ipv6.multipath|default(64) }}
-              ibgp:
-                maximum-paths: {{prop.protocols.bgp.ipv6.multipath|default(64) }}
+              maximum-paths: {{prop.protocols.bgp.ipv6.multipath|default(64) }}
            {% if prop.protocols.bgp.ipv6.ipv4 is defined %}
             ipv4-unicast:
                advertise-ipv6-next-hops: {{ prop.protocols.bgp.ipv6.ipv4["advertise-ipv6-next-hops"] | default(false) }}
@@ -141,13 +135,12 @@
             admin-state: enable
             {% endif %}
             multipath:
-              ebgp:
-                maximum-paths: {{prop.protocols.bgp.evpn.multipath|default(64) }}
-              ibgp:
-                maximum-paths: {{prop.protocols.bgp.evpn.multipath|default(64) }}
+              maximum-paths: {{prop.protocols.bgp.evpn.multipath|default(64) }}
             evpn:
               rapid-update: {{ prop.protocols.bgp.evpn["rapid-update"] | default (true) }}
         {% endif %}
+        send-community:
+          large: {{ prop.protocols.bgp["large-community"] | default(true) }}
         transport:
            mtu-discovery: {{ prop.protocols.bgp["mtu-discovery"] | default(true) }}
         group:
@@ -171,6 +164,8 @@
           {% if group_spec.import_policy is defined %}
           import-policy: [{{ group_spec.import_policy }}]
           {% endif %}
+          send-community:
+            large: {{ group_spec["large-community"] | default(true) }}
           {% if 'ipv4' in group_spec or 'ipv6' in group_spec or 'evpn' in group_spec %}
           afi-safi:
             {% if 'ipv4' in group_spec %}
