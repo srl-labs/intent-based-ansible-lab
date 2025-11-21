@@ -1,0 +1,216 @@
+{
+  "freeTextAnnotations": [],
+  "groupStyleAnnotations": [],
+  "cloudNodeAnnotations": [],
+  "nodeAnnotations": [
+    {
+      "id": "l1",
+      "icon": "router",
+      "position": {
+        "x": 77,
+        "y": 133
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Leafs",
+      "level": "1"
+    },
+    {
+      "id": "l2",
+      "icon": "router",
+      "position": {
+        "x": 203,
+        "y": 133
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Leafs",
+      "level": "1"
+    },
+    {
+      "id": "l3",
+      "icon": "router",
+      "position": {
+        "x": 287,
+        "y": 133
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Leafs",
+      "level": "1"
+    },
+    {
+      "id": "l4",
+      "icon": "router",
+      "position": {
+        "x": 413,
+        "y": 133
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Leafs",
+      "level": "1"
+    },
+    {
+      "id": "s1",
+      "icon": "router",
+      "position": {
+        "x": 203,
+        "y": 35
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Spines",
+      "level": "1"
+    },
+    {
+      "id": "s2",
+      "icon": "router",
+      "position": {
+        "x": 287,
+        "y": 35
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Spines",
+      "level": "1"
+    },
+    {
+      "id": "cl011",
+      "icon": "router",
+      "position": {
+        "x": 7,
+        "y": 133
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      }
+    },
+    {
+      "id": "cl121",
+      "icon": "router",
+      "position": {
+        "x": 77,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack1",
+      "level": "1"
+    },
+    {
+      "id": "cl122",
+      "icon": "router",
+      "position": {
+        "x": 119,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack1",
+      "level": "1"
+    },
+    {
+      "id": "cl123",
+      "icon": "router",
+      "position": {
+        "x": 161,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack1",
+      "level": "1"
+    },
+    {
+      "id": "cl124",
+      "icon": "router",
+      "position": {
+        "x": 203,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack1",
+      "level": "1"
+    },
+    {
+      "id": "cl341",
+      "icon": "router",
+      "position": {
+        "x": 287,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack2",
+      "level": "1"
+    },
+    {
+      "id": "cl342",
+      "icon": "router",
+      "position": {
+        "x": 329,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack2",
+      "level": "1"
+    },
+    {
+      "id": "cl343",
+      "icon": "router",
+      "position": {
+        "x": 371,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack2",
+      "level": "1"
+    },
+    {
+      "id": "cl344",
+      "icon": "router",
+      "position": {
+        "x": 413,
+        "y": 259
+      },
+      "geoCoordinates": {
+        "lat": 48.684826888402256,
+        "lng": 9.007895390625677
+      },
+      "group": "Rack2",
+      "level": "1"
+    }
+  ],
+  "aliasEndpointAnnotations": []
+}
