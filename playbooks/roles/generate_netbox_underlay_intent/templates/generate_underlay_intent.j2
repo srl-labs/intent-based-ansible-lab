@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for host in [query('inventory_hostnames', 'leaf'), query('inventory_hostnames', 'spine'), query('inventory_hostnames', 'borderleaf'), query('inventory_hostnames', 'superspine'), query('inventory_hostnames', 'dcgw')] | flatten %}
 {% set overlay_asn=lookup('netbox.netbox.nb_lookup', 'locations', api_filter='slug=' + (hostvars[host].locations | first), api_endpoint=netbox_url, token=netbox_token).value.custom_fields.Overlay_ASN.asn %}
 {{ host }}:

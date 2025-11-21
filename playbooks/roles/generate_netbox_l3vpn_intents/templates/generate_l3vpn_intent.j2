@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% set netbox_l3vpn_ids=netbox_l3vpns | map(attribute='id')%}
 {% set l3vpn_ns = namespace() %}
 {% set l3vpn_ns.l3vpns = {} %}

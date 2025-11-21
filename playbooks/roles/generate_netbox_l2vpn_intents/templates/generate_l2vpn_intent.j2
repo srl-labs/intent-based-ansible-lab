@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for svc in netbox_l2vpns %}
   {% if svc.identifier is defined and svc.identifier is not none %}
     {% set id=svc.identifier %}

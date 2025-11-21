@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for ni, prop in network_instance.items() %}
 {% if prop._state|default('present') != 'deleted' %}
 - path: /network-instance[name={{ni}}]

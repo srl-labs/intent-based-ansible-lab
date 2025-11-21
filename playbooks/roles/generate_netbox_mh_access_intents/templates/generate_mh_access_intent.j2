@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% set mh_access_ns = namespace() %}
 {% set mh_access_ns.intents = {} %}
 {% for host in [query('inventory_hostnames', 'leaf'), query('inventory_hostnames', 'spine'), query('inventory_hostnames', 'borderleaf'), query('inventory_hostnames', 'superspine'), query('inventory_hostnames', 'dcgw')] | flatten %}

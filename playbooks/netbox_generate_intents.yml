@@ -19,6 +19,13 @@
     when: intent_dir | default('') == ''
     tags: [always]
 
+  - name: Derive env from provided intent_dir
+    delegate_to: localhost
+    ansible.builtin.set_fact:
+      env: "{{ intent_dir | basename }}"
+    when: env | default('') == '' and intent_dir | default('') != ''
+    tags: [always]
+
   - name: Discover NetBox
     discover_netbox:
     tags: [always]

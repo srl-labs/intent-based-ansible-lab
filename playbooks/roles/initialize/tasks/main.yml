@@ -22,6 +22,12 @@
     intent_dir: "{{ playbook_dir }}/intent/{{ env }}" # default location for intent files
   when: intent_dir | default('') == ''
 
+- name: Derive env from provided intent_dir
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    env: "{{ intent_dir | basename }}"
+  when: env | default('') == '' and intent_dir | default('') != ''
+
 - name: Get data from SRlinux device
   nokia.srlinux.get:
     paths:

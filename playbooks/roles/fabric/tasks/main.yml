@@ -7,7 +7,7 @@
     name: utils_load_intent
 
 - name: Process fabric
-  when: fabric_intent is defined and fabric_intent is not none and fabric_intent | length
+  when: fabric_intent is defined and fabric_intent is not none and (fabric_intent | length > 0)
   block:
 
   - name: Validate fabric intent
