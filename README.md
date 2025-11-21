@@ -33,8 +33,6 @@ A practical example of using Ansible to manage the configuration of an SR Linux 
 ## Local setup
 
 ```bash
-git clone --recursive https://github.com/srl-labs/srl-netbox-demo
-cd srl-netbox-demo
 
 # Install uv (Linux/macOS)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -55,13 +53,7 @@ clab deploy -t topo.clab.yml
 2. Run the Ansible playbook:
 ```
 INTENT_DIR=$(pwd)/intent_examples/infra/underlay_with_fabric_intent
-ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fabric.yml
-``` 
-
-2. Run the Ansible playbook:
-```
-INTENT_DIR=$(pwd)/intent_examples/infra/underlay_with_fabric_intent
-ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fabric.yml
+uv run ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fabric.yml
 ``` 
 
 3. Verify with fcli
