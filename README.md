@@ -58,7 +58,7 @@ uv run ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fa
 
 3. Verify with fcli
 ```
-fcli ni
+fcli -t topo.clab.yml ni
 ``` 
 
 4. Run other Ansible playbook described here:
