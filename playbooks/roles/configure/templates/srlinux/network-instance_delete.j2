@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% if network_instance is defined %}
 {% for ni in running_config['srl_nokia-network-instance:network-instance'] %}
 {% if ni.name in network_instance and network_instance[ni.name]._state | default("present") == "deleted" %}

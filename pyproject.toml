@@ -1,0 +1,39 @@
+[project]
+name = "intent-based-ansible-lab"
+version = "0.1.0"
+description = "Demo lab for Nokia SR Linux, NetBox, and Ansible automation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ansible==12.2.0",
+    "ansible-core==2.19.4",
+    "attrs==25.4.0",
+    "cffi==2.0.0",
+    "cryptography==46.0.3",
+    "importlib-resources==6.5.2",
+    "jinja2==3.1.6",
+    "jsonschema==4.25.1",
+    "jsonschema-specifications==2025.9.1",
+    "lxml==6.0.2",
+    "markupsafe==3.0.3",
+    "ncclient==0.7.0",
+    "netaddr==1.3.0",
+    "networkx==3.5",
+    "packaging==25.0",
+    "pycparser==2.23",
+    "pyyaml==6.0.3",
+    "referencing==0.37.0",
+    "resolvelib==1.2.1",
+    "rpds-py==0.29.0",
+    "xmltodict==1.0.2",
+    "pynetbox==7.5.0",
+    "pytz==2025.2",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+include-package-data = false

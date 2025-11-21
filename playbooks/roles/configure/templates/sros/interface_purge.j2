@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% set PORT = namespace(instances=[]) %}
 {% if running_config['port'] | type_debug == "list" %}
 {% set PORT.instances = running_config['port'] %}

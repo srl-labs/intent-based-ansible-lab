@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% set NETWORK_INSTANCE = namespace(found = false) %}
 {% set DCGW_BHVPLS_OFFSET = hostvars[inventory_hostname]['dcgw_bhvpls_offset'] | default(10000) | int %}
 {% set ROUTERBASEIFACE = namespace(instances=[]) %}

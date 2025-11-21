@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for itf, itf_spec in bfd.interfaces.items() %}
 - path: /bfd/subinterface[id={{ itf }}]
   operation: replace
