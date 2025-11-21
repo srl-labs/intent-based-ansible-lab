@@ -40,7 +40,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install the Nokia SR Linux Ansible collection
 uv run ansible-galaxy collection install nokia.srlinux
 
-Install the fcli tool
+# Install the fcli tool
 uv tool install git+https://github.com/srl-labs/nornir-srl
 ```
 
