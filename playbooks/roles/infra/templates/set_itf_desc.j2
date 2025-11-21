@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 interfaces:
 {% for itf, nbrs in lldp_nbrs.items() %}
 {% if itf in interfaces and itf.startswith('ethernet') %}

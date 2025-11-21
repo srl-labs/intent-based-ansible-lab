@@ -16,13 +16,60 @@ A practical example of using Ansible to manage the configuration of an SR Linux 
 
 ---
 
-## Quick Start Guide to run in codespaces
+## Choose how to run
+
+- **Codespaces:** click the button above and wait for the devcontainer to finish. Everything below is run from the repo root inside Codespaces.
+- **Local machine:** follow the prerequisites and setup below, then run the same workflow.
+
+## Local prerequisites
+
+1) Containerlab installed. See the [official docs](https://containerlab.srlinux.dev/install/).
+2) Git, Docker, and uv.
+
+> [!TIP]
+> **Why uv?**
+> [uv](https://docs.astral.sh/uv) is a single, ultra-fast tool that can replace `pip`, `pipx`, `virtualenv`, `pip-tools`, `poetry`, and more. It automatically manages Python versions, handles ephemeral or persistent virtual environments (`uv venv`), lockfiles, and often runs **10–100× faster** than pip installs.
+
+## Local setup
+
+```bash
+git clone --recursive https://github.com/srl-labs/srl-netbox-demo
+cd srl-netbox-demo
+
+# Install uv (Linux/macOS)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install the Nokia SR Linux Ansible collection
+uv run ansible-galaxy collection install nokia.srlinux
+
+Install the fcli tool
+uv tool install git+https://github.com/srl-labs/nornir-srl
+```
+
+## Quick Start Guide
 
 1. Deploy the lab topology:
 ```
-sudo clab deploy -t topo.yml
+clab deploy -t topo.clab.yml
 ``` 
 2. Run the Ansible playbook:
 ```
-ansible-playbook -i inv/ -e intent_dir=/workspaces/intent-based-ansible-lab/intent_examples/infra/underlay_with_fabric_intent --diff playbooks/cf_fabric.yml
+INTENT_DIR=$(pwd)/intent_examples/infra/underlay_with_fabric_intent
+ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fabric.yml
 ``` 
+
+2. Run the Ansible playbook:
+```
+INTENT_DIR=$(pwd)/intent_examples/infra/underlay_with_fabric_intent
+ansible-playbook -i inv/ -e intent_dir=$INTENT_DIR --diff playbooks/cf_fabric.yml
+``` 
+
+3. Verify with fcli
+```
+fcli ni
+``` 
+
+4. Run other Ansible playbook described here:
+``` 
+https://learn.srlinux.dev/tutorials/programmability/ansible/intent-based-management/config/
+```

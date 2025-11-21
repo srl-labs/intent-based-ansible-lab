@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {%- for subif, prop in subinterface.items() %}
 {% if prop._state|default('present') != 'deleted' %}
 {% set l = subif.split('.') %}
