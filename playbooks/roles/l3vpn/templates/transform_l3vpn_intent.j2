@@ -88,7 +88,7 @@ network_instance:
                 {% set ROUTERBASEIFACE.instances = [running_config.router.interface] %}
               {% endif %}
               {% if ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | length == 0 %}
-                {% set system_ip=intent.subinterface["system0.0"].ipv4_address | ansible.utils.ipaddr("address") %}
+                {% set system_ip=subinterface["system0.0"].ipv4_address | ansible.utils.ipaddr("address") %}
               {% else %}
                 {% set system_ip=(ROUTERBASEIFACE.instances | selectattr('interface-name', 'eq', 'system') | first).ipv4.primary.address %}
               {% endif %}

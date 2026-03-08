@@ -14,19 +14,17 @@
 - name: Generate low-level intent for mh_access
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_mh_access_intent.j2',template_vars=intent) | from_yaml }}"
-  when: mh_access is defined and mh_access is not none and intent is mapping
+    my_intent: "{{ lookup('template', 'transform_mh_access_intent.j2', template_vars={'interfaces': all_interfaces}) | from_yaml }}"
+  when: mh_access is defined and mh_access is not none and all_interfaces is defined
 
-- name: Update 'interface' in intent
+- name: Update 'interface' in intent_mh_access
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
-  #  when: my_intent.subinterface is defined
+    intent_mh_access: "{{ intent_mh_access | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
   when: my_intent.interfaces is defined
 
-- name: Update 'system' in intent
+- name: Update 'system' in intent_mh_access
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'system': my_intent.system}, recursive=true) }}"
-  #  when: my_intent.subinterface is defined
+    intent_mh_access: "{{ intent_mh_access | default({}) | combine({'system': my_intent.system}, recursive=true) }}"
   when: my_intent.system is defined

@@ -1,0 +1,35 @@
+## Merge all scoped intent layers into the final 'intent' variable
+## Order matters: later layers override earlier ones for overlapping keys
+##
+## Inputs (set_fact from upstream roles):
+##   intent_fabric     - underlay topology, loopbacks, ISL interfaces, BGP
+##   intent_infra      - system config, routing policies, ACLs, infra interfaces
+##   intent_mh_access  - LAG interfaces, ethernet segments
+##   intent_l2vpn      - mac-vrf network instances, bridged subinterfaces, VXLAN tunnels
+##   intent_l3vpn      - ip-vrf network instances, IRB subinterfaces, routed tunnels
+##
+## Output:
+##   intent            - merged intent consumed by the 'configure' role
+
+- name: Merge intent layers (fabric + infra + mh_access + l2vpn)
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: >-
+      {{
+        intent_fabric    | default({})
+        | combine(intent_infra      | default({}), recursive=True)
+        | combine(intent_mh_access  | default({}), recursive=True)
+        | combine(intent_l2vpn      | default({}), recursive=True)
+      }}
+
+- name: Merge l3vpn intent (network_instance uses list append for interface lists)
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    intent: >-
+      {{
+        intent
+        | combine({'network_instance': intent_l3vpn.network_instance | default({})}, recursive=True, list_merge='append')
+        | combine({'subinterface':     intent_l3vpn.subinterface     | default({})}, recursive=True)
+        | combine({'tunnel_interface': intent_l3vpn.tunnel_interface | default({})}, recursive=True)
+      }}
+  when: intent_l3vpn is defined and intent_l3vpn is mapping and intent_l3vpn | length > 0
