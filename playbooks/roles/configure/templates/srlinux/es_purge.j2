@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% if system is defined and "srl_nokia-system-network-instance:network-instance" in running_config['srl_nokia-system:system'] %}
     {% set evpn_data = running_config['srl_nokia-system:system']['srl_nokia-system-network-instance:network-instance']
         ['protocols'] | default({}, true) %}

@@ -6,6 +6,14 @@
     delete: []
     cacheable: true
 
+- name: Derive env from intent dir
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    env: "{{ intent_dir | ansible.builtin.basename }}"
+  when:
+    - env is not defined
+    - intent_dir | default('') != ''
+
 - name: Check if 'ENV' environment var is set
   delegate_to: localhost
   ansible.builtin.set_fact:

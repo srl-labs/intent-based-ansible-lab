@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% if bfd is defined and bfd is not none %}
 {% for subitf in running_config['srl_nokia-bfd:bfd']['subinterface'] | default([]) %}
 {% if subitf.id not in bfd.interfaces | default({}) %}

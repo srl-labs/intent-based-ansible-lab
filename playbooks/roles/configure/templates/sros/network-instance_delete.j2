@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% if network_instance is defined %}
 {% set VPRN = namespace(instances=[]) %}
 {% if running_config['service']['vprn'] | type_debug == "list" %}

@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% if subinterface is defined and subinterface is not none %}
 {% for itf in running_config['srl_nokia-interfaces:interface'] %}
 {% if itf.subinterface is defined and itf.subinterface is not none %}

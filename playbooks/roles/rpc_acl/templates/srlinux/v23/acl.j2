@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for acl, acl_spec in acl_filters.items() %}
   {% if acl_spec.type == "ipv4" %}
 - path: /acl/ipv4-filter[name={{ acl }}]

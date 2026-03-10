@@ -6,7 +6,7 @@ mgmt:
 
 topology:
   kinds:
-    srl:
+    nokia_srlinux:
       image: ghcr.io/nokia/srlinux:25.3.2
       #image: ghcr.io/nokia/srlinux:24.10.4
       #image: ghcr.io/nokia/srlinux:24.7.2
@@ -18,79 +18,55 @@ topology:
       image: ghcr.io/hellt/network-multitool
   nodes:
     l1:
-      kind: srl
-      type: ixrd2
+      kind: nokia_srlinux
+      type: ixr-d2
       mgmt-ipv4: 172.20.21.11
       labels:
         role: leaf
         fabric: yes
-        graph-posX: "485"
-        graph-posY: "135"
-        graph-group: Leaf-switches
-        graph-level: "2"
-        graph-groupLabelPos: bottom-center
+
     l2:
-      kind: srl
-      type: ixrd2
+      kind: nokia_srlinux
+      type: ixr-d2
       mgmt-ipv4: 172.20.21.12
       labels:
         role: leaf
         fabric: yes
-        graph-posX: "525"
-        graph-posY: "135"
-        graph-group: Leaf-switches
-        graph-level: "2"
-        graph-groupLabelPos: bottom-center
+
     l3:
-      kind: srl
-      type: ixrd2
+      kind: nokia_srlinux
+      type: ixr-d2
       mgmt-ipv4: 172.20.21.13
       labels:
         role: leaf
         fabric: yes
-        graph-posX: "635"
-        graph-posY: "135"
-        graph-group: Leaf-switches
-        graph-level: "2"
-        graph-groupLabelPos: bottom-center
+
     l4:
-      kind: srl
-      type: ixrd2
+      kind: nokia_srlinux
+      type: ixr-d2
       mgmt-ipv4: 172.20.21.14
       labels:
         role: leaf
         fabric: yes
-        graph-posX: "675"
-        graph-posY: "135"
-        graph-group: Leaf-switches
-        graph-level: "2"
-        graph-groupLabelPos: bottom-center
+
     s1:
-      kind: srl
-      type: ixrd3l
+      kind: nokia_srlinux
+      type: ixr-d3l
       #      type: ixrh2
       mgmt-ipv4: 172.20.21.101
       labels:
         role: spine
         fabric: yes
-        graph-posX: "535"
-        graph-posY: "65"
-        graph-group: Spine-switches
-        graph-level: "1"
-        graph-groupLabelPos: bottom-center
+
     s2:
-      kind: srl
-      type: ixrd3l
+      kind: nokia_srlinux
+      type: ixr-d3l
       #type: ixrh2
       mgmt-ipv4: 172.20.21.102
       labels:
         role: spine
         fabric: yes
-        graph-posX: "625"
-        graph-posY: "65"
-        graph-group: Spine-switches
-        graph-level: "1"
-        graph-groupLabelPos: bottom-center
+
     cl011:
       kind: linux
       mgmt-ipv4: 172.20.21.141
@@ -101,12 +77,7 @@ topology:
         - ip addr add 10.5.0.1/31 dev eth1
         - ip link set eth1 up
         - ip route add 10.0.0.0/8 via 10.5.0.0
-      labels:
-        graph-posX: "405"
-        graph-posY: "210"
-        graph-group: rack1_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl121:
       kind: linux
       mgmt-ipv4: 172.20.21.133
@@ -123,12 +94,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.1.254
-      labels:
-        graph-posX: "455"
-        graph-posY: "210"
-        graph-group: rack1_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl122:
       kind: linux
       mgmt-ipv4: 172.20.21.134
@@ -145,12 +111,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.2.254
-      labels:
-        graph-posX: "485"
-        graph-posY: "210"
-        graph-group: rack1_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl123:
       kind: linux
       mgmt-ipv4: 172.20.21.135
@@ -167,12 +128,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.1.254
-      labels:
-        graph-posX: "515"
-        graph-posY: "210"
-        graph-group: rack1_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl124:
       kind: linux
       mgmt-ipv4: 172.20.21.136
@@ -189,12 +145,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.2.254
-      labels:
-        graph-posX: "545"
-        graph-posY: "210"
-        graph-group: rack1_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl341:
       kind: linux
       mgmt-ipv4: 172.20.21.137
@@ -211,12 +162,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.2.254
-      labels:
-        graph-posX: "610"
-        graph-posY: "210"
-        graph-group: rack2_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl342:
       kind: linux
       mgmt-ipv4: 172.20.21.138
@@ -233,12 +179,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.3.254
-      labels:
-        graph-posX: "640"
-        graph-posY: "210"
-        graph-group: rack2_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl343:
       kind: linux
       mgmt-ipv4: 172.20.21.139
@@ -255,12 +196,7 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.1.254
-      labels:
-        graph-posX: "670"
-        graph-posY: "210"
-        graph-group: rack2_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
     cl344:
       kind: linux
       mgmt-ipv4: 172.20.21.140
@@ -277,35 +213,30 @@ topology:
         - ip link set eth2 up
         - ip link set bond0 up
         - ip route add 10.0.0.0/8 via 10.0.3.254
-      labels:
-        graph-posX: "700"
-        graph-posY: "210"
-        graph-group: rack2_clients
-        graph-level: "3"
-        graph-groupLabelPos: bottom-center
+
   links:
-    - endpoints: [ "l1:e1-50", "s1:e1-1" ]
-    - endpoints: [ "l1:e1-49", "s2:e1-1" ]
-    - endpoints: [ "l2:e1-50", "s1:e1-2" ]
-    - endpoints: [ "l2:e1-49", "s2:e1-2" ]
-    - endpoints: [ "l3:e1-50", "s1:e1-3" ]
-    - endpoints: [ "l3:e1-49", "s2:e1-3" ]
-    - endpoints: [ "l4:e1-50", "s1:e1-4" ]
-    - endpoints: [ "l4:e1-49", "s2:e1-4" ]
-    - endpoints: [ "cl121:eth1", "l1:e1-20" ]
-    - endpoints: [ "cl121:eth2", "l2:e1-20" ]
-    - endpoints: [ "cl122:eth1", "l1:e1-21" ]
-    - endpoints: [ "cl122:eth2", "l2:e1-21" ]
-    - endpoints: [ "cl341:eth1", "l3:e1-20" ]
-    - endpoints: [ "cl341:eth2", "l4:e1-20" ]
-    - endpoints: [ "cl342:eth1", "l3:e1-21" ]
-    - endpoints: [ "cl342:eth2", "l4:e1-21" ]
-    - endpoints: [ "cl123:eth1", "l1:e1-30" ]
-    - endpoints: [ "cl123:eth2", "l2:e1-30" ]
-    - endpoints: [ "cl124:eth1", "l1:e1-31" ]
-    - endpoints: [ "cl124:eth2", "l2:e1-31" ]
-    - endpoints: [ "cl343:eth1", "l3:e1-30" ]
-    - endpoints: [ "cl343:eth2", "l4:e1-30" ]
-    - endpoints: [ "cl344:eth1", "l3:e1-31" ]
-    - endpoints: [ "cl344:eth2", "l4:e1-31" ]
-    - endpoints: [ "cl011:eth1", "l1:e1-22" ]
+    - endpoints: ["l1:e1-50", "s1:e1-1"]
+    - endpoints: ["l1:e1-49", "s2:e1-1"]
+    - endpoints: ["l2:e1-50", "s1:e1-2"]
+    - endpoints: ["l2:e1-49", "s2:e1-2"]
+    - endpoints: ["l3:e1-50", "s1:e1-3"]
+    - endpoints: ["l3:e1-49", "s2:e1-3"]
+    - endpoints: ["l4:e1-50", "s1:e1-4"]
+    - endpoints: ["l4:e1-49", "s2:e1-4"]
+    - endpoints: ["cl121:eth1", "l1:e1-20"]
+    - endpoints: ["cl121:eth2", "l2:e1-20"]
+    - endpoints: ["cl122:eth1", "l1:e1-21"]
+    - endpoints: ["cl122:eth2", "l2:e1-21"]
+    - endpoints: ["cl341:eth1", "l3:e1-20"]
+    - endpoints: ["cl341:eth2", "l4:e1-20"]
+    - endpoints: ["cl342:eth1", "l3:e1-21"]
+    - endpoints: ["cl342:eth2", "l4:e1-21"]
+    - endpoints: ["cl123:eth1", "l1:e1-30"]
+    - endpoints: ["cl123:eth2", "l2:e1-30"]
+    - endpoints: ["cl124:eth1", "l1:e1-31"]
+    - endpoints: ["cl124:eth2", "l2:e1-31"]
+    - endpoints: ["cl343:eth1", "l3:e1-30"]
+    - endpoints: ["cl343:eth2", "l4:e1-30"]
+    - endpoints: ["cl344:eth1", "l3:e1-31"]
+    - endpoints: ["cl344:eth2", "l4:e1-31"]
+    - endpoints: ["cl011:eth1", "l1:e1-22"]

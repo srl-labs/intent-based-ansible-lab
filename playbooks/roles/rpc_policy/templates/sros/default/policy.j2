@@ -1,4 +1,4 @@
-#jinja2: lstrip_blocks: "True"
+#jinja2: lstrip_blocks: True
 {% for pfx_set, pfx_spec in (routing_policy.prefix_set | default({})).items() %}
 - path: /policy-options/prefix-list[name={{pfx_set}}]
   operation: replace
