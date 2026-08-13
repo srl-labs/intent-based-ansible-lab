@@ -13,29 +13,29 @@
 - name: Generate low-level intent for L3VPN
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2', template_vars=intent) | from_yaml }}"
-  when: l3vpn is mapping and intent is mapping
+    my_intent: "{{ lookup('template', 'transform_l3vpn_intent.j2', template_vars={'network_instance': all_network_instances, 'subinterface': all_subinterfaces}) | from_yaml }}"
+  when: l3vpn is mapping and all_network_instances is defined
 
-- name: Update 'network_instance' in intent
+- name: Update 'network_instance' in intent_l3vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance | default({}, true)}, recursive=true, list_merge='append') }}"
+    intent_l3vpn: "{{ intent_l3vpn | default({}) | combine({'network_instance': my_intent.network_instance | default({}, true)}, recursive=true) }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.network_instance is defined and my_intent.network_instance is not none
 
-- name: Update 'subinterface' in intent
+- name: Update 'subinterface' in intent_l3vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'subinterface': my_intent.subinterface | default({}, true)}, recursive=true) }}"
+    intent_l3vpn: "{{ intent_l3vpn | default({}) | combine({'subinterface': my_intent.subinterface | default({}, true)}, recursive=true) }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.subinterface is defined and my_intent.subinterface is not none
 
-- name: Update 'tunnel_interface' in intent
+- name: Update 'tunnel_interface' in intent_l3vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface | default({}, true)}, recursive=true) }}"
+    intent_l3vpn: "{{ intent_l3vpn | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface | default({}, true)}, recursive=true) }}"
   when:
     - my_intent is defined and my_intent is not none
     - my_intent.tunnel_interface is defined and my_intent.tunnel_interface is not none

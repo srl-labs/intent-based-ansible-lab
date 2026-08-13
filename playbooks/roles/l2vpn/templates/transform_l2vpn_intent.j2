@@ -98,11 +98,14 @@ subinterface:
 {%          endfor                                                      %}
 {%      endfor                                                          %}
 interfaces:
+{%      set seen_itfs = []                                              %}
 {%      for svc in macvrf.svc                                           %}
-{%      set svc_spec = l2vpn[svc]                                       %}
 {%          for itf in macvrf.svc[svc]['itfs']                          %}
+{%              if itf not in seen_itfs                                 %}
+{%                  set _ = seen_itfs.append(itf)                       %}
     {{ itf }}:
         vlan_tagging: true
+{%              endif                                                   %}
 {%          endfor                                                      %}
 {%      endfor                                                          %}
 tunnel_interface:

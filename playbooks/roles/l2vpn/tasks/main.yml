@@ -14,30 +14,29 @@
 - name: Generate low-level intent for L2VPN
   delegate_to: localhost
   ansible.builtin.set_fact:
-    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2', template_vars=intent) | from_yaml }}"
-  when: l2vpn is defined and l2vpn is not none and intent is defined and intent is not none
+    my_intent: "{{ lookup('template', 'transform_l2vpn_intent.j2', template_vars={'interfaces': all_interfaces}) | from_yaml }}"
+  when: l2vpn is defined and l2vpn is not none and all_interfaces is defined
 
-- name: Update 'network_instance' in intent
+- name: Update 'network_instance' in intent_l2vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
+    intent_l2vpn: "{{ intent_l2vpn | default({}) | combine({'network_instance': my_intent.network_instance}, recursive=true) }}"
   when: my_intent.network_instance | type_debug == 'dict'
 
-- name: Update 'interfaces' in intent
+- name: Update 'interfaces' in intent_l2vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
+    intent_l2vpn: "{{ intent_l2vpn | default({}) | combine({'interfaces': my_intent.interfaces}, recursive=true) }}"
   when: my_intent.interfaces is defined
 
-- name: Update 'subinterface' in intent
+- name: Update 'subinterface' in intent_l2vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
-  #  when: my_intent.subinterface is defined
+    intent_l2vpn: "{{ intent_l2vpn | default({}) | combine({'subinterface': my_intent.subinterface}, recursive=true) }}"
   when: my_intent.subinterface is defined
 
-- name: Update 'tunnel_interface' in intent
+- name: Update 'tunnel_interface' in intent_l2vpn
   delegate_to: localhost
   ansible.builtin.set_fact:
-    intent: "{{ intent | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface}, recursive=true) }}"
+    intent_l2vpn: "{{ intent_l2vpn | default({}) | combine({'tunnel_interface': my_intent.tunnel_interface}, recursive=true) }}"
   when: my_intent.tunnel_interface is defined
