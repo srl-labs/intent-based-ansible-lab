@@ -57,7 +57,7 @@
       subinterface:
         - mgmt0.0
   ansible.builtin.set_fact:
-    delete: "{{ delete + lookup('template', '{{platform}}/{{item}}_purge.j2', template_vars=intent) | from_yaml | default([], true) }}"
+    delete: "{{ delete + lookup('template', platform ~ '/' ~ item ~ '_purge.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
   when:
@@ -69,7 +69,7 @@
 - name: Generate Delete sets for explicit pruning
   delegate_to: localhost
   ansible.builtin.set_fact:
-    delete: "{{ delete + lookup('template', '{{platform}}/{{item}}_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
+    delete: "{{ delete + lookup('template', platform ~ '/' ~ item ~ '_delete.j2', template_vars=intent) | from_yaml | default([], true) }}"
     cacheable: true
   loop: "{{ purgeable }}"
 
